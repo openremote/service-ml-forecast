@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "service_ml_forecast"
+version = "0.1.0"
+description = "Machine Learning Forecast Service"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.68.0",
+    "uvicorn>=0.15.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=6.0",
+    "pytest-bdd>=6.1.1",
+    "black>=22.1.0",
+    "isort>=5.10.0",
+    "mypy>=0.931",
+    "flake8>=4.0.1",
+    "build>=0.7.0",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/openremote/service-ml-forecast"
+"Bug Tracker" = "https://github.com/openremote/service-ml-forecast/issues"
+
+[tool.setuptools]
+packages = ["service_ml_forecast"]
+package-dir = {"service_ml_forecast" = "src/service_ml_forecast"}
+
+[tool.black]
+line-length = 100
+target-version = ["py38"]
+include = '\.pyi?$'
+
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+
+[project.scripts]
+service_ml_forecast = "service_ml_forecast.main:app"
