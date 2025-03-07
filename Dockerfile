@@ -30,6 +30,7 @@ ENV PYTHONUNBUFFERED=1 \
 # Copy only the installed package from the builder stage
 COPY --from=builder /usr/local/lib/python3.10/site-packages/ /usr/local/lib/python3.10/site-packages/
 COPY --from=builder /usr/local/bin/ /usr/local/bin/
+COPY pyproject.toml ./
 COPY src/ ./src/
 
 # Expose port
