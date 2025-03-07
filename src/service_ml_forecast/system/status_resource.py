@@ -6,7 +6,6 @@ from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
 
-
 class HealthCheckResponse(BaseModel):
     status: str = Field(default="healthy", description="Status of the service")
     timestamp: float = Field(default=time.time(), description="Timestamp of the request")
