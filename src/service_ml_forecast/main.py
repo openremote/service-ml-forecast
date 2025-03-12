@@ -4,8 +4,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from service_ml_forecast import __app_info__
+from service_ml_forecast.config import config
 
 logger = logging.getLogger(__name__)
+
 
 def create_app() -> FastAPI:
 
@@ -13,7 +15,6 @@ def create_app() -> FastAPI:
         logger.error("App initialization failed: Failed to read app info")
         raise Exception("App initialization failed: Failed to read app info")
 
-    # TODO: Docs should be disabled in production
     app = FastAPI(
         title=__app_info__.name,
         description=__app_info__.description,
@@ -22,6 +23,11 @@ def create_app() -> FastAPI:
         redoc_url="/redoc",
         openapi_url="/openapi.json",
     )
+
+    if not config.PUBLIC_DOCS:
+        app.docs_url = None
+        app.redoc_url = None
+        app.openapi_url = None
 
     # Add CORS middleware
     # TODO: In production, replace with specific origin
@@ -34,5 +40,6 @@ def create_app() -> FastAPI:
     )
 
     return app
+
 
 app = create_app()

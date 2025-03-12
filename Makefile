@@ -54,7 +54,7 @@ build: clean
 
 # Run the application
 run:
-	uvicorn service_ml_forecast.main:app --reload --log-config=src/service_ml_forecast/logging.yaml
+	uvicorn service_ml_forecast.main:app --reload
 
 # Help command
 help:

@@ -4,6 +4,11 @@ from pathlib import Path
 import tomli
 from pydantic import BaseModel
 
+from service_ml_forecast.logging_config import configure_logging
+
+configure_logging()
+
+
 logger = logging.getLogger(__name__)
 
 
