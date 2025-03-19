@@ -10,8 +10,7 @@ from service_ml_forecast.integrations.openremote.models import (
 )
 from service_ml_forecast.integrations.openremote.openremote_client import OpenRemoteClient
 
-# Tests won't work if there is no local OpenRemote Demo instance running
-
+# Common test data used across multiple tests
 TEST_ASSET_ID = "44ORIhkDVAlT97dYGUD9n5"
 TEST_ATTRIBUTE_NAME = "powerTotalConsumers"
 
@@ -28,6 +27,7 @@ def openremote_client() -> OpenRemoteClient:
         service_user_secret=config.OPENREMOTE_SERVICE_USER_SECRET,
     )
 
+    # Skip tests if OpenRemote API is not available
     if not client.health_check():
         pytest.skip(reason="OpenRemote API not available")
 
