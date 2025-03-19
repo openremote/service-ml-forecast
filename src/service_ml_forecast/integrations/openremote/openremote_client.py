@@ -76,7 +76,11 @@ class OpenRemoteClient:
             return token_data
 
     def __refresh_token(self) -> None:
-        """Refresh the OAuth2 token if it is expired."""
+        """Refresh the OAuth2 token if it is expired.
+
+        This is done with an offset of 10 seconds to account for any delays in response time.
+
+        """
 
         # Refresh token if it has expired with an offset of 10 seconds
         if self.token_expiration_timestamp and time.time() > self.token_expiration_timestamp - 10:
@@ -84,7 +88,7 @@ class OpenRemoteClient:
             self.token_expiration_timestamp = time.time() + self.oauth_token.expires_in
 
     def __build_headers(self) -> dict[str, str]:
-        """Build headers dictionary."""
+        """Build headers dictionary with the correct authorization and content type."""
         headers = {
             "Authorization": f"Bearer {self.oauth_token.access_token}",
             "Content-Type": "application/json",
@@ -92,7 +96,7 @@ class OpenRemoteClient:
         return headers
 
     def __build_request(self, method: str, url: str, data: Any | None = None) -> httpx.Request:
-        """Build a HTTPX request object."""
+        """Build a HTTPX request object with the correct headers and data."""
         headers = self.__build_headers()
         self.__refresh_token()
         return httpx.Request(method, url, headers=headers, json=data)
