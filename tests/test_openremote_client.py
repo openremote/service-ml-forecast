@@ -10,6 +10,8 @@ from service_ml_forecast.integrations.openremote.models import (
 )
 from service_ml_forecast.integrations.openremote.openremote_client import OpenRemoteClient
 
+# Tests won't work if there is no local OpenRemote Demo instance running
+
 
 class TestOpenRemoteClient:
     def setup_class(self) -> None:
@@ -21,6 +23,9 @@ class TestOpenRemoteClient:
             service_user=config.OPENREMOTE_SERVICE_USER,
             service_user_secret=config.OPENREMOTE_SERVICE_USER_SECRET,
         )
+
+        if not self.openremote_client.health_check():
+            pytest.skip(allow_module_level=True, reason="OpenRemote API not available")
 
     def test_retrieve_assets(self) -> None:
         assets: list[Asset] = self.openremote_client.retrieve_assets("master")

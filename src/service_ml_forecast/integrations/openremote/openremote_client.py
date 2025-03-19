@@ -103,6 +103,19 @@ class OpenRemoteClient:
         self.__refresh_token()
         return httpx.Request(method, url, headers=headers, json=data)
 
+    def health_check(self) -> bool:
+        """Check if the OpenRemote API is healthy."""
+        url = f"{self.openremote_url}/api/master/health"
+        request = self.__build_request("GET", url)
+        with httpx.Client() as client:
+            try:
+                response = client.send(request)
+                response.raise_for_status()
+                return response.status_code == HTTPStatus.OK
+            except httpx.ConnectError as e:
+                self.logger.error(f"OpenRemote API is not healthy: {e}")
+                return False
+
     def retrieve_assets(self, realm: str) -> list[Asset]:
         """Retrieve all assets for a given realm."""
         url = f"{self.openremote_url}/api/{realm}/asset/query"
