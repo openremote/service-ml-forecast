@@ -24,6 +24,9 @@ class TestOpenRemoteClient:
             service_user_secret=config.OPENREMOTE_SERVICE_USER_SECRET,
         )
 
+        self.test_asset_id = "44ORIhkDVAlT97dYGUD9n5"
+        self.test_attribute_name = "powerTotalConsumers"
+
         if not self.openremote_client.health_check():
             pytest.skip(allow_module_level=True, reason="OpenRemote API not available")
 
@@ -37,24 +40,24 @@ class TestOpenRemoteClient:
 
     def test_retrieve_asset_datapoint_period(self) -> None:
         datapoint_period: AssetDatapointPeriod = self.openremote_client.retrieve_asset_datapoint_period(
-            "44ORIhkDVAlT97dYGUD9n5", "powerTotalConsumers"
+            self.test_asset_id, self.test_attribute_name
         )
         assert datapoint_period is not None, "Failed to retrieve asset datapoint period"
 
     def test_retrieve_asset_datapoint_period_invalid_asset_id(self) -> None:
         with pytest.raises(HTTPStatusError):
-            self.openremote_client.retrieve_asset_datapoint_period("invalid_asset_id", "powerTotalConsumers")
+            self.openremote_client.retrieve_asset_datapoint_period("invalid_asset_id", self.test_attribute_name)
 
     def test_retrieve_historical_datapoints(self) -> None:
         datapoints: list[Datapoint] = self.openremote_client.retrieve_historical_datapoints(
-            "44ORIhkDVAlT97dYGUD9n5", "powerTotalConsumers", 1716153600000, int(time.time() * 1000)
+            self.test_asset_id, self.test_attribute_name, 1716153600000, int(time.time() * 1000)
         )
         assert len(datapoints) > 0, "Failed to retrieve historical datapoints"
 
     def test_retrieve_historical_datapoints_invalid_asset_id(self) -> None:
         with pytest.raises(HTTPStatusError):
             self.openremote_client.retrieve_historical_datapoints(
-                "invalid_asset_id", "powerTotalConsumers", 1716153600000, int(time.time() * 1000)
+                "invalid_asset_id", self.test_attribute_name, 1716153600000, int(time.time() * 1000)
             )
 
     def test_write_retrieve_predicted_datapoints(self) -> None:
@@ -67,11 +70,11 @@ class TestOpenRemoteClient:
         ]
 
         assert self.openremote_client.write_predicted_datapoints(
-            "44ORIhkDVAlT97dYGUD9n5", "powerTotalConsumers", datapoints
+            self.test_asset_id, self.test_attribute_name, datapoints
         ), "Failed to write predicted datapoints"
 
         predicted_datapoints: list[Datapoint] = self.openremote_client.retrieve_predicted_datapoints(
-            "44ORIhkDVAlT97dYGUD9n5", "powerTotalConsumers", timestamp1, timestamp2
+            self.test_asset_id, self.test_attribute_name, timestamp1, timestamp2
         )
         assert len(predicted_datapoints) == len(datapoints), (
             "Predicted datapoints should have the same length as the written datapoints"

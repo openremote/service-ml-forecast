@@ -1,9 +1,3 @@
-# POST Retrieve assets - https://demo.openremote.io/api/master/asset/query
-# GET Data point period of asset attribute - https://demo.openremote.io/api/master/asset/datapoint/:assetId/:attributeName/period
-# GET Historical data points of asset attribute - https://demo.openremote.io/api/master/asset/datapoint/:assetId/:attributeName
-# PUT Write predicted data points of asset attribute - https://demo.openremote.io/api/master/asset/predicted/:assetId/:attributeName
-# POST Retrieve predicted data points of asset attribute - https://demo.openremote.io/api/master/asset/predicted/:assetId/:attributeName
-
 import logging
 import time
 from http import HTTPStatus
