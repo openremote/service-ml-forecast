@@ -6,6 +6,7 @@
 
 import logging
 import time
+from http import HTTPStatus
 from typing import Any
 
 import httpx
@@ -15,7 +16,7 @@ from service_ml_forecast.integrations.openremote.models import (
     Asset,
     AssetDatapointPeriod,
     Datapoint,
-    HistoricalDatapointsRequestBody,
+    DatapointsRequestBody,
 )
 
 
@@ -138,10 +139,46 @@ class OpenRemoteClient:
         params = f"{asset_id}/{attribute_name}"
         url = f"{self.openremote_url}/api/master/asset/datapoint/{params}"
 
-        request_body = HistoricalDatapointsRequestBody(
+        request_body = DatapointsRequestBody(
             fromTimestamp=from_timestamp,
             toTimestamp=to_timestamp,
         )
+        request = self.__build_request("POST", url, data=request_body.model_dump())
+
+        with httpx.Client() as client:
+            response = client.send(request)
+            response.raise_for_status()
+            datapoints = response.json()
+
+            return [Datapoint(**datapoint) for datapoint in datapoints]
+
+    def write_predicted_datapoints(self, asset_id: str, attribute_name: str, datapoints: list[Datapoint]) -> bool:
+        """Write the predicted data points of a given asset attribute."""
+        params = f"{asset_id}/{attribute_name}"
+        url = f"{self.openremote_url}/api/master/asset/predicted/{params}"
+
+        datapoints_json = [datapoint.model_dump() for datapoint in datapoints]
+
+        request = self.__build_request("PUT", url, data=datapoints_json)
+
+        with httpx.Client() as client:
+            response = client.send(request)
+            response.raise_for_status()
+
+            return response.status_code == HTTPStatus.NO_CONTENT
+
+    def retrieve_predicted_datapoints(
+        self, asset_id: str, attribute_name: str, from_timestamp: int, to_timestamp: int
+    ) -> list[Datapoint]:
+        """Retrieve the predicted data points of a given asset attribute."""
+        params = f"{asset_id}/{attribute_name}"
+        url = f"{self.openremote_url}/api/master/asset/predicted/{params}"
+
+        request_body = DatapointsRequestBody(
+            fromTimestamp=from_timestamp,
+            toTimestamp=to_timestamp,
+        )
+
         request = self.__build_request("POST", url, data=request_body.model_dump())
 
         with httpx.Client() as client:

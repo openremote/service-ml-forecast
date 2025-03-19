@@ -48,8 +48,8 @@ class Datapoint(BaseModel):
     y: Any
 
 
-class HistoricalDatapointsRequestBody(BaseModel):
-    """Request body for retrieving historical data points of an asset attribute."""
+class DatapointsRequestBody(BaseModel):
+    """Request body for retrieving either historical or predicted data points of an asset attribute."""
 
     fromTimestamp: int
     toTimestamp: int

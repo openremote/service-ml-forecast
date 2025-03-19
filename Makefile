@@ -21,7 +21,7 @@ install:
 
 # Run tests
 test:
-	$(PYTEST) $(TEST_DIR) -o log_cli=true
+	$(PYTEST) $(TEST_DIR) -v --cache-clear
 
 # Run formatting, linting and type checking
 lint:

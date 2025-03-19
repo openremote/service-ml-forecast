@@ -3,7 +3,6 @@ import time
 import pytest
 from httpx import HTTPStatusError
 
-from service_ml_forecast.config import config
 from service_ml_forecast.integrations.openremote.models import (
     Asset,
     AssetDatapointPeriod,
@@ -11,38 +10,72 @@ from service_ml_forecast.integrations.openremote.models import (
 )
 from service_ml_forecast.integrations.openremote.openremote_client import OpenRemoteClient
 
-openremote_client = OpenRemoteClient(
-    openremote_url=config.OPENREMOTE_URL,
-    keycloak_url=config.OPENREMOTE_KEYCLOAK_URL,
-    service_user=config.OPENREMOTE_SERVICE_USER,
-    service_user_secret=config.OPENREMOTE_SERVICE_USER_SECRET,
-)
 
+class TestOpenRemoteClient:
+    def setup_class(self) -> None:
+        from service_ml_forecast.config import config
 
-def test_retrieve_assets() -> None:
-    assets: list[Asset] = openremote_client.retrieve_assets("master")
-    assert len(assets) > 0
+        self.openremote_client = OpenRemoteClient(
+            openremote_url=config.OPENREMOTE_URL,
+            keycloak_url=config.OPENREMOTE_KEYCLOAK_URL,
+            service_user=config.OPENREMOTE_SERVICE_USER,
+            service_user_secret=config.OPENREMOTE_SERVICE_USER_SECRET,
+        )
 
+    def test_retrieve_assets(self) -> None:
+        assets: list[Asset] = self.openremote_client.retrieve_assets("master")
+        assert len(assets) > 0, "Failed to retrieve assets"
 
-def test_retrieve_assets_invalid_realm() -> None:
-    with pytest.raises(HTTPStatusError):
-        openremote_client.retrieve_assets("invalid_realm_name")
+    def test_retrieve_assets_invalid_realm(self) -> None:
+        with pytest.raises(HTTPStatusError):
+            self.openremote_client.retrieve_assets("invalid_realm_name")
 
+    def test_retrieve_asset_datapoint_period(self) -> None:
+        datapoint_period: AssetDatapointPeriod = self.openremote_client.retrieve_asset_datapoint_period(
+            "44ORIhkDVAlT97dYGUD9n5", "powerTotalConsumers"
+        )
+        assert datapoint_period is not None, "Failed to retrieve asset datapoint period"
 
-def test_retrieve_asset_datapoint_period() -> None:
-    datapoint_period: AssetDatapointPeriod = openremote_client.retrieve_asset_datapoint_period(
-        "44ORIhkDVAlT97dYGUD9n5", "powerTotalConsumers"
-    )
-    assert datapoint_period is not None
+    def test_retrieve_asset_datapoint_period_invalid_asset_id(self) -> None:
+        with pytest.raises(HTTPStatusError):
+            self.openremote_client.retrieve_asset_datapoint_period("invalid_asset_id", "powerTotalConsumers")
 
+    def test_retrieve_historical_datapoints(self) -> None:
+        datapoints: list[Datapoint] = self.openremote_client.retrieve_historical_datapoints(
+            "44ORIhkDVAlT97dYGUD9n5", "powerTotalConsumers", 1716153600000, int(time.time() * 1000)
+        )
+        assert len(datapoints) > 0, "Failed to retrieve historical datapoints"
 
-def test_retrieve_asset_datapoint_period_invalid_asset_id() -> None:
-    with pytest.raises(HTTPStatusError):
-        openremote_client.retrieve_asset_datapoint_period("invalid_asset_id", "powerTotalConsumers")
+    def test_retrieve_historical_datapoints_invalid_asset_id(self) -> None:
+        with pytest.raises(HTTPStatusError):
+            self.openremote_client.retrieve_historical_datapoints(
+                "invalid_asset_id", "powerTotalConsumers", 1716153600000, int(time.time() * 1000)
+            )
 
+    def test_write_retrieve_predicted_datapoints(self) -> None:
+        timestamp1 = 572127577200000  # 20100-01-01 00:00:00
+        timestamp2 = 572127577200001  # 20100-01-01 00:00:01
 
-def test_retrieve_historical_datapoints() -> None:
-    datapoints: list[Datapoint] = openremote_client.retrieve_historical_datapoints(
-        "44ORIhkDVAlT97dYGUD9n5", "powerTotalConsumers", 1716153600000, int(time.time() * 1000)
-    )
-    assert len(datapoints) > 0
+        datapoints: list[Datapoint] = [
+            Datapoint(x=timestamp1, y=100),
+            Datapoint(x=timestamp2, y=200),
+        ]
+
+        assert self.openremote_client.write_predicted_datapoints(
+            "44ORIhkDVAlT97dYGUD9n5", "powerTotalConsumers", datapoints
+        ), "Failed to write predicted datapoints"
+
+        predicted_datapoints: list[Datapoint] = self.openremote_client.retrieve_predicted_datapoints(
+            "44ORIhkDVAlT97dYGUD9n5", "powerTotalConsumers", timestamp1, timestamp2
+        )
+        assert len(predicted_datapoints) == len(datapoints), (
+            "Predicted datapoints should have the same length as the written datapoints"
+        )
+
+        # Sort both lists by timestamp (x) before comparison
+        sorted_predicted = sorted(predicted_datapoints, key=lambda d: d.x)
+        sorted_original = sorted(datapoints, key=lambda d: d.x)
+
+        for predicted_datapoint, datapoint in zip(sorted_predicted, sorted_original, strict=True):
+            assert predicted_datapoint.x == datapoint.x, f"Timestamp mismatch: {predicted_datapoint.x} != {datapoint.x}"
+            assert predicted_datapoint.y == datapoint.y, f"Value mismatch: {predicted_datapoint.y} != {datapoint.y}"
