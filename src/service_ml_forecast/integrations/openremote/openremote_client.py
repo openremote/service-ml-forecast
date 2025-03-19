@@ -1,6 +1,6 @@
 # POST Retrieve assets - https://demo.openremote.io/api/master/asset/query
 # GET Data point period of asset attribute - https://demo.openremote.io/api/master/asset/datapoint/:assetId/:attributeName/period
-# GET Historical data points of asset attribute - https://demo.openremote.io/api/master/asset/datapoint/export
+# GET Historical data points of asset attribute - https://demo.openremote.io/api/master/asset/datapoint/:assetId/:attributeName
 # PUT Write predicted data points of asset attribute - https://demo.openremote.io/api/master/asset/predicted/:assetId/:attributeName
 # POST Retrieve predicted data points of asset attribute - https://demo.openremote.io/api/master/asset/predicted/:assetId/:attributeName
 
@@ -11,8 +11,12 @@ from typing import Any
 import httpx
 from pydantic import BaseModel
 
-from service_ml_forecast.integrations.openremote.asset import Asset
-from service_ml_forecast.integrations.openremote.asset_datapoint_period import AssetDatapointPeriod
+from service_ml_forecast.integrations.openremote.models import (
+    Asset,
+    AssetDatapointPeriod,
+    Datapoint,
+    HistoricalDatapointsRequestBody,
+)
 
 
 class OAuthTokenResponse(BaseModel):
@@ -98,8 +102,8 @@ class OpenRemoteClient:
         self.__refresh_token()
         return httpx.Request(method, url, headers=headers, json=data)
 
-    def get_assets(self, realm: str) -> list[Asset]:
-        """Get all assets for a given realm."""
+    def retrieve_assets(self, realm: str) -> list[Asset]:
+        """Retrieve all assets for a given realm."""
         url = f"{self.openremote_url}/api/{realm}/asset/query"
 
         asset_query = {"recursive": True, "realm": {"name": realm}}
@@ -113,9 +117,10 @@ class OpenRemoteClient:
 
             return [Asset(**asset) for asset in assets]
 
-    def get_asset_datapoint_period(self, asset_id: str, attribute_name: str) -> AssetDatapointPeriod:
-        """Get the datapoints timestamp period of a given asset attribute."""
-        url = f"{self.openremote_url}/api/master/asset/datapoint/periods?assetId={asset_id}&attributeName={attribute_name}"
+    def retrieve_asset_datapoint_period(self, asset_id: str, attribute_name: str) -> AssetDatapointPeriod:
+        """Retrieve the datapoints timestamp period of a given asset attribute."""
+        query = f"?assetId={asset_id}&attributeName={attribute_name}"
+        url = f"{self.openremote_url}/api/master/asset/datapoint/periods{query}"
 
         request = self.__build_request("GET", url)
 
@@ -125,3 +130,23 @@ class OpenRemoteClient:
             datapoint_period = AssetDatapointPeriod(**response.json())
 
             return datapoint_period
+
+    def retrieve_historical_datapoints(
+        self, asset_id: str, attribute_name: str, from_timestamp: int, to_timestamp: int
+    ) -> list[Datapoint]:
+        """Retrieve the historical data points of a given asset attribute."""
+        params = f"{asset_id}/{attribute_name}"
+        url = f"{self.openremote_url}/api/master/asset/datapoint/{params}"
+
+        request_body = HistoricalDatapointsRequestBody(
+            fromTimestamp=from_timestamp,
+            toTimestamp=to_timestamp,
+        )
+        request = self.__build_request("POST", url, data=request_body.model_dump())
+
+        with httpx.Client() as client:
+            response = client.send(request)
+            response.raise_for_status()
+            datapoints = response.json()
+
+            return [Datapoint(**datapoint) for datapoint in datapoints]

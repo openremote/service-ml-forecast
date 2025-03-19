@@ -36,7 +36,7 @@ packages = ["service_ml_forecast"]
 package-dir = {"service_ml_forecast" = "src/service_ml_forecast"}
 
 [tool.ruff]
-line-length = 145
+line-length = 120
 target-version = "py310"
 fix = true
 unsafe-fixes = false
@@ -57,6 +57,11 @@ select = [
     "PL",    # pylint
     "RUF",   # ruff-specific rules
 ]
+fixable = ["ALL"]
+
+[tool.ruff.format]
+line-ending = "auto"
+quote-style = "double"
 
 [tool.ruff.lint.isort]
 known-first-party = ["service_ml_forecast"]
