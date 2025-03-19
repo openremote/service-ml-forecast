@@ -10,10 +10,12 @@ logger = logging.getLogger(__name__)
 
 
 def create_app() -> FastAPI:
+    logger.info("Starting application")
 
     if __app_info__ is None:
-        logger.error("App initialization failed: Failed to read app info")
-        raise Exception("App initialization failed: Failed to read app info")
+        logger.exception("App initialization failed: Failed to read app info")
+        raise RuntimeError("App initialization failed: Failed to read app info")
+    logger.info("Application details: %s", __app_info__)
 
     app = FastAPI(
         title=__app_info__.name,

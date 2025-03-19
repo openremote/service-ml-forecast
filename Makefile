@@ -7,13 +7,9 @@ PIP = pip
 # Testing
 PYTEST = pytest
 
-# Code formatting
-BLACK = black
-ISORT = isort
-
 # Linting and type checking
 MYPY = mypy
-FLAKE8 = flake8
+RUFF = ruff
 
 # Directories
 SRC_DIR = src
@@ -25,17 +21,17 @@ install:
 
 # Run tests
 test:
-	$(PYTEST) $(TEST_DIR)
+	$(PYTEST) $(TEST_DIR) -o log_cli=true
 
-# Run linting
+# Run formatting, linting and type checking
 lint:
-	$(FLAKE8) $(SRC_DIR) $(TEST_DIR)
-	$(MYPY) $(SRC_DIR)
+	$(RUFF) check $(SRC_DIR) $(TEST_DIR)
+	$(MYPY) $(SRC_DIR) --cache-fine-grained
 
 # Format code
 format:
-	$(BLACK) $(SRC_DIR) $(TEST_DIR)
-	$(ISORT) $(SRC_DIR) $(TEST_DIR)
+	$(RUFF) format $(SRC_DIR) $(TEST_DIR)
+	$(RUFF) check --fix $(SRC_DIR) $(TEST_DIR)
 
 # Clean build artifacts and dependencies
 clean:
@@ -61,8 +57,8 @@ help:
 	@echo "Available commands:"
 	@echo "  install  - Install package in development mode with all dependencies"
 	@echo "  test     - Run tests"
-	@echo "  lint     - Run linting tools"
-	@echo "  format   - Format code with black and isort"
+	@echo "  lint     - Run linting and type checking"
+	@echo "  format   - Format code with ruff"
 	@echo "  clean    - Clean build artifacts"
 	@echo "  build    - Build package for distribution"
 	@echo "  run      - Run the application in development mode"

@@ -22,10 +22,8 @@ dependencies = [
 dev = [
     "pytest>=8.3.5",
     "pytest-bdd>=8.1.0",
-    "black>=25.1.0",
-    "isort>=6.0.1",
     "mypy>=1.15.0",
-    "flake8>=7.1.2",
+    "ruff>=0.11.0",
     "build>=1.2.2",
 ]
 
@@ -37,19 +35,47 @@ dev = [
 packages = ["service_ml_forecast"]
 package-dir = {"service_ml_forecast" = "src/service_ml_forecast"}
 
-[tool.black]
-line-length = 100
-target-version = ["py38"]
-include = '\.pyi?$'
+[tool.ruff]
+line-length = 145
+target-version = "py310"
+fix = true
+unsafe-fixes = false
 
+[tool.ruff.lint]
+select = [
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # pyflakes
+    "I",     # isort
+    "C4",    # flake8-comprehensions
+    "UP",    # pyupgrade
+    "B",     # flake8-bugbear
+    "C90",   # mccabe complexity
+    "ERA",   # eradicate
+    "PD",    # pandas-vet
+    "PGH",   # pygrep-hooks
+    "PL",    # pylint
+    "RUF",   # ruff-specific rules
+]
 
-[tool.isort]
-profile = "black"
-line_length = 100
+[tool.ruff.lint.isort]
+known-first-party = ["service_ml_forecast"]
+combine-as-imports = true
 
 [tool.mypy]
 python_version = "3.10"
-strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_optional = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

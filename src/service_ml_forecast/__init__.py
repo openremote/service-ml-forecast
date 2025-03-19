@@ -1,3 +1,5 @@
+"""Service ML Forecast."""
+
 import logging
 from pathlib import Path
 
@@ -13,6 +15,8 @@ logger = logging.getLogger(__name__)
 
 
 class AppInfo(BaseModel):
+    """Application information."""
+
     name: str
     description: str
     version: str
@@ -27,8 +31,8 @@ def get_app_info() -> AppInfo | None:
             pyproject_data = tomli.load(f)
 
         return AppInfo(**pyproject_data["project"])
-    except (FileNotFoundError, KeyError, tomli.TOMLDecodeError) as e:
-        logger.error(f"Failed to read app info: {e}")
+    except (FileNotFoundError, KeyError, tomli.TOMLDecodeError):
+        logger.exception("Failed to read app info")
         return None
 
 

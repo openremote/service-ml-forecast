@@ -6,7 +6,7 @@ from service_ml_forecast.config import config
 
 
 def configure_logging() -> None:
-    """Configure application-wide logging"""
+    """Configure application-wide logging."""
     logging_config = {
         "version": 1,
         "disable_existing_loggers": False,

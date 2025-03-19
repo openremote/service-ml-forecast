@@ -1,5 +1,3 @@
-from typing import Optional
-
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -19,25 +17,20 @@ class Settings(BaseSettings):
     ENV: str = "development"
 
     # OpenRemote Settings
-    OPENREMOTE_URL: Optional[str] = None
-    OPENREMOTE_SERVICE_USER: Optional[str] = None
-    OPENREMOTE_SERVICE_USER_SECRET: Optional[str] = None
+    OPENREMOTE_URL: str
+    OPENREMOTE_KEYCLOAK_URL: str
+    OPENREMOTE_SERVICE_USER: str
+    OPENREMOTE_SERVICE_USER_SECRET: str
 
-    model_config = SettingsConfigDict(case_sensitive=True, env_prefix="")
-
-    """
-    Check if the environment is production
-    """
+    model_config = SettingsConfigDict(case_sensitive=True, env_prefix="", env_file=".env", env_file_encoding="utf-8")
 
     def is_production(self) -> bool:
+        """Check if the environment is production."""
         return self.ENV == "production"
 
-    """
-    Check if the environment is development
-    """
-
     def is_development(self) -> bool:
+        """Check if the environment is development."""
         return self.ENV == "development"
 
 
-config = Settings()
+config = Settings()  # type: ignore  # noqa: PGH003
