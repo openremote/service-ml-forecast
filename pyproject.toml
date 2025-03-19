@@ -25,6 +25,7 @@ dev = [
     "mypy>=1.15.0",
     "ruff>=0.11.0",
     "build>=1.2.2",
+    "respx>=0.22.0",
 ]
 
 [project.urls]
