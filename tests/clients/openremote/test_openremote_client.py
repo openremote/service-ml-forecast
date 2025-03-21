@@ -3,12 +3,12 @@ import time
 import pytest
 from httpx import HTTPStatusError
 
-from service_ml_forecast.integrations.openremote.models import (
+from service_ml_forecast.clients.openremote.models import (
     Asset,
     AssetDatapointPeriod,
     Datapoint,
 )
-from service_ml_forecast.integrations.openremote.openremote_client import OpenRemoteClient
+from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 
 # Common test data used across multiple tests
 TEST_ASSET_ID = "44ORIhkDVAlT97dYGUD9n5"

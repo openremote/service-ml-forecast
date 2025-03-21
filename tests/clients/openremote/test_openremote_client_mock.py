@@ -5,12 +5,12 @@ import pytest
 import respx
 from httpx import HTTPStatusError
 
-from service_ml_forecast.integrations.openremote.models import (
+from service_ml_forecast.clients.openremote.models import (
     Asset,
     AssetDatapointPeriod,
     Datapoint,
 )
-from service_ml_forecast.integrations.openremote.openremote_client import OpenRemoteClient
+from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 
 # Mock URLs and credentials - used in openremote_client fixture and all tests
 MOCK_OPENREMOTE_URL = "https://openremote.local"
