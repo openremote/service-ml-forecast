@@ -6,7 +6,7 @@ from typing import Any
 import httpx
 from pydantic import BaseModel
 
-from service_ml_forecast.clients.openremote.models import (
+from service_ml_forecast.clients.openremote.openremote_models import (
     Asset,
     AssetDatapointPeriod,
     Datapoint,

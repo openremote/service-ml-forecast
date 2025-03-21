@@ -3,12 +3,12 @@ import time
 import pytest
 from httpx import HTTPStatusError
 
-from service_ml_forecast.clients.openremote.models import (
+from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
+from service_ml_forecast.clients.openremote.openremote_models import (
     Asset,
     AssetDatapointPeriod,
     Datapoint,
 )
-from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 
 # Common test data used across multiple tests
 TEST_ASSET_ID = "44ORIhkDVAlT97dYGUD9n5"
@@ -18,7 +18,7 @@ TEST_ATTRIBUTE_NAME = "powerTotalConsumers"
 @pytest.fixture
 def openremote_client() -> OpenRemoteClient:
     """Create an OpenRemote client for testing against a real instance."""
-    from service_ml_forecast.config import config
+    from service_ml_forecast.app.config import config
 
     client = OpenRemoteClient(
         openremote_url=config.OPENREMOTE_URL,

@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from service_ml_forecast import __app_info__
-from service_ml_forecast.config import config
+from service_ml_forecast.app.config import config
 
 logger = logging.getLogger(__name__)
 

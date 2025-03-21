@@ -2,7 +2,7 @@
 
 import logging.config
 
-from service_ml_forecast.config import config
+from service_ml_forecast.app.config import config
 
 
 def configure_logging() -> None:
