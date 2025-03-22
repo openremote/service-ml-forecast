@@ -36,11 +36,17 @@ class BaseModelConfig(BaseModel):
     forecast_datapoint_interval: str = Field(
         description="The interval between forecasted datapoints. Expects ISO 8601 duration strings."
     )
-    history_oldest_timestamp: str = Field(
-        description="The starting timestamp to use for training. Expects milliseconds since epoch."
+    history_oldest_timestamp: int = Field(
+        description="The oldest timestamp to use for training. Expects milliseconds since epoch."
     )
-    history_newest_timestamp: str = Field(
-        description="The ending timestamp to use for training. Expects milliseconds since epoch."
+    history_newest_timestamp: int = Field(
+        description="The newest timestamp to use for training. Expects milliseconds since epoch."
+    )
+    trained_at: int | None = Field(
+        description="The timestamp when the model was trained. Expects milliseconds since epoch."
+    )
+    forecasted_at: int | None = Field(
+        description="The timestamp when the forecast was generated. Expects milliseconds since epoch."
     )
 
 
