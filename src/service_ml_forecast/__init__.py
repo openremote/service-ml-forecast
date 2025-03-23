@@ -1,13 +1,15 @@
-import logging
+"""Service ML Forecast application."""
+
+import logging.config
 from pathlib import Path
 
 import tomli
 from pydantic import BaseModel
 
-from service_ml_forecast.app.logging_config import configure_logging
+from service_ml_forecast.logging_config import LOGGING_CONFIG
 
-configure_logging()
-
+# Load the logging configuration
+logging.config.dictConfig(LOGGING_CONFIG)
 
 logger = logging.getLogger(__name__)
 

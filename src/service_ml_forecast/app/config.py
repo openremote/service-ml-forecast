@@ -1,16 +1,14 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class ServiceConfig(BaseSettings):
-    """Application configuration.
+class AppEnvironment(BaseSettings):
+    """Application environment settings.
 
     All settings can be overridden via environment variables.
-
-    Defined variables are automatically set via environment variables.
     """
 
     # Application Settings
-    PUBLIC_DOCS: bool = True
+    PUBLISH_DOCS: bool = True
 
     # Logging
     LOG_LEVEL: str = "INFO"
@@ -35,4 +33,4 @@ class ServiceConfig(BaseSettings):
         return self.ENV == "development"
 
 
-config = ServiceConfig()  # type: ignore  # noqa: PGH003
+env = AppEnvironment()  # type: ignore  # noqa: PGH003

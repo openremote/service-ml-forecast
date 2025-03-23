@@ -5,12 +5,8 @@ import pytest
 import respx
 from httpx import HTTPStatusError
 
+from service_ml_forecast.clients.openremote.models import Asset, AssetDatapoint, AssetDatapointPeriod
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
-from service_ml_forecast.clients.openremote.openremote_models import (
-    Asset,
-    AssetDatapointPeriod,
-    Datapoint,
-)
 
 # Mock URLs and credentials - used in openremote_client fixture and all tests
 MOCK_OPENREMOTE_URL = "https://openremote.local"
@@ -137,7 +133,7 @@ def test_retrieve_historical_datapoints(openremote_client: OpenRemoteClient) -> 
                 ],
             )
         )
-        datapoints: list[Datapoint] = openremote_client.retrieve_historical_datapoints(
+        datapoints: list[AssetDatapoint] = openremote_client.retrieve_historical_datapoints(
             MOCK_ASSET_ID, MOCK_ATTRIBUTE_NAME, MOCK_OLDEST_TIMESTAMP, int(time.time() * 1000)
         )
         assert len(datapoints) > 0
@@ -163,9 +159,9 @@ def test_write_retrieve_predicted_datapoints(openremote_client: OpenRemoteClient
     mock_timestamp2 = mock_timestamp1 + 1  # 20100-01-01 00:00:01 UTC
     mock_values = [100, 200]
 
-    datapoints: list[Datapoint] = [
-        Datapoint(x=mock_timestamp1, y=mock_values[0]),
-        Datapoint(x=mock_timestamp2, y=mock_values[1]),
+    datapoints: list[AssetDatapoint] = [
+        AssetDatapoint(x=mock_timestamp1, y=mock_values[0]),
+        AssetDatapoint(x=mock_timestamp2, y=mock_values[1]),
     ]
 
     with respx.mock(base_url=MOCK_OPENREMOTE_URL) as respx_mock:
@@ -187,7 +183,7 @@ def test_write_retrieve_predicted_datapoints(openremote_client: OpenRemoteClient
             "Failed to write predicted datapoints"
         )
 
-        predicted_datapoints: list[Datapoint] = openremote_client.retrieve_predicted_datapoints(
+        predicted_datapoints: list[AssetDatapoint] = openremote_client.retrieve_predicted_datapoints(
             MOCK_ASSET_ID, MOCK_ATTRIBUTE_NAME, mock_timestamp1, mock_timestamp2
         )
         assert len(predicted_datapoints) == len(datapoints)
