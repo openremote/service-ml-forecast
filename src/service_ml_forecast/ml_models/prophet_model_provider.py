@@ -21,12 +21,14 @@ class ProphetModelProvider(BaseModelProvider):
         self.openremote_client = openremote_client
 
     def train(self) -> bool:
-        logger.info("Training Prophet model")
-        self.__get_prophet_dataframe()
+        dataframe = self.__get_prophet_dataframe()
+        if dataframe is None:
+            logger.error("Failed to obtain data for training")
+            return False
 
         return True
 
-    def __get_prophet_dataframe(self) -> pd.DataFrame:
+    def __get_prophet_dataframe(self) -> pd.DataFrame | None:
         target = self.config.predicted_asset_attribute
         regressors = self.config.regressors
 
@@ -36,7 +38,10 @@ class ProphetModelProvider(BaseModelProvider):
             from_timestamp=target.oldest_timestamp,
             to_timestamp=target.newest_timestamp,
         )
-        logger.info("Target data: %s", target_data)
+
+        if (target_data is None) or (len(target_data) == 0):
+            logger.error("No target data found")
+            return None
 
         if regressors is None:
             regressors_data = []
@@ -50,7 +55,8 @@ class ProphetModelProvider(BaseModelProvider):
                 )
                 for regressor in regressors
             ]
-            logger.info("Regressors data: %s", regressors_data)
+            # TODO: Remove this
+            logger.info("Regressors found: %s", len(regressors_data))
 
         return pd.DataFrame()
 

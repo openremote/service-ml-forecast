@@ -26,6 +26,8 @@ PROPHET_MODEL_CONFIG = ProphetModelConfig(
 )
 
 
+# TODO: Replace with a mocked client, and add mocked paths for the retrieve_historical_datapoints method
+# We will use a local csv file for the datapoints (for testing purposes)
 @pytest.fixture
 def openremote_client() -> OpenRemoteClient:
     """Create an OpenRemote client for testing against a real instance."""
@@ -47,4 +49,17 @@ def openremote_client() -> OpenRemoteClient:
 
 def test_prophet_model_provider_train(openremote_client: OpenRemoteClient) -> None:
     model_provider = ProphetModelProvider(PROPHET_MODEL_CONFIG, openremote_client)
+    # We can only assert whether the training was successful,
+    # the predict method will then be tested for correctness
     assert model_provider.train()
+
+
+def test_prophet_model_provider_train_no_datapoints(openremote_client: OpenRemoteClient) -> None:
+    config = PROPHET_MODEL_CONFIG.model_copy(deep=True)
+    config.predicted_asset_attribute.newest_timestamp = 1716153600000
+    config.predicted_asset_attribute.oldest_timestamp = 1716153600000
+
+    model_provider = ProphetModelProvider(config, openremote_client)
+    # We can only assert whether the training was successful,
+    # the predict method will then be tested for correctness
+    assert not model_provider.train()
