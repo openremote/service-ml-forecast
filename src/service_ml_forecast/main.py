@@ -15,6 +15,7 @@ def create_app() -> FastAPI:
     if __app_info__ is None:
         logger.exception("App initialization failed: Failed to read app info")
         raise RuntimeError("App initialization failed: Failed to read app info")
+
     logger.info("Application details: %s", __app_info__)
 
     app = FastAPI(
