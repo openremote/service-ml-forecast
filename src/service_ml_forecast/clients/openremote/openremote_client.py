@@ -8,8 +8,8 @@ from pydantic import BaseModel
 
 from service_ml_forecast.clients.openremote.models import (
     Asset,
+    AssetDatapoint,
     AssetDatapointPeriod,
-    Datapoint,
     DatapointsRequestBody,
 )
 
@@ -145,7 +145,7 @@ class OpenRemoteClient:
 
     def retrieve_historical_datapoints(
         self, asset_id: str, attribute_name: str, from_timestamp: int, to_timestamp: int
-    ) -> list[Datapoint]:
+    ) -> list[AssetDatapoint]:
         """Retrieve the historical data points of a given asset attribute."""
         params = f"{asset_id}/{attribute_name}"
         url = f"{self.openremote_url}/api/master/asset/datapoint/{params}"
@@ -161,9 +161,9 @@ class OpenRemoteClient:
             response.raise_for_status()
             datapoints = response.json()
 
-            return [Datapoint(**datapoint) for datapoint in datapoints]
+            return [AssetDatapoint(**datapoint) for datapoint in datapoints]
 
-    def write_predicted_datapoints(self, asset_id: str, attribute_name: str, datapoints: list[Datapoint]) -> bool:
+    def write_predicted_datapoints(self, asset_id: str, attribute_name: str, datapoints: list[AssetDatapoint]) -> bool:
         """Write the predicted data points of a given asset attribute."""
         params = f"{asset_id}/{attribute_name}"
         url = f"{self.openremote_url}/api/master/asset/predicted/{params}"
@@ -180,7 +180,7 @@ class OpenRemoteClient:
 
     def retrieve_predicted_datapoints(
         self, asset_id: str, attribute_name: str, from_timestamp: int, to_timestamp: int
-    ) -> list[Datapoint]:
+    ) -> list[AssetDatapoint]:
         """Retrieve the predicted data points of a given asset attribute."""
         params = f"{asset_id}/{attribute_name}"
         url = f"{self.openremote_url}/api/master/asset/predicted/{params}"
@@ -197,4 +197,4 @@ class OpenRemoteClient:
             response.raise_for_status()
             datapoints = response.json()
 
-            return [Datapoint(**datapoint) for datapoint in datapoints]
+            return [AssetDatapoint(**datapoint) for datapoint in datapoints]

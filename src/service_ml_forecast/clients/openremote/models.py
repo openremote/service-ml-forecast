@@ -35,7 +35,7 @@ class AssetDatapointPeriod(BaseModel):
     latestTimestamp: int
 
 
-class Datapoint(BaseModel):
+class AssetDatapoint(BaseModel):
     """Data point of an asset attribute.
 
     Args:
