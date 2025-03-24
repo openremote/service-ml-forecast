@@ -34,12 +34,6 @@ class ModelConfig(BaseModel):
     forecast_datapoint_interval: str = Field(
         description="The interval between forecasted datapoints. Expects ISO 8601 duration strings."
     )
-    trained_at: int | None = Field(
-        default=None, description="The timestamp when the model was trained. Expects milliseconds since epoch."
-    )
-    forecasted_at: int | None = Field(
-        default=None, description="The timestamp when the forecast was generated. Expects milliseconds since epoch."
-    )
 
 
 class ProphetModelConfig(ModelConfig):

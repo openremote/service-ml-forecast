@@ -1,8 +1,8 @@
 import logging
 
 import pandas as pd
-from prophet import Prophet  # type: ignore  # noqa: PGH003 # provides no type hints
-from prophet.serialize import model_from_json, model_to_json  # type: ignore  # noqa: PGH003 # provides no type hints
+from prophet import Prophet
+from prophet.serialize import model_from_json, model_to_json
 
 from service_ml_forecast.clients.openremote.models import AssetDatapoint
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient

@@ -57,19 +57,15 @@ def openremote_client() -> OpenRemoteClient:
 
 def test_prophet_model_provider_train(openremote_client: OpenRemoteClient) -> None:
     model_provider = ProphetModelProvider(PROPHET_MODEL_CONFIG, openremote_client)
-    # We can only assert whether the training was successful,
-    # the predict method will then be tested for correctness
     assert model_provider.train_model()
 
 
 def test_prophet_model_provider_train_no_datapoints(openremote_client: OpenRemoteClient) -> None:
     config = PROPHET_MODEL_CONFIG.model_copy(deep=True)
     # override the timestamp to a time where no datapoints are available
-    config.predicted_asset_attribute.cutoff_timestamp = 2716153600000
+    config.predicted_asset_attribute.cutoff_timestamp = 2716153600000  # somewhere random in the future
 
     model_provider = ProphetModelProvider(config, openremote_client)
-    # We can only assert whether the training was successful,
-    # the predict method will then be tested for correctness
     assert not model_provider.train_model()
 
 
