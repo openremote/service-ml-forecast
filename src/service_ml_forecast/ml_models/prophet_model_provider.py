@@ -8,6 +8,7 @@ from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteC
 from service_ml_forecast.ml_models.model_provider import ModelProvider
 from service_ml_forecast.ml_models.model_util import DatapointWrapper, load_model, save_model
 from service_ml_forecast.schemas.model_config import ProphetModelConfig
+from service_ml_forecast.clients.openremote.models import AssetDatapoint
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +34,7 @@ class ProphetModelProvider(ModelProvider):
         model = Prophet()
         model.fit(dataframe)
 
-        # Save the trained model to the /data/models directory
+        # Save the trained model
         if not save_model(model_to_json(model), f"{self.config.id}.json"):
             logger.error(f"Failed to save trained model for {self.config.id}")
             return False
@@ -110,6 +111,8 @@ class ProphetModelProvider(ModelProvider):
         return dataframe
 
     def predict(self) -> bool:
+        """Predict the target data using the saved model based on the provider config."""
+
         model_json = load_model(f"{self.config.id}.json")
 
         if model_json is None:
@@ -122,6 +125,17 @@ class ProphetModelProvider(ModelProvider):
         future = model.make_future_dataframe(periods=5, freq="D")
         forecast = model.predict(future)
 
-        logger.info(f"Forecast: {forecast}")
+        datapoints = self.__prophet_dataframe_to_datapoints(forecast)
+        logger.info(f"Datapoints: {datapoints}")
 
         return True
+
+    def __prophet_dataframe_to_datapoints(self, dataframe: pd.DataFrame) -> list[AssetDatapoint]:
+        """Convert a Prophet dataframe to a list of AssetDatapoint objects."""
+        datapoints = []
+
+        # Convert ds to milliseconds since epoch
+        for _, row in dataframe.iterrows():
+            datapoints.append(AssetDatapoint(x=int(row["ds"].timestamp() * 1000), y=row["yhat"]))
+
+        return datapoints
