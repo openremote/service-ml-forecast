@@ -205,5 +205,4 @@ logs/
 *.joblib
 
 # Application specific
-data/models/*.json
-data/configs/*.json
+deployment/data/**
