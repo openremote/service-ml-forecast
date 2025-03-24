@@ -1,7 +1,7 @@
 from typing import Protocol
 
 
-class BaseModelProvider(Protocol):
+class ModelProvider(Protocol):
     """Base protocol for all ML models.
 
     This protocol defines the methods that all ML model providers must implement.

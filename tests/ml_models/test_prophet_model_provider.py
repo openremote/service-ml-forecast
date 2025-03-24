@@ -26,6 +26,17 @@ PROPHET_MODEL_CONFIG = ProphetModelConfig(
 )
 
 
+PROPHET_MODEL_CONFIG_WITH_REGRESSORS = PROPHET_MODEL_CONFIG.model_copy(deep=True)
+PROPHET_MODEL_CONFIG_WITH_REGRESSORS.regressors = [
+    ModelInputAssetAttribute(
+        asset_id=TEST_ASSET_ID,
+        attribute_name=TEST_ATTRIBUTE_NAME,
+        oldest_timestamp=1716153600000,
+        newest_timestamp=1742750287563,
+    )
+]
+
+
 # TODO: Replace with a mocked client, and add mocked paths for the retrieve_historical_datapoints method
 # We will use a local csv file for the datapoints (for testing purposes)
 @pytest.fixture
@@ -56,6 +67,7 @@ def test_prophet_model_provider_train(openremote_client: OpenRemoteClient) -> No
 
 def test_prophet_model_provider_train_no_datapoints(openremote_client: OpenRemoteClient) -> None:
     config = PROPHET_MODEL_CONFIG.model_copy(deep=True)
+    # override the timestamp to a time where no datapoints are available
     config.predicted_asset_attribute.newest_timestamp = 1716153600000
     config.predicted_asset_attribute.oldest_timestamp = 1716153600000
 

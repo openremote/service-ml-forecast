@@ -3,13 +3,14 @@ import logging
 import pandas as pd
 
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
-from service_ml_forecast.ml_models.base_model_provider import BaseModelProvider
+from service_ml_forecast.ml_models.model_provider import ModelProvider
+from service_ml_forecast.ml_models.model_util import DatapointWrapper
 from service_ml_forecast.schemas.model_config import ProphetModelConfig
 
 logger = logging.getLogger(__name__)
 
 
-class ProphetModelProvider(BaseModelProvider):
+class ProphetModelProvider(ModelProvider):
     """Prophet model provider."""
 
     def __init__(
@@ -21,44 +22,81 @@ class ProphetModelProvider(BaseModelProvider):
         self.openremote_client = openremote_client
 
     def train(self) -> bool:
-        dataframe = self.__get_prophet_dataframe()
+        dataframe = self.__get_dataframe()
         if dataframe is None:
-            logger.error("Failed to obtain data for training")
+            logger.error("Failed to obtain valid dataframe for training the Prophet model")
             return False
 
         return True
 
-    def __get_prophet_dataframe(self) -> pd.DataFrame | None:
+    def __get_dataframe(self) -> pd.DataFrame | None:
+        """Retrieve the target and regressors data from the OpenRemote client and convert it to a Prophet dataframe."""
         target = self.config.predicted_asset_attribute
-        regressors = self.config.regressors
+        regressor_list = self.config.regressors
 
-        target_data = self.openremote_client.retrieve_historical_datapoints(
-            asset_id=target.asset_id,
+        regressors_data_list: list[DatapointWrapper] | None = None
+
+        target_data = DatapointWrapper(
             attribute_name=target.attribute_name,
-            from_timestamp=target.oldest_timestamp,
-            to_timestamp=target.newest_timestamp,
+            datapoints=self.openremote_client.retrieve_historical_datapoints(
+                asset_id=target.asset_id,
+                attribute_name=target.attribute_name,
+                from_timestamp=target.oldest_timestamp,
+                to_timestamp=target.newest_timestamp,
+            ),
         )
 
-        if (target_data is None) or (len(target_data) == 0):
-            logger.error("No target data found")
+        if (target_data.datapoints is None) or (len(target_data.datapoints) == 0):
+            logger.error(f"No target datapoints are available for {target.attribute_name}")
             return None
 
-        if regressors is None:
-            regressors_data = []
-        else:
-            regressors_data = [
-                self.openremote_client.retrieve_historical_datapoints(
-                    asset_id=regressor.asset_id,
+        if regressor_list is not None:
+            regressors_data_list = [
+                DatapointWrapper(
                     attribute_name=regressor.attribute_name,
-                    from_timestamp=regressor.oldest_timestamp,
-                    to_timestamp=regressor.newest_timestamp,
+                    datapoints=self.openremote_client.retrieve_historical_datapoints(
+                        asset_id=regressor.asset_id,
+                        attribute_name=regressor.attribute_name,
+                        from_timestamp=regressor.oldest_timestamp,
+                        to_timestamp=regressor.newest_timestamp,
+                    ),
                 )
-                for regressor in regressors
+                for regressor in regressor_list
             ]
-            # TODO: Remove this
-            logger.info("Regressors found: %s", len(regressors_data))
 
-        return pd.DataFrame()
+            for regressor_data in regressors_data_list:
+                if (regressor_data.datapoints is None) or (len(regressor_data.datapoints) == 0):
+                    logger.error(f"No regressor datapoints are available for {regressor_data.attribute_name}")
+                    return None
+
+        # Convert the target and regressors data to a Prophet dataframe
+        prophet_dataframe = self.__create_prophet_dataframe(target_data, regressors_data_list)
+        logger.info(f"Prophet dataframe: {prophet_dataframe}")
+
+        return prophet_dataframe
+
+    def __create_prophet_dataframe(
+        self, target_data: DatapointWrapper, regressors_data_list: list[DatapointWrapper] | None = None
+    ) -> pd.DataFrame:
+        """Creates a valid Prophet dataframe from the target and regressors datapoints."""
+
+        # Convert the datapoints to a dataframe - prophet expects the target data to be 'ds' and 'y' structure
+        dataframe = pd.DataFrame([{"ds": point.x, "y": point.y} for point in target_data.datapoints])
+        dataframe["ds"] = pd.to_datetime(dataframe["ds"], unit="ms")
+
+        # Add regressors if they are provided
+        if regressors_data_list is not None:
+            for regressor_data in regressors_data_list:
+                # Prophet expects regressors to be added as an additional column
+                regressor_dataframe = pd.DataFrame(
+                    [{"ds": point.x, regressor_data.attribute_name: point.y} for point in regressor_data.datapoints]
+                )
+                regressor_dataframe["ds"] = pd.to_datetime(regressor_dataframe["ds"], unit="ms")
+
+                # Interpolate the regressor values to the target data point timestamps
+                dataframe = pd.merge_asof(dataframe, regressor_dataframe, on="ds", direction="nearest")
+
+        return dataframe
 
     def predict(self) -> bool:
         return True
