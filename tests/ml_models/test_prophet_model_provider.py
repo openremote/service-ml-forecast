@@ -1,5 +1,3 @@
-import uuid
-
 import pytest
 
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
@@ -10,7 +8,7 @@ TEST_ASSET_ID = "44ORIhkDVAlT97dYGUD9n5"
 TEST_ATTRIBUTE_NAME = "powerTotalConsumers"
 
 PROPHET_MODEL_CONFIG = ProphetModelConfig(
-    id=str(uuid.uuid4()),
+    id="d3c119a6-1018-4ebd-932b-a509eb7ab730",
     name="Power Total Consumers Forecast",
     type=ModelType.PROPHET,
     predicted_asset_attribute=ModelInputAssetAttribute(
@@ -27,6 +25,7 @@ PROPHET_MODEL_CONFIG = ProphetModelConfig(
 
 
 PROPHET_MODEL_CONFIG_WITH_REGRESSORS = PROPHET_MODEL_CONFIG.model_copy(deep=True)
+PROPHET_MODEL_CONFIG_WITH_REGRESSORS.id = "d3c119a6-1018-4ebd-932b-a509eb7ab731"
 PROPHET_MODEL_CONFIG_WITH_REGRESSORS.regressors = [
     ModelInputAssetAttribute(
         asset_id=TEST_ASSET_ID,
@@ -38,7 +37,7 @@ PROPHET_MODEL_CONFIG_WITH_REGRESSORS.regressors = [
 
 
 # TODO: Replace with a mocked client, and add mocked paths for the retrieve_historical_datapoints method
-# We will use a local csv file for the datapoints (for testing purposes)
+# We will use a local json files for the datapoints (for testing purposes)
 @pytest.fixture
 def openremote_client() -> OpenRemoteClient:
     """Create an OpenRemote client for testing against a real instance."""
@@ -75,3 +74,8 @@ def test_prophet_model_provider_train_no_datapoints(openremote_client: OpenRemot
     # We can only assert whether the training was successful,
     # the predict method will then be tested for correctness
     assert not model_provider.train()
+
+
+def test_prophet_model_provider_predict(openremote_client: OpenRemoteClient) -> None:
+    model_provider = ProphetModelProvider(PROPHET_MODEL_CONFIG, openremote_client)
+    assert model_provider.predict()

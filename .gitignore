@@ -203,3 +203,7 @@ logs/
 *.h5
 *.model
 *.joblib
+
+# Application specific
+data/models/*.json
+data/configs/*.json

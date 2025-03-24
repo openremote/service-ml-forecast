@@ -1,10 +1,12 @@
 import logging
 
 import pandas as pd
+from prophet import Prophet  # type: ignore  # noqa: PGH003 # provides no type hints
+from prophet.serialize import model_from_json, model_to_json  # type: ignore  # noqa: PGH003 # provides no type hints
 
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 from service_ml_forecast.ml_models.model_provider import ModelProvider
-from service_ml_forecast.ml_models.model_util import DatapointWrapper
+from service_ml_forecast.ml_models.model_util import DatapointWrapper, load_model, save_model
 from service_ml_forecast.schemas.model_config import ProphetModelConfig
 
 logger = logging.getLogger(__name__)
@@ -25,6 +27,15 @@ class ProphetModelProvider(ModelProvider):
         dataframe = self.__get_dataframe()
         if dataframe is None:
             logger.error("Failed to obtain valid dataframe for training the Prophet model")
+            return False
+
+        # Train the Prophet model
+        model = Prophet()
+        model.fit(dataframe)
+
+        # Save the trained model to the /data/models directory
+        if not save_model(model_to_json(model), f"{self.config.id}.json"):
+            logger.error(f"Failed to save trained model for {self.config.id}")
             return False
 
         return True
@@ -99,4 +110,18 @@ class ProphetModelProvider(ModelProvider):
         return dataframe
 
     def predict(self) -> bool:
+        model_json = load_model(f"{self.config.id}.json")
+
+        if model_json is None:
+            logger.error(f"Failed to load model for {self.config.id}")
+            return False
+
+        model: Prophet = model_from_json(model_json)
+
+        # Predict the target data
+        future = model.make_future_dataframe(periods=5, freq="D")
+        forecast = model.predict(future)
+
+        logger.info(f"Forecast: {forecast}")
+
         return True

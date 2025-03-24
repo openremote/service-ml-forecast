@@ -9,6 +9,8 @@ class AppEnvironment(BaseSettings):
 
     # Application Settings
     PUBLISH_DOCS: bool = True
+    MODELS_DIR: str = "/data/models"
+    CONFIGS_DIR: str = "/data/configs"
 
     # Logging
     LOG_LEVEL: str = "INFO"
