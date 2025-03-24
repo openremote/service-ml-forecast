@@ -1,5 +1,6 @@
 import logging
 
+from httpx import HTTPStatusError
 import pandas as pd
 from prophet import Prophet
 from prophet.serialize import model_from_json, model_to_json
@@ -39,6 +40,7 @@ class ProphetModelProvider(ModelProvider):
             logger.error(f"Failed to save trained model for {self.config.id}")
             return False
 
+        logger.info(f"Successfully trained and saved model for {self.config.id}")
         return True
 
     def __get_dataframe(self) -> pd.DataFrame | None:
@@ -83,7 +85,6 @@ class ProphetModelProvider(ModelProvider):
 
         # Convert the target and regressors data to a Prophet dataframe
         prophet_dataframe = self.__create_prophet_dataframe(target_data, regressors_data_list)
-        logger.info(f"Prophet dataframe: {prophet_dataframe}")
 
         return prophet_dataframe
 
@@ -128,15 +129,27 @@ class ProphetModelProvider(ModelProvider):
         last_train_date = model.history["ds"].max()
         forecast_future = forecast[forecast["ds"] > last_train_date]
 
+        # Convert the forecasted dataframe to a list of AssetDatapoint objects
         datapoints = self.__prophet_forecast_to_datapoints(forecast_future)
-        logger.info(f"Datapoints: {datapoints}, {len(datapoints)}")
+        logger.info(f"Generated {len(datapoints)} forecasted datapoints")
 
         # Send the datapoints to the OpenRemote client
-        return self.openremote_client.write_predicted_datapoints(
-            asset_id=self.config.predicted_asset_attribute.asset_id,
-            attribute_name=self.config.predicted_asset_attribute.attribute_name,
-            datapoints=datapoints,
+        try:
+            self.openremote_client.write_predicted_datapoints(
+                asset_id=self.config.predicted_asset_attribute.asset_id,
+                attribute_name=self.config.predicted_asset_attribute.attribute_name,
+                datapoints=datapoints,
+            )
+        except Exception as e:
+            logger.error(f"Failed to write forecasted datapoints to OpenRemote: {e}")
+            return False
+
+        logger.info(
+            f"Successfully wrote {len(datapoints)} forecasted datapoints to OpenRemote "
+            f"({self.config.predicted_asset_attribute.asset_id}/"
+            f"{self.config.predicted_asset_attribute.attribute_name})"
         )
+        return True
 
     def __prophet_forecast_to_datapoints(self, dataframe: pd.DataFrame) -> list[AssetDatapoint]:
         """Convert a Prophet forecasted dataframe to a list of AssetDatapoint objects."""
