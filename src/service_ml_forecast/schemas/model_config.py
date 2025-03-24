@@ -8,11 +8,8 @@ class ModelInputAssetAttribute(BaseModel):
     attribute_name: str = Field(
         description="The name of the attribute of the asset from OpenRemote. This attribute requires historical data."
     )
-    oldest_timestamp: int = Field(
-        description="The oldest timestamp to use for training. Expects milliseconds since epoch."
-    )
-    newest_timestamp: int = Field(
-        description="The newest timestamp to use for training. Expects milliseconds since epoch."
+    cutoff_timestamp: int = Field(
+        description="The timestamp to use for training, all data after this timestamp will be used."
     )
 
 

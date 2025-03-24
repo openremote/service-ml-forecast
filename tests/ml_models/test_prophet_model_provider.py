@@ -14,8 +14,7 @@ PROPHET_MODEL_CONFIG = ProphetModelConfig(
     predicted_asset_attribute=ModelInputAssetAttribute(
         asset_id=TEST_ASSET_ID,
         attribute_name=TEST_ATTRIBUTE_NAME,
-        oldest_timestamp=1716153600000,
-        newest_timestamp=1742750287563,
+        cutoff_timestamp=1716153600000,
     ),
     forecast_interval="PT1H",  # 1 hour
     training_interval="PT1D",  # 1 day
@@ -30,8 +29,7 @@ PROPHET_MODEL_CONFIG_WITH_REGRESSORS.regressors = [
     ModelInputAssetAttribute(
         asset_id=TEST_ASSET_ID,
         attribute_name=TEST_ATTRIBUTE_NAME,
-        oldest_timestamp=1716153600000,
-        newest_timestamp=1742750287563,
+        cutoff_timestamp=1716153600000,
     )
 ]
 
@@ -61,21 +59,20 @@ def test_prophet_model_provider_train(openremote_client: OpenRemoteClient) -> No
     model_provider = ProphetModelProvider(PROPHET_MODEL_CONFIG, openremote_client)
     # We can only assert whether the training was successful,
     # the predict method will then be tested for correctness
-    assert model_provider.train()
+    assert model_provider.train_model()
 
 
 def test_prophet_model_provider_train_no_datapoints(openremote_client: OpenRemoteClient) -> None:
     config = PROPHET_MODEL_CONFIG.model_copy(deep=True)
     # override the timestamp to a time where no datapoints are available
-    config.predicted_asset_attribute.newest_timestamp = 1716153600000
-    config.predicted_asset_attribute.oldest_timestamp = 1716153600000
+    config.predicted_asset_attribute.cutoff_timestamp = 2716153600000
 
     model_provider = ProphetModelProvider(config, openremote_client)
     # We can only assert whether the training was successful,
     # the predict method will then be tested for correctness
-    assert not model_provider.train()
+    assert not model_provider.train_model()
 
 
 def test_prophet_model_provider_predict(openremote_client: OpenRemoteClient) -> None:
     model_provider = ProphetModelProvider(PROPHET_MODEL_CONFIG, openremote_client)
-    assert model_provider.predict()
+    assert model_provider.generate_forecast()

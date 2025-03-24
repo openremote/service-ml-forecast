@@ -4,11 +4,11 @@ import pandas as pd
 from prophet import Prophet  # type: ignore  # noqa: PGH003 # provides no type hints
 from prophet.serialize import model_from_json, model_to_json  # type: ignore  # noqa: PGH003 # provides no type hints
 
+from service_ml_forecast.clients.openremote.models import AssetDatapoint
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 from service_ml_forecast.ml_models.model_provider import ModelProvider
 from service_ml_forecast.ml_models.model_util import DatapointWrapper, load_model, save_model
 from service_ml_forecast.schemas.model_config import ProphetModelConfig
-from service_ml_forecast.clients.openremote.models import AssetDatapoint
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ class ProphetModelProvider(ModelProvider):
         self.config = config
         self.openremote_client = openremote_client
 
-    def train(self) -> bool:
+    def train_model(self) -> bool:
         dataframe = self.__get_dataframe()
         if dataframe is None:
             logger.error("Failed to obtain valid dataframe for training the Prophet model")
@@ -53,8 +53,8 @@ class ProphetModelProvider(ModelProvider):
             datapoints=self.openremote_client.retrieve_historical_datapoints(
                 asset_id=target.asset_id,
                 attribute_name=target.attribute_name,
-                from_timestamp=target.oldest_timestamp,
-                to_timestamp=target.newest_timestamp,
+                from_timestamp=target.cutoff_timestamp,
+                to_timestamp=(int(pd.Timestamp.now().timestamp())) * 1000,
             ),
         )
 
@@ -69,8 +69,8 @@ class ProphetModelProvider(ModelProvider):
                     datapoints=self.openremote_client.retrieve_historical_datapoints(
                         asset_id=regressor.asset_id,
                         attribute_name=regressor.attribute_name,
-                        from_timestamp=regressor.oldest_timestamp,
-                        to_timestamp=regressor.newest_timestamp,
+                        from_timestamp=regressor.cutoff_timestamp,
+                        to_timestamp=(int(pd.Timestamp.now().timestamp())) * 1000,
                     ),
                 )
                 for regressor in regressor_list
@@ -110,9 +110,8 @@ class ProphetModelProvider(ModelProvider):
 
         return dataframe
 
-    def predict(self) -> bool:
+    def generate_forecast(self) -> bool:
         """Predict the target data using the saved model based on the provider config."""
-
         model_json = load_model(f"{self.config.id}.json")
 
         if model_json is None:
@@ -122,19 +121,28 @@ class ProphetModelProvider(ModelProvider):
         model: Prophet = model_from_json(model_json)
 
         # Predict the target data
-        future = model.make_future_dataframe(periods=5, freq="D")
+        future = model.make_future_dataframe(periods=96, freq="30min")
         forecast = model.predict(future)
 
-        datapoints = self.__prophet_dataframe_to_datapoints(forecast)
-        logger.info(f"Datapoints: {datapoints}")
+        # Filter historical data from the forecast dataframe
+        last_train_date = model.history["ds"].max()
+        forecast_future = forecast[forecast["ds"] > last_train_date]
 
-        return True
+        datapoints = self.__prophet_forecast_to_datapoints(forecast_future)
+        logger.info(f"Datapoints: {datapoints}, {len(datapoints)}")
 
-    def __prophet_dataframe_to_datapoints(self, dataframe: pd.DataFrame) -> list[AssetDatapoint]:
-        """Convert a Prophet dataframe to a list of AssetDatapoint objects."""
+        # Send the datapoints to the OpenRemote client
+        return self.openremote_client.write_predicted_datapoints(
+            asset_id=self.config.predicted_asset_attribute.asset_id,
+            attribute_name=self.config.predicted_asset_attribute.attribute_name,
+            datapoints=datapoints,
+        )
+
+    def __prophet_forecast_to_datapoints(self, dataframe: pd.DataFrame) -> list[AssetDatapoint]:
+        """Convert a Prophet forecasted dataframe to a list of AssetDatapoint objects."""
         datapoints = []
 
-        # Convert ds to milliseconds since epoch
+        # Convert ds datetime to milliseconds since epoch
         for _, row in dataframe.iterrows():
             datapoints.append(AssetDatapoint(x=int(row["ds"].timestamp() * 1000), y=row["yhat"]))
 

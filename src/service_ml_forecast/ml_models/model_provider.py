@@ -7,8 +7,8 @@ class ModelProvider(Protocol):
     This protocol defines the methods that all ML model providers must implement.
     """
 
-    def train(self) -> bool:
+    def train_model(self) -> bool:
         pass
 
-    def predict(self) -> bool:
+    def generate_forecast(self) -> bool:
         pass
