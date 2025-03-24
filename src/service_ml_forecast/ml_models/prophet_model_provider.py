@@ -1,6 +1,5 @@
 import logging
 
-from httpx import HTTPStatusError
 import pandas as pd
 from prophet import Prophet
 from prophet.serialize import model_from_json, model_to_json
