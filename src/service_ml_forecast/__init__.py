@@ -1,17 +1,9 @@
 """Service ML Forecast application."""
 
-import logging.config
 from pathlib import Path
 
 import tomli
 from pydantic import BaseModel
-
-from service_ml_forecast.logging_config import LOGGING_CONFIG
-
-# Load the logging configuration
-logging.config.dictConfig(LOGGING_CONFIG)
-
-logger = logging.getLogger(__name__)
 
 
 class AppInfo(BaseModel):
@@ -32,7 +24,6 @@ def get_app_info() -> AppInfo | None:
 
         return AppInfo(**pyproject_data["project"])
     except (FileNotFoundError, KeyError, tomli.TOMLDecodeError):
-        logger.exception("Failed to read app info")
         return None
 
 
