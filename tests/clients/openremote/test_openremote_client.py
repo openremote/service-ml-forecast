@@ -6,29 +6,8 @@ from httpx import HTTPStatusError
 from service_ml_forecast.clients.openremote.models import Asset, AssetDatapoint, AssetDatapointPeriod
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 
-# Common test data used across multiple tests
-TEST_ASSET_ID = "44ORIhkDVAlT97dYGUD9n5"
-TEST_ATTRIBUTE_NAME = "powerTotalConsumers"
-
-
-@pytest.fixture
-def openremote_client() -> OpenRemoteClient:
-    """Create an OpenRemote client for testing against a real instance."""
-    from service_ml_forecast.config import env
-
-    client = OpenRemoteClient(
-        openremote_url=env.OPENREMOTE_URL,
-        keycloak_url=env.OPENREMOTE_KEYCLOAK_URL,
-        service_user=env.OPENREMOTE_SERVICE_USER,
-        service_user_secret=env.OPENREMOTE_SERVICE_USER_SECRET,
-    )
-
-    # Skip tests if OpenRemote API is not available
-    if not client.health_check():
-        pytest.skip(reason="OpenRemote API not available")
-
-    return client
-
+# Import shared test data from conftest.py
+from tests.conftest import TEST_ASSET_ID, TEST_ATTRIBUTE_NAME
 
 def test_retrieve_assets(openremote_client: OpenRemoteClient) -> None:
     assets: list[Asset] = openremote_client.retrieve_assets("master")

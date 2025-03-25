@@ -19,10 +19,10 @@ class AppEnvironment(BaseSettings):
     ENV: str = "development"
 
     # OpenRemote Settings
-    OPENREMOTE_URL: str
-    OPENREMOTE_KEYCLOAK_URL: str
-    OPENREMOTE_SERVICE_USER: str
-    OPENREMOTE_SERVICE_USER_SECRET: str
+    OPENREMOTE_URL: str = "http://localhost:8080"
+    OPENREMOTE_KEYCLOAK_URL: str = "http://localhost:8081"
+    OPENREMOTE_SERVICE_USER: str = "serviceuser"
+    OPENREMOTE_SERVICE_USER_SECRET: str = "secret"
 
     model_config = SettingsConfigDict(case_sensitive=True, env_prefix="", env_file=".env", env_file_encoding="utf-8")
 
@@ -35,4 +35,4 @@ class AppEnvironment(BaseSettings):
         return self.ENV == "development"
 
 
-env = AppEnvironment()  # type: ignore  # noqa: PGH003
+env = AppEnvironment()
