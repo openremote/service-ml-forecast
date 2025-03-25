@@ -31,11 +31,10 @@ def build_app() -> FastAPI:
         app.redoc_url = None
         app.openapi_url = None
 
-    # Add CORS middleware
-    # TODO: In production, replace with specific origin
+    # noinspection PyTypeChecker
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=["*"], # TODO: Adjust to be stricter
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
