@@ -176,15 +176,13 @@ cython_debug/
 
 # IDE - VSCode
 .vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
+
 
 # IDE - PyCharm (additional entries)
 *.iws
 *.iml
 *.ipr
+.idea/*
 
 # OS generated files
 .DS_Store
@@ -206,3 +204,6 @@ logs/
 
 # Application specific
 deployment/data/**
+
+
+
