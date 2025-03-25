@@ -28,7 +28,7 @@ class ProphetModelProvider(ModelProvider):
         self.config = config
 
     def train_model(self, training_dataset: TrainingDataset) -> Callable | None:
-        dataframe = self.__create_prophet_dataframe(training_dataset)
+        dataframe = __create_prophet_dataframe(training_dataset)
         if dataframe is None:
             logger.error("Failed to obtain valid dataframe for training the Prophet model")
             return None
@@ -47,34 +47,6 @@ class ProphetModelProvider(ModelProvider):
             return True
 
         return save_model_wrapper
-
-    @staticmethod
-    def __create_prophet_dataframe(training_dataset: TrainingDataset) -> pd.DataFrame | None:
-        """Creates a valid Prophet dataframe from the target and regressors datapoints."""
-
-        target = training_dataset.target
-        regressors = training_dataset.regressors
-
-        if target is None:
-            logger.error("No target data provided, cannot create dataframe for Prophet model")
-            return None
-
-        # Convert the datapoints to a dataframe - prophet expects the target data to be 'ds' and 'y' structure
-        dataframe = pd.DataFrame([{"ds": point.x, "y": point.y} for point in target.datapoints])
-        dataframe["ds"] = pd.to_datetime(dataframe["ds"], unit="ms")
-
-        # Add regressors if they are provided
-        if regressors is not None:
-            for regressor in regressors:
-                regressor_dataframe = pd.DataFrame(
-                    [{"ds": point.x, regressor.attribute_name: point.y} for point in regressor.datapoints]
-                )
-                regressor_dataframe["ds"] = pd.to_datetime(regressor_dataframe["ds"], unit="ms")
-
-                # Interpolate the regressor values to the target data point timestamps
-                dataframe = pd.merge_asof(dataframe, regressor_dataframe, on="ds", direction="nearest")
-
-        return dataframe
 
     def __load_model(self) -> Prophet | None:
         """Load the saved model from a file."""
@@ -111,13 +83,41 @@ class ProphetModelProvider(ModelProvider):
             datapoints=datapoints,
         )
 
-    @staticmethod
-    def __prophet_forecast_to_datapoints(dataframe: pd.DataFrame) -> list[AssetDatapoint]:
-        """Convert a Prophet forecasted dataframe to a list of AssetDatapoint objects."""
-        datapoints = []
 
-        # Convert ds datetime to milliseconds since epoch
-        for _, row in dataframe.iterrows():
-            datapoints.append(AssetDatapoint(x=int(row["ds"].timestamp() * 1000), y=row["yhat"]))
+def __prophet_forecast_to_datapoints(dataframe: pd.DataFrame) -> list[AssetDatapoint]:
+    """Convert a Prophet forecasted dataframe to a list of AssetDatapoint objects."""
+    datapoints = []
 
-        return datapoints
+    # Convert ds datetime to milliseconds since epoch
+    for _, row in dataframe.iterrows():
+        datapoints.append(AssetDatapoint(x=int(row["ds"].timestamp() * 1000), y=row["yhat"]))
+
+    return datapoints
+
+
+def __create_prophet_dataframe(training_dataset: TrainingDataset) -> pd.DataFrame | None:
+    """Creates a valid Prophet dataframe from the target and regressors datapoints."""
+
+    target = training_dataset.target
+    regressors = training_dataset.regressors
+
+    if target is None:
+        logger.error("No target data provided, cannot create dataframe for Prophet model")
+        return None
+
+    # Convert the datapoints to a dataframe - prophet expects the target data to be 'ds' and 'y' structure
+    dataframe = pd.DataFrame([{"ds": point.x, "y": point.y} for point in target.datapoints])
+    dataframe["ds"] = pd.to_datetime(dataframe["ds"], unit="ms")
+
+    # Add regressors if they are provided
+    if regressors is not None:
+        for regressor in regressors:
+            regressor_dataframe = pd.DataFrame(
+                [{"ds": point.x, regressor.attribute_name: point.y} for point in regressor.datapoints]
+            )
+            regressor_dataframe["ds"] = pd.to_datetime(regressor_dataframe["ds"], unit="ms")
+
+            # Interpolate the regressor values to the target data point timestamps
+            dataframe = pd.merge_asof(dataframe, regressor_dataframe, on="ds", direction="nearest")
+
+    return dataframe
