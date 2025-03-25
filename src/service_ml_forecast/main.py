@@ -35,7 +35,7 @@ def build_app() -> FastAPI:
     # noinspection PyTypeChecker
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"], # TODO: Adjust to be stricter
+        allow_origins=["*"],  # TODO: Adjust to be stricter
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
