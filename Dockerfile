@@ -37,4 +37,4 @@ COPY src/ ./src/
 EXPOSE 8000
 
 # Run 
-CMD ["uvicorn", "service_ml_forecast.main:app"] 
+CMD ["uvicorn", "service_ml_forecast.main:application"]
