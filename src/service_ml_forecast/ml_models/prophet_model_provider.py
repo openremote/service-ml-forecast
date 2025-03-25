@@ -48,14 +48,15 @@ class ProphetModelProvider(ModelProvider):
 
         return save_model_wrapper
 
-    def __create_prophet_dataframe(self, training_dataset: TrainingDataset) -> pd.DataFrame | None:
+    @staticmethod
+    def __create_prophet_dataframe(training_dataset: TrainingDataset) -> pd.DataFrame | None:
         """Creates a valid Prophet dataframe from the target and regressors datapoints."""
 
         target = training_dataset.target
         regressors = training_dataset.regressors
 
         if target is None:
-            logger.error("No target datapoints are available for training the Prophet model")
+            logger.error("No target data provided, cannot create dataframe for Prophet model")
             return None
 
         # Convert the datapoints to a dataframe - prophet expects the target data to be 'ds' and 'y' structure
@@ -81,7 +82,7 @@ class ProphetModelProvider(ModelProvider):
 
         if model_json is None:
             logger.error(f"Failed to load model for {self.config.id}")
-            return False
+            return None
 
         model: Prophet = model_from_json(model_json)
 
@@ -100,6 +101,7 @@ class ProphetModelProvider(ModelProvider):
         last_train_date = model.history["ds"].max()
         forecast_future = forecast[forecast["ds"] > last_train_date]
 
+        # noinspection PyTypeChecker
         datapoints = self.__prophet_forecast_to_datapoints(forecast_future)
         logger.info(f"Generated {len(datapoints)} forecasted datapoints")
 
@@ -109,7 +111,8 @@ class ProphetModelProvider(ModelProvider):
             datapoints=datapoints,
         )
 
-    def __prophet_forecast_to_datapoints(self, dataframe: pd.DataFrame) -> list[AssetDatapoint]:
+    @staticmethod
+    def __prophet_forecast_to_datapoints(dataframe: pd.DataFrame) -> list[AssetDatapoint]:
         """Convert a Prophet forecasted dataframe to a list of AssetDatapoint objects."""
         datapoints = []
 

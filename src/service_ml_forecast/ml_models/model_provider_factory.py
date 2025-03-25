@@ -1,4 +1,3 @@
-from service_ml_forecast.clients.openremote.openremote_client
 from service_ml_forecast.ml_models.model_provider import ModelProvider
 from service_ml_forecast.ml_models.prophet_model_provider import ProphetModelProvider
 from service_ml_forecast.schemas.model_config import ModelConfig, ModelType, ProphetModelConfig

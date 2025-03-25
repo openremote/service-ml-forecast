@@ -73,8 +73,9 @@ def load_model(path: str) -> str | None:
 def delete_model(path: str) -> bool:
     """Delete a model from a file."""
 
+    file_path = f"{os.getcwd()}{env.MODELS_DIR}/{path}"
+
     try:
-        file_path = f"{os.getcwd()}{env.MODELS_DIR}/{path}"
         os.remove(file_path)
         logger.info(f"Deleted model from {file_path}")
         return True
