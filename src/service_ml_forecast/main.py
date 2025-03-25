@@ -1,4 +1,6 @@
 import logging
+from typing import AsyncGenerator, Generator
+from fastapi.concurrency import asynccontextmanager
 import uvicorn
 
 from fastapi import FastAPI
@@ -17,6 +19,20 @@ if __app_info__ is None:
     logger.exception("App initialization failed: Failed to read app info")
     raise RuntimeError("App initialization failed: Failed to read app info")
 
+
+# FastAPI Lifecycle, handles startup and shutdown tasks
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    # Startup tasks
+    logger.info("Starting application")
+    logger.info("Application details: %s", __app_info__)
+
+    yield
+
+    # Shutdown tasks
+    logger.info("Shutting down application")
+
+
 app = FastAPI(
     title=__app_info__.name,
     description=__app_info__.description,
@@ -24,6 +40,7 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/openapi.json",
+    lifespan=lifespan,
 )
 
 if not env.PUBLISH_DOCS:
@@ -42,9 +59,6 @@ app.add_middleware(
 
 
 if __name__ == "__main__":
-    logger.info("Starting application")
-    logger.info("Application details: %s", __app_info__)
     reload = env.is_development()
-
     uvicorn.run("service_ml_forecast.main:app", host="0.0.0.0", port=8000, reload=reload)
 
