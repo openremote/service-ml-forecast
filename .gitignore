@@ -203,3 +203,5 @@ logs/
 *.h5
 *.model
 *.joblib
+.vscode/
+.idea/
