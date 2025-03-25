@@ -117,6 +117,7 @@ class ProphetModelProvider(ModelProvider):
 
         return callback
 
+    # TODO: Add regressor support, these need to be provided in the forecast request
     def generate_forecast(self) -> ForecastResult | None:
         """Generate a forecast for the target attribute.
 

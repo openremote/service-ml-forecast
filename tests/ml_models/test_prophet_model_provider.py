@@ -1,6 +1,7 @@
 import time
 
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
+from service_ml_forecast.ml_models.model_provider_factory import ModelProviderFactory
 from service_ml_forecast.ml_models.model_util import FeatureDatapoints, TrainingDataset
 from service_ml_forecast.ml_models.prophet_model_provider import ProphetModelProvider
 from service_ml_forecast.schemas.model_config import ModelInputAssetAttribute, ModelType, ProphetModelConfig
@@ -36,7 +37,7 @@ PROPHET_MODEL_CONFIG_WITH_REGRESSORS.regressors = [
 
 
 def test_prophet_model_provider_train(openremote_client: OpenRemoteClient) -> None:
-    model_provider = ProphetModelProvider(PROPHET_MODEL_CONFIG)
+    model_provider = ModelProviderFactory.create_provider(PROPHET_MODEL_CONFIG)
 
     target_datapoints = openremote_client.retrieve_historical_datapoints(
         asset_id=TEST_ASSET_ID,
@@ -60,5 +61,5 @@ def test_prophet_model_provider_train(openremote_client: OpenRemoteClient) -> No
 
 
 def test_prophet_model_provider_predict(openremote_client: OpenRemoteClient) -> None:
-    model_provider = ProphetModelProvider(PROPHET_MODEL_CONFIG)
+    model_provider = ModelProviderFactory.create_provider(PROPHET_MODEL_CONFIG)
     assert model_provider.generate_forecast()
