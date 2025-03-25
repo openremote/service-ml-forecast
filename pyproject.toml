@@ -72,27 +72,6 @@ quote-style = "double"
 known-first-party = ["service_ml_forecast"]
 combine-as-imports = true
 
-[tool.mypy]
-python_version = "3.10"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-check_untyped_defs = true
-disallow_untyped_decorators = true
-no_implicit_optional = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-warn_no_return = true
-warn_unreachable = true
-strict_optional = true
-
-# Ignore missing imports for prophet, as it provides no type definitions
-[[tool.mypy.overrides]]
-module = ["prophet.*"]
-ignore_missing_imports = true
-
-
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = "test_*.py"
