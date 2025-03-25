@@ -50,7 +50,7 @@ build: clean
 
 # Run the application
 run:
-	uvicorn service_ml_forecast.main:app --reload
+	uvicorn service_ml_forecast.main:application --reload
 
 # Help command
 help:

@@ -9,7 +9,7 @@ from service_ml_forecast.config import env
 logger = logging.getLogger(__name__)
 
 
-def create_app() -> FastAPI:
+def build_app() -> FastAPI:
     logger.info("Starting application")
 
     if __app_info__ is None:
@@ -45,4 +45,4 @@ def create_app() -> FastAPI:
     return app
 
 
-app = create_app()
+application = build_app()
