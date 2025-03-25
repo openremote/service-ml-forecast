@@ -25,8 +25,13 @@ class ModelConfig(BaseModel):
     )
     name: str = Field(description="A friendly name for the model configuration.")
     type: ModelType = Field(description="Which machine learning model to use.")
-    predicted_asset_attribute: ModelInputAssetAttribute = Field(
+    target: ModelInputAssetAttribute = Field(
         description="The asset attribute to predict. This attribute must have historical data available."
+    )
+    regressors: list[ModelInputAssetAttribute] | None = Field(
+        default=None,
+        description="List of model input asset attributes that will be used as regressors. "
+        "They must have historical data and predicted values available for the configured forecast period.",
     )
     forecast_interval: str = Field(description="Forecast generation interval. Expects ISO 8601 duration strings.")
     training_interval: str = Field(description="Model training interval. Expects ISO 8601 duration strings.")
@@ -40,11 +45,6 @@ class ProphetModelConfig(ModelConfig):
     """Prophet specific model config."""
 
     type: ModelType = ModelType.PROPHET
-    regressors: list[ModelInputAssetAttribute] | None = Field(
-        default=None,
-        description="List of model input asset attributes that will be used as regressors. "
-        "They must have historical data and predicted values available for the configured forecast period.",
-    )
     seasonality: bool = Field(
         default=True,
         description="Whether to include seasonality in the model.",

@@ -10,9 +10,24 @@ from service_ml_forecast.config import env
 logger = logging.getLogger(__name__)
 
 
-class DatapointWrapper(BaseModel):
-    """Util class for wrapping datapoints with their attribute name."""
+class FeatureDatapoints(BaseModel):
+    """Dataset of datapoints with their attribute name."""
 
+    attribute_name: str
+    datapoints: list[AssetDatapoint]
+
+
+class TrainingDataset(BaseModel):
+    """Dataset of the target and regressors."""
+
+    target: FeatureDatapoints
+    regressors: list[FeatureDatapoints] | None = None
+
+
+class ForecastResult(BaseModel):
+    """Forecast result with the asset id, attribute name and the forecasted datapoints."""
+
+    asset_id: str
     attribute_name: str
     datapoints: list[AssetDatapoint]
 
