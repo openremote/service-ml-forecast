@@ -1,10 +1,12 @@
+import time
 
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
+from service_ml_forecast.ml_models.model_util import FeatureDatapoints, TrainingDataset
 from service_ml_forecast.ml_models.prophet_model_provider import ProphetModelProvider
 from service_ml_forecast.schemas.model_config import ModelInputAssetAttribute, ModelType, ProphetModelConfig
 
-TEST_ASSET_ID = "44ORIhkDVAlT97dYGUD9n5"
-TEST_ATTRIBUTE_NAME = "powerTotalConsumers"
+# Import shared test data from conftest.py
+from tests.conftest import TEST_ASSET_ID, TEST_ATTRIBUTE_NAME
 
 PROPHET_MODEL_CONFIG = ProphetModelConfig(
     id="d3c119a6-1018-4ebd-932b-a509eb7ab730",
@@ -34,19 +36,29 @@ PROPHET_MODEL_CONFIG_WITH_REGRESSORS.regressors = [
 
 
 def test_prophet_model_provider_train(openremote_client: OpenRemoteClient) -> None:
-    model_provider = ProphetModelProvider(PROPHET_MODEL_CONFIG, openremote_client)
-    assert model_provider.train_model()
+    model_provider = ProphetModelProvider(PROPHET_MODEL_CONFIG)
 
+    target_datapoints = openremote_client.retrieve_historical_datapoints(
+        asset_id=TEST_ASSET_ID,
+        attribute_name=TEST_ATTRIBUTE_NAME,
+        from_timestamp=1716153600000,
+        to_timestamp=int(time.time() * 1000),
+    )
 
-def test_prophet_model_provider_train_no_datapoints(openremote_client: OpenRemoteClient) -> None:
-    config = PROPHET_MODEL_CONFIG.model_copy(deep=True)
-    # override the timestamp to a time where no datapoints are available
-    config.predicted_asset_attribute.cutoff_timestamp = 2716153600000  # somewhere random in the future
+    target_feature = FeatureDatapoints(
+        attribute_name=TEST_ATTRIBUTE_NAME,
+        datapoints=target_datapoints,
+    )
 
-    model_provider = ProphetModelProvider(config, openremote_client)
-    assert not model_provider.train_model()
+    training_dataset = TrainingDataset(
+        target=target_feature,
+    )
+
+    save_model = model_provider.train_model(training_dataset)
+    assert save_model is not None
+    assert save_model()
 
 
 def test_prophet_model_provider_predict(openremote_client: OpenRemoteClient) -> None:
-    model_provider = ProphetModelProvider(PROPHET_MODEL_CONFIG, openremote_client)
+    model_provider = ProphetModelProvider(PROPHET_MODEL_CONFIG)
     assert model_provider.generate_forecast()
