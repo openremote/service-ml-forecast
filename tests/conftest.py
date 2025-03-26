@@ -4,9 +4,14 @@ from http import HTTPStatus
 import pytest
 import respx
 
+from service_ml_forecast import find_project_root
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 from service_ml_forecast.config import env
 from service_ml_forecast.logging_config import LOGGING_CONFIG
+
+PROJECT_ROOT = find_project_root()
+
+logging.config.dictConfig(LOGGING_CONFIG)
 
 # Common test data used across multiple tests
 TEST_ASSET_ID = "44ORIhkDVAlT97dYGUD9n5"
@@ -21,14 +26,12 @@ MOCK_SERVICE_USER_SECRET = "service_user_secret"
 MOCK_ACCESS_TOKEN = "mock_access_token"
 MOCK_TOKEN_EXPIRY_SECONDS = 60
 
-# Load the logging configuration
-logging.config.dictConfig(LOGGING_CONFIG)
-
 # Overwrite model and config storage paths for testing purposes
-env.MODELS_DIR = "/.tmp/models"
-env.CONFIGS_DIR = "/.tmp/configs"
+env.MODELS_DIR = "/tests/.tmp/models"
+env.CONFIGS_DIR = "/tests/.tmp/configs"
 
 
+# FIXTURES
 @pytest.fixture
 def openremote_client() -> OpenRemoteClient:
     """Create an OpenRemote client for testing against a real instance."""

@@ -1,11 +1,11 @@
 
 {
-    "id": "d3c119a6-1018-4ebd-932b-a509eb7ab731",
-    "name": "Power Total Consumers Forecast",
+    "id": "d3c119a6-1018-4ebd-932b-a509eb7ab841",
+    "name": "Tariff Forecast",
     "type": "prophet",
     "target": {
-      "asset_id": "44ORIhkDVAlT97dYGUD9n5",
-      "attribute_name": "powerTotalConsumers",
+      "asset_id": "tariff-provider-asset-id",
+      "attribute_name": "tariff",
       "cutoff_timestamp": 1716153600000
     },
     "forecast_interval": "PT1H",
@@ -14,8 +14,8 @@
     "forecast_datapoint_interval": "PT1H",
     "regressors": [
       {
-        "asset_id": "44ORIhkDVAlT97dYGUD9n5",
-        "attribute_name": "powerTotalConsumers",
+        "asset_id": "wind-turbine-asset-id",
+        "attribute_name": "windSpeed",
         "cutoff_timestamp": 1716153600000
       }
     ]

@@ -1,4 +1,5 @@
 import logging
+import time
 
 import pandas as pd
 from prophet import Prophet
@@ -32,6 +33,9 @@ def _convert_datapoints_to_dataframe(datapoints: list[AssetDatapoint], rename_y:
     dataframe["ds"] = pd.to_datetime(dataframe["ds"], unit="ms")
     if rename_y is not None:
         dataframe = dataframe.rename(columns={"y": rename_y})
+
+    # Sort dataframe by timestamp
+    dataframe = dataframe.sort_values("ds")
 
     return dataframe
 
@@ -90,6 +94,8 @@ class ProphetModelProvider(ModelProvider):
         Returns:
             A callable that allows the model to be saved to a file.
         """
+        logger.info(f"Preparing training data for {self.config.id}")
+
         if training_dataset.target.datapoints is None or len(training_dataset.target.datapoints) == 0:
             logger.error("No target data provided, cannot train Prophet model")
             return None
@@ -101,6 +107,13 @@ class ProphetModelProvider(ModelProvider):
 
         # Train the Prophet model
         model = Prophet()
+
+        # Add regressors to the model if provided
+        if training_dataset.regressors is not None:
+            logger.info(f"Adding {len(training_dataset.regressors)} regressor(s) for {self.config.id}")
+            for regressor in training_dataset.regressors:
+                model.add_regressor(regressor.attribute_name)
+
         model.fit(dataframe)
 
         # Return a callable that saves the trained model to a file
@@ -109,9 +122,10 @@ class ProphetModelProvider(ModelProvider):
                 logger.error(f"Failed to save trained model for {self.config.id}")
                 return False
 
-            logger.info(f"Successfully trained and saved model for {self.config.id}")
+            logger.info(f"Saved trained model for {self.config.id}")
             return True
 
+        logger.info(f"Training completed for {self.config.id}")
         return callback
 
     def generate_forecast(self, forecast_feature_set: ForecastFeatureSet | None = None) -> ForecastResult | None:
