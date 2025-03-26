@@ -5,6 +5,7 @@ import pytest
 import respx
 
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
+from service_ml_forecast.config import env
 from service_ml_forecast.logging_config import LOGGING_CONFIG
 
 # Common test data used across multiple tests
@@ -22,6 +23,10 @@ MOCK_TOKEN_EXPIRY_SECONDS = 60
 
 # Load the logging configuration
 logging.config.dictConfig(LOGGING_CONFIG)
+
+# Overwrite model and config storage paths for testing purposes
+env.MODELS_DIR = "/.tmp/models"
+env.CONFIGS_DIR = "/.tmp/configs"
 
 
 @pytest.fixture

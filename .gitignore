@@ -204,3 +204,4 @@ logs/
 
 # Application specific
 deployment/data/**
+/.tmp
