@@ -1,13 +1,29 @@
-import logging
+# Copyright 2025, OpenRemote Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 from pathlib import Path
 
 import tomli
 from pydantic import BaseModel
 
-logger = logging.getLogger(__name__)
-
 
 class AppInfo(BaseModel):
+    """Application information."""
+
     name: str
     description: str
     version: str
@@ -22,8 +38,7 @@ def get_app_info() -> AppInfo | None:
             pyproject_data = tomli.load(f)
 
         return AppInfo(**pyproject_data["project"])
-    except (FileNotFoundError, KeyError, tomli.TOMLDecodeError) as e:
-        logger.error(f"Failed to read app info: {e}")
+    except (FileNotFoundError, KeyError, tomli.TOMLDecodeError):
         return None
 
 
