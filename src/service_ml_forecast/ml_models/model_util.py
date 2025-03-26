@@ -1,7 +1,7 @@
 import logging
 import os
-from pathlib import Path
 import tempfile
+from pathlib import Path
 
 from pydantic import BaseModel
 
@@ -41,6 +41,7 @@ class ForecastResult(BaseModel):
 
 
 APP_ROOT: Path = find_project_root()
+
 
 def save_model(model: str, path: str) -> bool:
     """Atomically save a model to a file."""

@@ -9,21 +9,24 @@ from service_ml_forecast.ml_models.model_provider_factory import ModelProviderFa
 from service_ml_forecast.ml_models.model_util import FeatureDatapoints, TrainingFeatureSet
 from service_ml_forecast.schemas.model_config import ProphetModelConfig
 
+
 @pytest.fixture
 def prophet_model_config() -> ProphetModelConfig:
     config_path = Path(__file__).parent / "prophet_model_config.json"
-    with open(config_path, "r") as f:
+    with open(config_path) as f:
         return ProphetModelConfig(**json.load(f))
 
 
 @pytest.fixture
 def prophet_model_config_with_regressors() -> ProphetModelConfig:
     config_path = Path(__file__).parent / "prophet_model_regressor_config.json"
-    with open(config_path, "r") as f:
+    with open(config_path) as f:
         return ProphetModelConfig(**json.load(f))
 
 
-def test_prophet_model_provider_train(openremote_client: OpenRemoteClient, prophet_model_config: ProphetModelConfig) -> None:
+def test_prophet_model_provider_train(
+    openremote_client: OpenRemoteClient, prophet_model_config: ProphetModelConfig
+) -> None:
     model_provider = ModelProviderFactory.create_provider(prophet_model_config)
 
     target_datapoints = openremote_client.retrieve_historical_datapoints(
@@ -47,6 +50,13 @@ def test_prophet_model_provider_train(openremote_client: OpenRemoteClient, proph
     assert save_model()
 
 
-def test_prophet_model_provider_predict(openremote_client: OpenRemoteClient, prophet_model_config: ProphetModelConfig) -> None:
+def test_prophet_model_provider_predict(
+    openremote_client: OpenRemoteClient, prophet_model_config: ProphetModelConfig
+) -> None:
     model_provider = ModelProviderFactory.create_provider(prophet_model_config)
-    assert model_provider.generate_forecast()
+
+    forecast = model_provider.generate_forecast()
+
+    assert forecast is not None
+    assert forecast.datapoints is not None
+    assert len(forecast.datapoints) > 0

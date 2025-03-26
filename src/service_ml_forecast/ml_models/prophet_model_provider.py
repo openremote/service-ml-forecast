@@ -18,15 +18,7 @@ from service_ml_forecast.schemas.model_config import ProphetModelConfig
 logger = logging.getLogger(__name__)
 
 
-def prophet_forecast_to_datapoints(dataframe: pd.DataFrame) -> list[AssetDatapoint]:
-    """Convert a Prophet forecasted dataframe to a list of AssetDatapoint objects.
-
-    Args:
-        dataframe: The forecasted dataframe to convert.
-
-    Returns:
-        A list of AssetDatapoint objects.
-    """
+def _convert_prophet_forecast_to_datapoints(dataframe: pd.DataFrame) -> list[AssetDatapoint]:
     datapoints = []
     # Convert ds datetime to milliseconds since epoch
     for _, row in dataframe.iterrows():
@@ -35,32 +27,36 @@ def prophet_forecast_to_datapoints(dataframe: pd.DataFrame) -> list[AssetDatapoi
     return datapoints
 
 
-def create_prophet_dataframe(training_dataset: TrainingFeatureSet) -> pd.DataFrame | None:
-    """Creates a Prophet dataframe from the training dataset.
+def _convert_datapoints_to_dataframe(datapoints: list[AssetDatapoint], rename_y: str | None = None) -> pd.DataFrame:
+    dataframe = pd.DataFrame([{"ds": point.x, "y": point.y} for point in datapoints])
+    dataframe["ds"] = pd.to_datetime(dataframe["ds"], unit="ms")
+    if rename_y is not None:
+        dataframe = dataframe.rename(columns={"y": rename_y})
 
-    Args:
-        training_dataset: The training dataset to create the dataframe from.
+    return dataframe
 
-    Returns:
-        A valid Prophet dataframe.
-    """
+
+def _prepare_training_dataframe(training_dataset: TrainingFeatureSet) -> pd.DataFrame | None:
     target = training_dataset.target
     regressors = training_dataset.regressors
 
     # Convert the datapoints to a dataframe - prophet expects the target data to be 'ds' and 'y' structure
-    dataframe = pd.DataFrame([{"ds": point.x, "y": point.y} for point in target.datapoints])
-    dataframe["ds"] = pd.to_datetime(dataframe["ds"], unit="ms")
+    dataframe = _convert_datapoints_to_dataframe(target.datapoints)
 
     # Add regressors if they are provided
     if regressors is not None:
         for regressor in regressors:
-            regressor_dataframe = pd.DataFrame(
-                [{"ds": point.x, regressor.attribute_name: point.y} for point in regressor.datapoints]
+            regressor_dataframe = _convert_datapoints_to_dataframe(
+                regressor.datapoints, rename_y=regressor.attribute_name
             )
-            regressor_dataframe["ds"] = pd.to_datetime(regressor_dataframe["ds"], unit="ms")
 
             # Interpolate the regressor values to the target data point timestamps
-            dataframe = pd.merge_asof(dataframe, regressor_dataframe, on="ds", direction="nearest")
+            dataframe = pd.merge_asof(
+                dataframe,
+                regressor_dataframe[["ds", regressor.attribute_name]],
+                on="ds",
+                direction="nearest",
+            )
 
     return dataframe
 
@@ -89,16 +85,16 @@ class ProphetModelProvider(ModelProvider):
         """Train the Prophet model
 
         Args:
-            training_dataset: The training dataset to train the model on.
+            training_dataset: The training feature set to train the model on.
 
         Returns:
-            A callable that saves the trained model to a file.
+            A callable that allows the model to be saved to a file.
         """
         if training_dataset.target.datapoints is None or len(training_dataset.target.datapoints) == 0:
             logger.error("No target data provided, cannot train Prophet model")
             return None
 
-        dataframe = create_prophet_dataframe(training_dataset)
+        dataframe = _prepare_training_dataframe(training_dataset)
         if dataframe is None:
             logger.error("Failed to obtain valid dataframe for training the Prophet model")
             return None
@@ -118,7 +114,6 @@ class ProphetModelProvider(ModelProvider):
 
         return callback
 
-    # TODO: Add regressor support, these need to be provided in the forecast request
     def generate_forecast(self, forecast_feature_set: ForecastFeatureSet | None = None) -> ForecastResult | None:
         """Generate a forecast for the target attribute.
 
@@ -134,14 +129,30 @@ class ProphetModelProvider(ModelProvider):
             return None
 
         future = model.make_future_dataframe(periods=96, freq="30min")
+
+        # Add future regressor values to the future dataframe if provided
+        if forecast_feature_set is not None:
+            for regressor in forecast_feature_set.regressors:
+                regressor_dataframe = _convert_datapoints_to_dataframe(
+                    regressor.datapoints, rename_y=regressor.attribute_name
+                )
+
+                # Interpolate the regressor values to the future data point timestamps
+                future = pd.merge_asof(
+                    future,
+                    regressor_dataframe[["ds", regressor.attribute_name]],
+                    on="ds",
+                    direction="nearest",
+                )
+
         forecast = model.predict(future)
 
-        # Filter historical data from the forecast dataframe
+        # Remove historical data from the forecast dataframe - prophet returns the entire history
         last_train_date = model.history["ds"].max()
         forecast_future = forecast[forecast["ds"] > last_train_date]
 
         # noinspection PyTypeChecker
-        datapoints = prophet_forecast_to_datapoints(forecast_future)
+        datapoints = _convert_prophet_forecast_to_datapoints(forecast_future)
         logger.info(f"Generated {len(datapoints)} forecasted datapoints")
 
         return ForecastResult(
