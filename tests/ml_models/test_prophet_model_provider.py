@@ -2,8 +2,7 @@ import time
 
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 from service_ml_forecast.ml_models.model_provider_factory import ModelProviderFactory
-from service_ml_forecast.ml_models.model_util import FeatureDatapoints, TrainingDataset
-from service_ml_forecast.ml_models.prophet_model_provider import ProphetModelProvider
+from service_ml_forecast.ml_models.model_util import FeatureDatapoints, TrainingFeatureSet
 from service_ml_forecast.schemas.model_config import ModelInputAssetAttribute, ModelType, ProphetModelConfig
 
 # Import shared test data from conftest.py
@@ -51,7 +50,7 @@ def test_prophet_model_provider_train(openremote_client: OpenRemoteClient) -> No
         datapoints=target_datapoints,
     )
 
-    training_dataset = TrainingDataset(
+    training_dataset = TrainingFeatureSet(
         target=target_feature,
     )
 

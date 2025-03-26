@@ -11,17 +11,23 @@ logger = logging.getLogger(__name__)
 
 
 class FeatureDatapoints(BaseModel):
-    """Dataset of datapoints with their attribute name."""
+    """Feature with the attribute name and the datapoints."""
 
     attribute_name: str
     datapoints: list[AssetDatapoint]
 
 
-class TrainingDataset(BaseModel):
-    """Dataset of the target and regressors."""
+class TrainingFeatureSet(BaseModel):
+    """Training set of the target and regressors."""
 
     target: FeatureDatapoints
     regressors: list[FeatureDatapoints] | None = None
+
+
+class ForecastFeatureSet(BaseModel):
+    """Forecast feature set with regressors."""
+
+    regressors: list[FeatureDatapoints]
 
 
 class ForecastResult(BaseModel):

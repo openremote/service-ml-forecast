@@ -7,8 +7,9 @@ from prophet.serialize import model_from_json, model_to_json
 from service_ml_forecast.clients.openremote.models import AssetDatapoint
 from service_ml_forecast.ml_models.model_provider import ModelProvider, SaveModelCallable
 from service_ml_forecast.ml_models.model_util import (
+    ForecastFeatureSet,
     ForecastResult,
-    TrainingDataset,
+    TrainingFeatureSet,
     load_model,
     save_model,
 )
@@ -34,7 +35,7 @@ def prophet_forecast_to_datapoints(dataframe: pd.DataFrame) -> list[AssetDatapoi
     return datapoints
 
 
-def create_prophet_dataframe(training_dataset: TrainingDataset) -> pd.DataFrame | None:
+def create_prophet_dataframe(training_dataset: TrainingFeatureSet) -> pd.DataFrame | None:
     """Creates a Prophet dataframe from the training dataset.
 
     Args:
@@ -84,7 +85,7 @@ class ProphetModelProvider(ModelProvider):
 
         return model
 
-    def train_model(self, training_dataset: TrainingDataset) -> SaveModelCallable | None:
+    def train_model(self, training_dataset: TrainingFeatureSet) -> SaveModelCallable | None:
         """Train the Prophet model
 
         Args:
@@ -118,8 +119,11 @@ class ProphetModelProvider(ModelProvider):
         return callback
 
     # TODO: Add regressor support, these need to be provided in the forecast request
-    def generate_forecast(self) -> ForecastResult | None:
+    def generate_forecast(self, forecast_feature_set: ForecastFeatureSet | None = None) -> ForecastResult | None:
         """Generate a forecast for the target attribute.
+
+        Args:
+            forecast_feature_set: Set containing the predicted datapoints for the regressors.
 
         Returns:
             A ForecastResult object containing the forecasted datapoints.
