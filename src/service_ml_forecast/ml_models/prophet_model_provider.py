@@ -1,5 +1,4 @@
 import logging
-import time
 
 import pandas as pd
 from prophet import Prophet

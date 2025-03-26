@@ -83,3 +83,7 @@ def test_model_provider_train_with_regressor(prophet_regressor_test_config: Prop
     )
     assert save_model is not None
     assert save_model()
+
+    assert prophet_regressor_test_config.id is not None
+    model_file_exists = Path(f"{PROJECT_ROOT}/{env.MODELS_DIR}/{prophet_regressor_test_config.id}.json")
+    assert model_file_exists.exists()
