@@ -45,7 +45,7 @@ clean:
 	rm -rf requirements.txt
 
 # Build package
-build: clean
+build:
 	$(PYTHON) -m build
 
 # Run the application
