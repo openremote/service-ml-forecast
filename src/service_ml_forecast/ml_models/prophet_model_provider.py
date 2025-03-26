@@ -105,8 +105,11 @@ class ProphetModelProvider(ModelProvider):
             logger.error("Failed to obtain valid dataframe for training the Prophet model")
             return None
 
-        # Train the Prophet model
+        # Configure the model
         model = Prophet()
+        model.weekly_seasonality = self.config.weekly_seasonality
+        model.yearly_seasonality = self.config.yearly_seasonality
+        model.daily_seasonality = self.config.daily_seasonality
 
         # Add regressors to the model if provided
         if training_dataset.regressors is not None:
@@ -114,6 +117,7 @@ class ProphetModelProvider(ModelProvider):
             for regressor in training_dataset.regressors:
                 model.add_regressor(regressor.attribute_name)
 
+        # Train the model
         model.fit(dataframe)
 
         # Return a callable that saves the trained model to a file

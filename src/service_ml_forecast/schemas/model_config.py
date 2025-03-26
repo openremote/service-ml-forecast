@@ -45,7 +45,15 @@ class ProphetModelConfig(ModelConfig):
     """Prophet specific model config."""
 
     type: ModelType = ModelType.PROPHET
-    seasonality: bool = Field(
+    yearly_seasonality: bool = Field(
         default=True,
-        description="Whether to include seasonality in the model.",
+        description="Whether to include yearly seasonality in the model.",
+    )
+    weekly_seasonality: bool = Field(
+        default=True,
+        description="Whether to include weekly seasonality in the model.",
+    )
+    daily_seasonality: bool = Field(
+        default=True,
+        description="Whether to include daily seasonality in the model.",
     )
