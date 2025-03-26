@@ -37,4 +37,4 @@ COPY src/ ./src/
 EXPOSE 8000
 
 # Run 
-CMD ["uvicorn", "service_ml_forecast.main:app", "--host", "0.0.0.0", "--port", "8000"] 
+CMD ["python", "-m", "service_ml_forecast.main"]

@@ -68,6 +68,10 @@ instance/
 # Scrapy stuff:
 .scrapy
 
+
+# Ruff
+.ruff_cache/
+
 # Sphinx documentation
 docs/_build/
 
@@ -199,3 +203,5 @@ logs/
 *.h5
 *.model
 *.joblib
+.vscode/
+.idea/
