@@ -1,9 +1,11 @@
 import logging
 import os
+from pathlib import Path
 import tempfile
 
 from pydantic import BaseModel
 
+from service_ml_forecast import find_project_root
 from service_ml_forecast.clients.openremote.models import AssetDatapoint
 from service_ml_forecast.config import env
 
@@ -38,10 +40,12 @@ class ForecastResult(BaseModel):
     datapoints: list[AssetDatapoint]
 
 
+APP_ROOT: Path = find_project_root()
+
 def save_model(model: str, path: str) -> bool:
     """Atomically save a model to a file."""
 
-    file_path = f"{os.getcwd()}{env.MODELS_DIR}/{path}"
+    file_path = f"{APP_ROOT}{env.MODELS_DIR}/{path}"
     dir_path = os.path.dirname(file_path)
 
     try:
@@ -66,7 +70,7 @@ def save_model(model: str, path: str) -> bool:
 def load_model(path: str) -> str | None:
     """Load a model from a file."""
 
-    file_path = f"{os.getcwd()}{env.MODELS_DIR}/{path}"
+    file_path = f"{APP_ROOT}{env.MODELS_DIR}/{path}"
 
     try:
         with open(file_path) as file:
@@ -79,7 +83,7 @@ def load_model(path: str) -> str | None:
 def delete_model(path: str) -> bool:
     """Delete a model from a file."""
 
-    file_path = f"{os.getcwd()}{env.MODELS_DIR}/{path}"
+    file_path = f"{APP_ROOT}{env.MODELS_DIR}/{path}"
 
     try:
         os.remove(file_path)

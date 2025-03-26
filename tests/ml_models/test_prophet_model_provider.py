@@ -1,52 +1,40 @@
+import json
 import time
+from pathlib import Path
+
+import pytest
 
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 from service_ml_forecast.ml_models.model_provider_factory import ModelProviderFactory
 from service_ml_forecast.ml_models.model_util import FeatureDatapoints, TrainingFeatureSet
-from service_ml_forecast.schemas.model_config import ModelInputAssetAttribute, ModelType, ProphetModelConfig
+from service_ml_forecast.schemas.model_config import ProphetModelConfig
 
-# Import shared test data from conftest.py
-from tests.conftest import TEST_ASSET_ID, TEST_ATTRIBUTE_NAME
-
-PROPHET_MODEL_CONFIG = ProphetModelConfig(
-    id="d3c119a6-1018-4ebd-932b-a509eb7ab730",
-    name="Power Total Consumers Forecast",
-    type=ModelType.PROPHET,
-    target=ModelInputAssetAttribute(
-        asset_id=TEST_ASSET_ID,
-        attribute_name=TEST_ATTRIBUTE_NAME,
-        cutoff_timestamp=1716153600000,
-    ),
-    forecast_interval="PT1H",  # 1 hour
-    training_interval="PT1D",  # 1 day
-    forecast_period="PT7D",  # 7 days
-    forecast_datapoint_interval="PT1H",  # 1 hour
-)
+@pytest.fixture
+def prophet_model_config() -> ProphetModelConfig:
+    config_path = Path(__file__).parent / "prophet_model_config.json"
+    with open(config_path, "r") as f:
+        return ProphetModelConfig(**json.load(f))
 
 
-PROPHET_MODEL_CONFIG_WITH_REGRESSORS = PROPHET_MODEL_CONFIG.model_copy(deep=True)
-PROPHET_MODEL_CONFIG_WITH_REGRESSORS.id = "d3c119a6-1018-4ebd-932b-a509eb7ab731"
-PROPHET_MODEL_CONFIG_WITH_REGRESSORS.regressors = [
-    ModelInputAssetAttribute(
-        asset_id=TEST_ASSET_ID,
-        attribute_name=TEST_ATTRIBUTE_NAME,
-        cutoff_timestamp=1716153600000,
-    )
-]
+@pytest.fixture
+def prophet_model_config_with_regressors() -> ProphetModelConfig:
+    config_path = Path(__file__).parent / "prophet_model_regressor_config.json"
+    with open(config_path, "r") as f:
+        return ProphetModelConfig(**json.load(f))
 
 
-def test_prophet_model_provider_train(openremote_client: OpenRemoteClient) -> None:
-    model_provider = ModelProviderFactory.create_provider(PROPHET_MODEL_CONFIG)
+def test_prophet_model_provider_train(openremote_client: OpenRemoteClient, prophet_model_config: ProphetModelConfig) -> None:
+    model_provider = ModelProviderFactory.create_provider(prophet_model_config)
 
     target_datapoints = openremote_client.retrieve_historical_datapoints(
-        asset_id=TEST_ASSET_ID,
-        attribute_name=TEST_ATTRIBUTE_NAME,
-        from_timestamp=1716153600000,
+        asset_id=prophet_model_config.target.asset_id,
+        attribute_name=prophet_model_config.target.attribute_name,
+        from_timestamp=prophet_model_config.target.cutoff_timestamp,
         to_timestamp=int(time.time() * 1000),
     )
 
     target_feature = FeatureDatapoints(
-        attribute_name=TEST_ATTRIBUTE_NAME,
+        attribute_name=prophet_model_config.target.attribute_name,
         datapoints=target_datapoints,
     )
 
@@ -59,6 +47,6 @@ def test_prophet_model_provider_train(openremote_client: OpenRemoteClient) -> No
     assert save_model()
 
 
-def test_prophet_model_provider_predict(openremote_client: OpenRemoteClient) -> None:
-    model_provider = ModelProviderFactory.create_provider(PROPHET_MODEL_CONFIG)
+def test_prophet_model_provider_predict(openremote_client: OpenRemoteClient, prophet_model_config: ProphetModelConfig) -> None:
+    model_provider = ModelProviderFactory.create_provider(prophet_model_config)
     assert model_provider.generate_forecast()

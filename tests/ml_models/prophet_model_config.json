@@ -1,0 +1,15 @@
+
+{
+    "id": "d3c119a6-1018-4ebd-932b-a509eb7ab730",
+    "name": "Power Total Consumers Forecast",
+    "type": "prophet",
+    "target": {
+      "asset_id": "44ORIhkDVAlT97dYGUD9n5",
+      "attribute_name": "powerTotalConsumers",
+      "cutoff_timestamp": 1716153600000
+    },
+    "forecast_interval": "PT1H",
+    "training_interval": "PT1D",
+    "forecast_period": "PT7D",
+    "forecast_datapoint_interval": "PT1H"
+  }
