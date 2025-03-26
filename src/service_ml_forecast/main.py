@@ -1,9 +1,9 @@
 import logging
-from typing import AsyncGenerator, Generator
-from fastapi.concurrency import asynccontextmanager
-import uvicorn
+from collections.abc import AsyncGenerator
 
+import uvicorn
 from fastapi import FastAPI
+from fastapi.concurrency import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 
 from service_ml_forecast import __app_info__
@@ -51,7 +51,7 @@ if not env.PUBLISH_DOCS:
 # noinspection PyTypeChecker
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # TODO: Adjust to be stricter
+    allow_origins=["*"],  # TODO: Adjust to be stricter
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -61,4 +61,3 @@ app.add_middleware(
 if __name__ == "__main__":
     reload = env.is_development()
     uvicorn.run("service_ml_forecast.main:app", host="0.0.0.0", port=8000, reload=reload)
-

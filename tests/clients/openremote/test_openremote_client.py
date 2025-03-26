@@ -9,6 +9,7 @@ from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteC
 # Import shared test data from conftest.py
 from tests.conftest import TEST_ASSET_ID, TEST_ATTRIBUTE_NAME
 
+
 def test_retrieve_assets(openremote_client: OpenRemoteClient) -> None:
     assets: list[Asset] = openremote_client.retrieve_assets("master")
     assert len(assets) > 0, "No assets retrieved"
