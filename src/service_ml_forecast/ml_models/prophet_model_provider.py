@@ -94,7 +94,7 @@ class ProphetModelProvider(ModelProvider):
         model_json = load_model(f"{self.config.id}.json")
 
         if model_json is None:
-            logger.error(f"Failed to load model for {self.config.id}")
+            logger.error(f"Failed to load model -- {self.config.id}")
             return None
 
         model: Prophet = model_from_json(model_json)
@@ -110,8 +110,6 @@ class ProphetModelProvider(ModelProvider):
         Returns:
             A callable that allows the model to be saved to a file.
         """
-        logger.info(f"Preparing training data for {self.config.id}")
-
         if training_dataset.target.datapoints is None or len(training_dataset.target.datapoints) == 0:
             logger.error("No target data provided, cannot train Prophet model")
             return None
@@ -129,7 +127,7 @@ class ProphetModelProvider(ModelProvider):
 
         # Add regressors to the model if provided
         if training_dataset.regressors is not None:
-            logger.info(f"Adding {len(training_dataset.regressors)} regressor(s) for {self.config.id}")
+            logger.info(f"Adding {len(training_dataset.regressors)} regressor(s) -- {self.config.id}")
             for regressor in training_dataset.regressors:
                 model.add_regressor(regressor.attribute_name)
 
@@ -139,13 +137,12 @@ class ProphetModelProvider(ModelProvider):
         # Return a callable that saves the trained model to a file
         def callback() -> bool:
             if not save_model(model_to_json(model), f"{self.config.id}.json"):
-                logger.error(f"Failed to save trained model for {self.config.id}")
+                logger.error(f"Failed to save trained model -- {self.config.id}")
                 return False
 
-            logger.info(f"Saved trained model for {self.config.id}")
+            logger.info(f"Saved trained model -- {self.config.id}")
             return True
 
-        logger.info(f"Training completed for {self.config.id}")
         return callback
 
     def generate_forecast(self, forecast_feature_set: ForecastFeatureSet | None = None) -> ForecastResult | None:
@@ -159,13 +156,14 @@ class ProphetModelProvider(ModelProvider):
         """
         model = self.__load_model()
         if model is None:
-            logger.error(f"Failed to load model for {self.config.id}")
+            logger.error(f"Failed to load model -- {self.config.id}")
             return None
 
         future = model.make_future_dataframe(periods=96, freq="30min")
 
         # Add future regressor values to the future dataframe if provided
         if forecast_feature_set is not None:
+            logger.info(f"Requested forecast is using regressor(s) -- {self.config.id}")
             for regressor in forecast_feature_set.regressors:
                 regressor_dataframe = _convert_datapoints_to_dataframe(
                     regressor.datapoints, rename_y=regressor.attribute_name
@@ -187,6 +185,7 @@ class ProphetModelProvider(ModelProvider):
 
         # noinspection PyTypeChecker
         datapoints = _convert_prophet_forecast_to_datapoints(forecast_future)
+
         logger.info(f"Generated {len(datapoints)} forecasted datapoints")
 
         return ForecastResult(

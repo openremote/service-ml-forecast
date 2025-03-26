@@ -16,11 +16,11 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 from collections.abc import Callable
-from typing import Protocol, TypeAlias
+from typing import Protocol
 
-from service_ml_forecast.ml_models.model_util import ForecastResult, TrainingFeatureSet
+from service_ml_forecast.ml_models.model_util import ForecastFeatureSet, ForecastResult, TrainingFeatureSet
 
-SaveModelCallable: TypeAlias = Callable[[], bool]
+SaveModelCallable = Callable[[], bool]
 
 
 class ModelProvider(Protocol):
@@ -32,5 +32,5 @@ class ModelProvider(Protocol):
     def train_model(self, training_dataset: TrainingFeatureSet) -> SaveModelCallable | None:
         pass
 
-    def generate_forecast(self) -> ForecastResult | None:
+    def generate_forecast(self, forecast_featureset: ForecastFeatureSet | None = None) -> ForecastResult | None:
         pass

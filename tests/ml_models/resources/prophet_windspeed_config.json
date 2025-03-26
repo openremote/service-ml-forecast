@@ -1,6 +1,7 @@
 
 {
     "id": "d3c119a6-1018-4ebd-932b-a509eb7ab731",
+    "realm": "master",
     "name": "Wind Speed Forecast",
     "type": "prophet",
     "target": {

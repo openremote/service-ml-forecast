@@ -41,6 +41,7 @@ class ModelConfig(BaseModel):
         description="ID of the model configuration. If not provided, a random uuid will be generated."
     )
     name: str = Field(description="A friendly name for the model configuration.")
+    realm: str = Field(description="The realm of where the assets are located.")
     type: ModelType = Field(description="Which machine learning model to use.")
     target: ModelInputAssetAttribute = Field(
         description="The asset attribute to predict. This attribute must have historical data available."
