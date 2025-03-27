@@ -15,22 +15,47 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-from collections.abc import Callable
-from typing import Protocol
+from typing import Protocol, TypeVar
 
 from service_ml_forecast.ml_models.model_util import ForecastFeatureSet, ForecastResult, TrainingFeatureSet
 
-SaveModelCallable = Callable[[], bool]
+# Define a generic type variable for the model
+# Enables type checking for different model type implementations
+ModelType = TypeVar("ModelType")
 
 
-class ModelProvider(Protocol):
+class ModelProvider(Protocol[ModelType]):
     """Base protocol for all ML models.
 
     This protocol defines the methods that all ML model providers must implement.
     """
 
-    def train_model(self, training_dataset: TrainingFeatureSet) -> SaveModelCallable | None:
-        pass
+    def train_model(self, training_dataset: TrainingFeatureSet) -> ModelType:
+        """Train the model on the training dataset.
+
+        Args:
+            training_dataset: The training dataset to train the model on.
+
+        Returns:
+            The trained model.
+        """
+
+    def save_model(self, model: ModelType) -> bool:
+        """Save the trained model to a file.
+
+        Args:
+            model: The trained model to save.
+
+        Returns:
+            True if the model was saved successfully, False otherwise.
+        """
 
     def generate_forecast(self, forecast_featureset: ForecastFeatureSet | None = None) -> ForecastResult | None:
-        pass
+        """Generate a forecast for the given forecast featureset.
+
+        Args:
+            forecast_featureset: The forecast featureset to generate a forecast for.
+
+        Returns:
+            The forecast result.
+        """

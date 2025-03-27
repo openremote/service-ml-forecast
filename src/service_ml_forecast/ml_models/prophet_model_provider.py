@@ -22,7 +22,7 @@ from prophet import Prophet
 from prophet.serialize import model_from_json, model_to_json
 
 from service_ml_forecast.clients.openremote.models import AssetDatapoint
-from service_ml_forecast.ml_models.model_provider import ModelProvider, SaveModelCallable
+from service_ml_forecast.ml_models.model_provider import ModelProvider
 from service_ml_forecast.ml_models.model_util import (
     ForecastFeatureSet,
     ForecastResult,
@@ -81,7 +81,7 @@ def _prepare_training_dataframe(training_dataset: TrainingFeatureSet) -> pd.Data
     return dataframe
 
 
-class ProphetModelProvider(ModelProvider):
+class ProphetModelProvider(ModelProvider[Prophet]):
     """Prophet model provider."""
 
     def __init__(
@@ -101,15 +101,7 @@ class ProphetModelProvider(ModelProvider):
 
         return model
 
-    def train_model(self, training_dataset: TrainingFeatureSet) -> SaveModelCallable | None:
-        """Train the Prophet model
-
-        Args:
-            training_dataset: The training feature set to train the model on.
-
-        Returns:
-            A callable that allows the model to be saved to a file.
-        """
+    def train_model(self, training_dataset: TrainingFeatureSet) -> Prophet:
         if training_dataset.target.datapoints is None or len(training_dataset.target.datapoints) == 0:
             logger.error("No target data provided, cannot train Prophet model")
             return None
@@ -134,26 +126,17 @@ class ProphetModelProvider(ModelProvider):
         # Train the model
         model.fit(dataframe)
 
-        # Return a callable that saves the trained model to a file
-        def callback() -> bool:
-            if not save_model(model_to_json(model), f"{self.config.id}.json"):
-                logger.error(f"Failed to save trained model -- {self.config.id}")
-                return False
+        return model
 
-            logger.info(f"Saved trained model -- {self.config.id}")
-            return True
+    def save_model(self, model: Prophet) -> bool:
+        if not save_model(model_to_json(model), f"{self.config.id}.json"):
+            logger.error(f"Failed to save trained model -- {self.config.id}")
+            return False
 
-        return callback
+        logger.info(f"Saved trained model -- {self.config.id}")
+        return True
 
     def generate_forecast(self, forecast_feature_set: ForecastFeatureSet | None = None) -> ForecastResult | None:
-        """Generate a forecast for the target attribute.
-
-        Args:
-            forecast_feature_set: Set containing the predicted datapoints for the regressors.
-
-        Returns:
-            A ForecastResult object containing the forecasted datapoints.
-        """
         model = self.__load_model()
         if model is None:
             logger.error(f"Failed to load model -- {self.config.id}")

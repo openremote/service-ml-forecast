@@ -32,15 +32,15 @@ def test_model_provider_train(prophet_basic_config: ProphetModelConfig) -> None:
 
     model_provider = ModelProviderFactory.create_provider(prophet_basic_config)
 
-    save_model = model_provider.train_model(
+    model = model_provider.train_model(
         TrainingFeatureSet(
             target=FeatureDatapoints(
                 attribute_name=prophet_basic_config.target.attribute_name, datapoints=windspeed_data
             )
         )
     )
-    assert save_model is not None
-    assert save_model()
+    assert model is not None
+    assert model_provider.save_model(model)
 
     assert prophet_basic_config.id is not None
     model_file_exists = Path(f"{PROJECT_ROOT}/{env.MODELS_DIR}/{prophet_basic_config.id}.json")
@@ -84,11 +84,11 @@ def test_model_provider_train_with_regressor(prophet_multi_variable_config: Prop
     ]
 
     # Train the model with the target and regressor feature datapoints
-    save_model = model_provider.train_model(
+    model = model_provider.train_model(
         TrainingFeatureSet(target=target_feature_datapoints, regressors=regressor_feature_datapoints)
     )
-    assert save_model is not None
-    assert save_model()
+    assert model is not None
+    assert model_provider.save_model(model)
 
     assert prophet_multi_variable_config.id is not None
     model_file_exists = Path(f"{PROJECT_ROOT}/{env.MODELS_DIR}/{prophet_multi_variable_config.id}.json")
