@@ -1,5 +1,6 @@
 # service-ml-forecast
-Machine Learning Forecast Service
+[![Lint and Test](https://github.com/openremote/service-ml-forecast/actions/workflows/ci.yml/badge.svg)](https://github.com/openremote/service-ml-forecast/actions/workflows/ci.yml)
+[![Open Source? Yes!](https://badgen.net/badge/Open%20Source%20%3F/Yes%21/blue?icon=github)](https://github.com/Naereen/badges/)
 
 ## Installation
 GNU Make is used for project management purposes. It simplifies the process of running the commands like building, testing, linting, formatting, etc. and ensures consistency across different operating systems.
