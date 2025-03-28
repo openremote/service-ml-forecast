@@ -1,29 +1,5 @@
-import pytest
-
-from service_ml_forecast.models.ml_config import MLFeature, MLModelType, ProphetMLConfig
+from service_ml_forecast.models.ml_config import ProphetMLConfig
 from service_ml_forecast.services.ml_config_storage_service import MLConfigStorageService
-
-
-@pytest.fixture
-def ml_config_storage_service() -> MLConfigStorageService:
-    return MLConfigStorageService()
-
-
-@pytest.fixture
-def test_ml_config() -> ProphetMLConfig:
-    return ProphetMLConfig(
-        id="test_config",
-        name="Test Config",
-        realm="master",
-        type=MLModelType.PROPHET,
-        target=MLFeature(
-            asset_id="test-asset-id", attribute_name="test-attribute-name", cutoff_timestamp=1716153600000
-        ),
-        forecast_interval="PT1H",
-        training_interval="PT1D",
-        forecast_periods=7,
-        forecast_frequency="1h",
-    )
 
 
 def test_save_config(ml_config_storage_service: MLConfigStorageService, test_ml_config: ProphetMLConfig) -> None:

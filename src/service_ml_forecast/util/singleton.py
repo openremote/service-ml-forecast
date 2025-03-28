@@ -1,8 +1,5 @@
 from threading import Lock
-from typing import Any, ClassVar, Self, TypeVar, cast
-
-# T is the type of the class implementing the singleton
-T = TypeVar("T")
+from typing import Any, ClassVar, Self, cast
 
 
 class Singleton:

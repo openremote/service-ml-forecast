@@ -25,7 +25,7 @@ from service_ml_forecast import find_project_root
 logger = logging.getLogger(__name__)
 
 
-class FileSystemUtil:
+class FsUtil:
     """Utility class for file system operations."""
 
     @staticmethod

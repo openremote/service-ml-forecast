@@ -9,7 +9,9 @@ from service_ml_forecast import find_project_root
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 from service_ml_forecast.config import env
 from service_ml_forecast.logging_config import LOGGING_CONFIG
-from service_ml_forecast.util.filesystem_util import FileSystemUtil
+from service_ml_forecast.models.ml_config import MLFeature, MLModelType, ProphetMLConfig
+from service_ml_forecast.services.ml_config_storage_service import MLConfigStorageService
+from service_ml_forecast.util.fs_util import FsUtil
 
 PROJECT_ROOT = find_project_root()
 
@@ -36,12 +38,22 @@ env.MODELS_DIR = f"{TEST_TMP_DIR}/models"
 env.CONFIGS_DIR = f"{TEST_TMP_DIR}/configs"
 
 
-# Clean up test files after all tests have run
+def cleanup_test_configs() -> None:
+    """Cleanup test configs after all tests have run."""
+    FsUtil.delete_directory(env.CONFIGS_DIR)
+
+
+def cleanup_test_models() -> None:
+    """Cleanup test models after all tests have run."""
+    FsUtil.delete_directory(env.MODELS_DIR)
+
+
+# Automatically clean up test files after all tests have run
 @pytest.fixture(scope="session", autouse=True)
 def cleanup_test_tmp_dir() -> Generator[None, None, None]:
     """Cleanup test files after all tests have run."""
     yield
-    FileSystemUtil.delete_directory(TEST_TMP_DIR)
+    FsUtil.delete_directory(TEST_TMP_DIR)
 
 
 # Create an OpenRemote client for testing against a real instance
@@ -90,3 +102,27 @@ def mock_openremote_client() -> OpenRemoteClient | None:
             service_user_secret=MOCK_SERVICE_USER_SECRET,
         )
         return client
+
+
+# Fixture for the MLConfigStorageService
+@pytest.fixture
+def ml_config_storage_service() -> MLConfigStorageService:
+    return MLConfigStorageService()
+
+
+# Shared test config that is not used for any training or forecasting
+@pytest.fixture
+def test_ml_config() -> ProphetMLConfig:
+    return ProphetMLConfig(
+        id="test_config",
+        name="Test Config",
+        realm="master",
+        type=MLModelType.PROPHET,
+        target=MLFeature(
+            asset_id="test-asset-id", attribute_name="test-attribute-name", cutoff_timestamp=1716153600000
+        ),
+        forecast_interval="PT1H",
+        training_interval="PT1D",
+        forecast_periods=7,
+        forecast_frequency="1h",
+    )
