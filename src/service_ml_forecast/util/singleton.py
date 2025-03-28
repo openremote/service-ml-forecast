@@ -1,10 +1,11 @@
 from threading import Lock
-from typing import Any, ClassVar, Generic, TypeVar, cast
+from typing import Any, ClassVar, Self, TypeVar, cast
 
+# T is the type of the class implementing the singleton
 T = TypeVar("T")
 
 
-class Singleton(Generic[T]):
+class Singleton:
     """
     Thread-safe singleton class. -- Prevents multiple instances of the same class.
     """
@@ -12,10 +13,10 @@ class Singleton(Generic[T]):
     _singleton_lock: ClassVar[Lock] = Lock()
     _singleton_instances: ClassVar[dict[Any, Any]] = {}
 
-    def __new__(cls, *args: object, **kwargs: object) -> Any:
+    def __new__(cls, *args: object, **kwargs: object) -> Self:
         if cls not in Singleton._singleton_instances:
             with Singleton._singleton_lock:
                 if cls not in Singleton._singleton_instances:
                     instance = super().__new__(cls)
                     Singleton._singleton_instances[cls] = instance
-        return cast(T, Singleton._singleton_instances[cls])
+        return cast(Self, Singleton._singleton_instances[cls])

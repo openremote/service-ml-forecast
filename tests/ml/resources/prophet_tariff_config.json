@@ -1,4 +1,3 @@
-
 {
     "id": "d3c119a6-1018-4ebd-932b-a509eb7ab841",
     "realm": "master",
@@ -11,8 +10,8 @@
     },
     "forecast_interval": "PT1H",
     "training_interval": "PT1D",
-    "forecast_period": "PT7D",
-    "forecast_datapoint_interval": "PT1H",
+    "forecast_periods": 7,
+    "forecast_frequency": "1h",
     "regressors": [
       {
         "asset_id": "wind-turbine-asset-id",

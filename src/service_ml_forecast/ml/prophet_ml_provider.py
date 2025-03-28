@@ -97,7 +97,7 @@ class ProphetMLProvider(MLModelProvider[Prophet]):
 
         return model
 
-    def train_model(self, training_dataset: TrainingFeatureSet) -> Prophet:
+    def train_model(self, training_dataset: TrainingFeatureSet) -> Prophet | None:
         if training_dataset.target.datapoints is None or len(training_dataset.target.datapoints) == 0:
             logger.error("No target data provided, cannot train Prophet model")
             return None

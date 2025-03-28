@@ -53,9 +53,9 @@ class MLConfig(BaseModel):
     )
     forecast_interval: str = Field(description="Forecast generation interval. Expects ISO 8601 duration strings.")
     training_interval: str = Field(description="Model training interval. Expects ISO 8601 duration strings.")
-    forecast_period: str = Field(description="The duration of the forecast. Expects ISO 8601 duration strings.")
-    forecast_datapoint_interval: str = Field(
-        description="The interval between forecasted datapoints. Expects ISO 8601 duration strings."
+    forecast_periods: int = Field(description="The number of periods to forecast.")
+    forecast_frequency: str = Field(
+        description="The frequency of each forecasted datapoint. Expects a pandas offset string. E.g. '30min' or '1h'."
     )
 
 

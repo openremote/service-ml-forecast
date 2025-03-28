@@ -15,6 +15,8 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
+from typing import Any
+
 from service_ml_forecast.ml.ml_provider import MLModelProvider
 from service_ml_forecast.ml.prophet_ml_provider import ProphetMLProvider
 from service_ml_forecast.models.ml_config import MLConfig, MLModelType, ProphetMLConfig
@@ -26,7 +28,7 @@ class MLModelProviderFactory:
     @staticmethod
     def create_provider(
         config: MLConfig,
-    ) -> MLModelProvider:
+    ) -> MLModelProvider[Any]:
         """Create a model provider instance based on the model config type.
 
         Args:
