@@ -25,7 +25,6 @@ from service_ml_forecast.util.fs_util import FsUtil
 
 logger = logging.getLogger(__name__)
 
-
 class MLConfigStorageService:
     """
     Manages the persistence of ML model configurations.
@@ -34,7 +33,7 @@ class MLConfigStorageService:
     CONFIG_FILE_PREFIX = "config"
 
     def save_config(self, config: MLConfig) -> bool:
-        """Save a ML model configuration to the file system."""
+        """Save an ML model configuration to the file system."""
         config_file_path = f"{env.CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config.id}.json"
 
         return FsUtil.save_file(config.model_dump_json(), config_file_path)
@@ -57,9 +56,9 @@ class MLConfigStorageService:
 
         return configs
 
-    def get_config(self, id: str) -> MLConfig | None:
-        """Get a ML model configuration from the file system."""
-        config_file_path = f"{env.CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{id}.json"
+    def get_config(self, config_id: str) -> MLConfig | None:
+        """Get an ML model configuration from the file system."""
+        config_file_path = f"{env.CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config_id}.json"
         file_content = FsUtil.read_file(config_file_path)
 
         if file_content is None:
@@ -69,7 +68,7 @@ class MLConfigStorageService:
         return MLConfig(**json.loads(file_content))
 
     def update_config(self, config: MLConfig) -> bool:
-        """Update a ML model configuration in the file system."""
+        """Update an ML model configuration in the file system."""
         if not config.id:
             return False
 
@@ -77,8 +76,8 @@ class MLConfigStorageService:
 
         return FsUtil.save_file(config.model_dump_json(), config_file_path)
 
-    def delete_config(self, id: str) -> bool:
-        """Delete a ML model configuration from the file system."""
-        config_file_path = f"{env.CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{id}.json"
+    def delete_config(self, config_id: str) -> bool:
+        """Delete an ML model configuration from the file system."""
+        config_file_path = f"{env.CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config_id}.json"
 
         return FsUtil.delete_file(config_file_path)

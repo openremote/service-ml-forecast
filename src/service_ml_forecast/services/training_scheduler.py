@@ -43,7 +43,7 @@ class TrainingScheduler(Singleton):
         executors = {"default": ProcessPoolExecutor(max_workers=1)}
         jobstores = {"default": MemoryJobStore()}
 
-        # Setup the scheduler
+        # Set up the scheduler
         self.scheduler = BackgroundScheduler(
             jobstores=jobstores, executors=executors, misfire_grace_time=misfire_grace_time
         )
