@@ -1,4 +1,5 @@
 import logging.config
+from collections.abc import Generator
 from http import HTTPStatus
 
 import pytest
@@ -8,6 +9,7 @@ from service_ml_forecast import find_project_root
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 from service_ml_forecast.config import env
 from service_ml_forecast.logging_config import LOGGING_CONFIG
+from service_ml_forecast.util.filesystem_util import FileSystemUtil
 
 PROJECT_ROOT = find_project_root()
 
@@ -26,12 +28,23 @@ MOCK_SERVICE_USER_SECRET = "service_user_secret"
 MOCK_ACCESS_TOKEN = "mock_access_token"
 MOCK_TOKEN_EXPIRY_SECONDS = 60
 
+
+TEST_TMP_DIR = "/tests/.tmp"
+
 # Overwrite model and config storage paths for testing purposes
-env.MODELS_DIR = "/tests/.tmp/models"
-env.CONFIGS_DIR = "/tests/.tmp/configs"
+env.MODELS_DIR = f"{TEST_TMP_DIR}/models"
+env.CONFIGS_DIR = f"{TEST_TMP_DIR}/configs"
 
 
-# FIXTURES
+# Clean up test files after all tests have run
+@pytest.fixture(scope="session", autouse=True)
+def cleanup_test_tmp_dir() -> Generator[None, None, None]:
+    """Cleanup test files after all tests have run."""
+    yield
+    FileSystemUtil.delete_directory(TEST_TMP_DIR)
+
+
+# Create an OpenRemote client for testing against a real instance
 @pytest.fixture
 def openremote_client() -> OpenRemoteClient | None:
     """Create an OpenRemote client for testing against a real instance."""
@@ -53,6 +66,7 @@ def openremote_client() -> OpenRemoteClient | None:
         pytest.skip(reason=f"Failed to create OpenRemoteClient: {e}")
 
 
+# Create a mock OpenRemote client with mocked authentication
 @pytest.fixture
 def mock_openremote_client() -> OpenRemoteClient | None:
     """Create a mock OpenRemote client with mocked authentication."""

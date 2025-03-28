@@ -16,6 +16,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 from enum import Enum
+from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
@@ -37,8 +38,9 @@ class MLModelType(str, Enum):
 class MLConfig(BaseModel):
     """Base configuration for all ML models."""
 
-    id: str | None = Field(
-        description="ID of the model configuration. If not provided, a random uuid will be generated."
+    id: str = Field(
+        default_factory=lambda: str(uuid4()),
+        description="ID of the model configuration. If not provided, a random uuid will be generated.",
     )
     realm: str = Field(description="The realm of where the assets and their datapoints are available.")
     name: str = Field(description="A friendly name for the model configuration.")

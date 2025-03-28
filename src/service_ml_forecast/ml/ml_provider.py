@@ -40,16 +40,6 @@ class MLModelProvider(Protocol[MLModelType]):
             The trained model.
         """
 
-    def save_model(self, model: MLModelType) -> bool:
-        """Save the trained model to env.MODELS_DIR.
-
-        Args:
-            model: The trained model to save.
-
-        Returns:
-            True if the model was saved successfully, False otherwise.
-        """
-
     def generate_forecast(self, forecast_featureset: ForecastFeatureSet | None = None) -> ForecastResult | None:
         """Generate a forecast for the given forecast featureset.
 
@@ -58,4 +48,24 @@ class MLModelProvider(Protocol[MLModelType]):
 
         Returns:
             The forecast result.
+        """
+
+    def save_model(self, model: MLModelType) -> bool:
+        """Save the trained model via the model storage service.
+
+        Args:
+            model: The trained model to save.
+
+        Returns:
+            True if the model was saved successfully, False otherwise.
+        """
+
+    def load_model(self, model_config_id: str) -> MLModelType | None:
+        """Load the trained model via the model storage service.
+
+        Args:
+            model_config_id: The ID of the model config to load the model for.
+
+        Returns:
+            The loaded model, or None if the model could not be loaded.
         """

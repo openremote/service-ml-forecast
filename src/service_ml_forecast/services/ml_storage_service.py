@@ -16,61 +16,55 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 import logging
-import os
-import tempfile
 
-from service_ml_forecast import find_project_root
 from service_ml_forecast.config import env
+from service_ml_forecast.util.filesystem_util import FileSystemUtil
 
 logger = logging.getLogger(__name__)
 
+MODEL_FILE_PREFIX = "model"
+
 
 class MLStorageService:
-    def __init__(self) -> None:
-        self.app_root = find_project_root()
+    """Manages the persistence of ML models."""
 
-    def save(self, model: str, path: str) -> bool:
-        """Atomically save a model to a file."""
-        file_path = f"{self.app_root}{env.MODELS_DIR}/{path}"
-        dir_path = os.path.dirname(file_path)
+    def save_model(self, model_content: str, model_id: str, model_file_extension: str) -> bool:
+        """Save the serialized ML model to a file.
 
-        try:
-            # Create directory if it doesn't exist
-            os.makedirs(dir_path, exist_ok=True)
+        Args:
+            model_content: The serialized ML model content to save.
+            model_id: The ID of the model
+            model_file_extension: The extension of the model file
+        Returns:
+            True if the model was saved successfully, False otherwise.
+        """
+        relative_path = f"{env.MODELS_DIR}/{MODEL_FILE_PREFIX}-{model_id}{model_file_extension}"
 
-            with tempfile.NamedTemporaryFile(mode="w", dir=dir_path, delete=False) as temp_file:
-                temp_file.write(model)
-                temp_file.flush()
-                os.fsync(temp_file.fileno())
+        return FileSystemUtil.save_file(model_content, relative_path)
 
-                # Rename the temporary file to the target file
-                os.replace(temp_file.name, file_path)
+    def load_model(self, model_id: str, model_file_extension: str) -> str | None:
+        """Load the serialized ML model from a file.
 
-            logger.info(f"Saved model to {file_path}")
-            return True
-        except OSError:
-            logger.error(f"Failed to save model to {file_path}")
-            return False
+        Args:
+            model_id: The ID of the model
+            model_file_extension: The extension of the model file
 
-    def load(self, path: str) -> str | None:
-        """Load a model from a file."""
-        file_path = f"{self.app_root}{env.MODELS_DIR}/{path}"
+        Returns:
+            The model content, or None if the model could not be loaded.
+        """
+        relative_path = f"{env.MODELS_DIR}/{MODEL_FILE_PREFIX}-{model_id}{model_file_extension}"
 
-        try:
-            with open(file_path) as file:
-                return file.read()
-        except FileNotFoundError:
-            logger.error(f"Failed to load model from {file_path}")
-            return None
+        return FileSystemUtil.read_file(relative_path)
 
-    def delete(self, path: str) -> bool:
-        """Delete a model from a file."""
-        file_path = f"{self.app_root}{env.MODELS_DIR}/{path}"
+    def delete_model(self, model_id: str, model_file_extension: str) -> bool:
+        """Delete a serialized ML model file.
 
-        try:
-            os.remove(file_path)
-            logger.info(f"Deleted model from {file_path}")
-            return True
-        except OSError:
-            logger.error(f"Failed to delete model from {file_path}")
-            return False
+        Args:
+            model_id: The ID of the model
+            model_file_extension: The extension of the model file
+        Returns:
+            True if the model file was deleted successfully, False otherwise.
+        """
+        relative_path = f"{env.MODELS_DIR}/{MODEL_FILE_PREFIX}-{model_id}{model_file_extension}"
+
+        return FileSystemUtil.delete_file(relative_path)

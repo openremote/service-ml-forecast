@@ -4,29 +4,36 @@ from pathlib import Path
 import pytest
 
 from service_ml_forecast.clients.openremote.models import AssetDatapoint
-from service_ml_forecast.config import env
 from service_ml_forecast.ml.ml_provider_factory import MLModelProviderFactory
 from service_ml_forecast.models.ml_config import ProphetMLConfig
 from service_ml_forecast.models.ml_data_models import FeatureDatapoints, ForecastFeatureSet, TrainingFeatureSet
-from tests.conftest import PROJECT_ROOT
+from service_ml_forecast.services.ml_storage_service import MLStorageService
 
 
 @pytest.fixture
 def prophet_basic_config() -> ProphetMLConfig:
-    config_path = Path(__file__).parent / "resources/prophet_windspeed_config.json"
+    config_path = Path(__file__).parent / "resources/prophet-windspeed-config.json"
     with open(config_path) as f:
         return ProphetMLConfig(**json.load(f))
 
 
 @pytest.fixture
 def prophet_multi_variable_config() -> ProphetMLConfig:
-    config_path = Path(__file__).parent / "resources/prophet_tariff_config.json"
+    config_path = Path(__file__).parent / "resources/prophet-tariff-config.json"
     with open(config_path) as f:
         return ProphetMLConfig(**json.load(f))
 
 
-def test_model_provider_train(prophet_basic_config: ProphetMLConfig) -> None:
-    windspeed_data_path = Path(__file__).parent / "resources/mock_datapoints_windspeed.json"
+@pytest.fixture
+def model_storage_service() -> MLStorageService:
+    return MLStorageService()
+
+
+def test_model_provider_train(
+    model_storage_service: MLStorageService,
+    prophet_basic_config: ProphetMLConfig,
+) -> None:
+    windspeed_data_path = Path(__file__).parent / "resources/mock-datapoints-windspeed.json"
     with open(windspeed_data_path) as f:
         windspeed_data: list[AssetDatapoint] = json.load(f)
 
@@ -40,11 +47,13 @@ def test_model_provider_train(prophet_basic_config: ProphetMLConfig) -> None:
         )
     )
     assert model is not None
+
+    # Save the model
     assert model_provider.save_model(model)
 
+    # Assert the model file exists
     assert prophet_basic_config.id is not None
-    model_file_exists = Path(f"{PROJECT_ROOT}/{env.MODELS_DIR}/{prophet_basic_config.id}.json")
-    assert model_file_exists.exists()
+    assert model_provider.load_model(prophet_basic_config.id) is not None
 
 
 def test_model_provider_predict(prophet_basic_config: ProphetMLConfig) -> None:
@@ -57,12 +66,15 @@ def test_model_provider_predict(prophet_basic_config: ProphetMLConfig) -> None:
     assert len(forecast.datapoints) > 0
 
 
-def test_model_provider_train_with_regressor(prophet_multi_variable_config: ProphetMLConfig) -> None:
-    wind_speed_data_path = Path(__file__).parent / "resources/mock_datapoints_windspeed.json"
+def test_model_provider_train_with_regressor(
+    model_storage_service: MLStorageService,
+    prophet_multi_variable_config: ProphetMLConfig,
+) -> None:
+    wind_speed_data_path = Path(__file__).parent / "resources/mock-datapoints-windspeed.json"
     with open(wind_speed_data_path) as f:
         wind_speed_data: list[AssetDatapoint] = json.load(f)
 
-    tariff_data_path = Path(__file__).parent / "resources/mock_datapoints_tariff.json"
+    tariff_data_path = Path(__file__).parent / "resources/mock-datapoints-tariff.json"
     with open(tariff_data_path) as f:
         tariff_data: list[AssetDatapoint] = json.load(f)
 
@@ -88,11 +100,12 @@ def test_model_provider_train_with_regressor(prophet_multi_variable_config: Prop
         TrainingFeatureSet(target=target_feature_datapoints, regressors=regressor_feature_datapoints)
     )
     assert model is not None
+
+    # Save the model
     assert model_provider.save_model(model)
 
-    assert prophet_multi_variable_config.id is not None
-    model_file_exists = Path(f"{PROJECT_ROOT}/{env.MODELS_DIR}/{prophet_multi_variable_config.id}.json")
-    assert model_file_exists.exists()
+    # Assert whether we can load the model now
+    assert model_provider.load_model(prophet_multi_variable_config.id) is not None
 
 
 def test_model_provider_predict_with_regressor_datapoints(

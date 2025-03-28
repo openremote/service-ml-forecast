@@ -86,17 +86,6 @@ class ProphetMLProvider(MLModelProvider[Prophet]):
         self.config = config
         self.ml_storage_service = MLStorageService()
 
-    def __load_model(self) -> Prophet | None:
-        model_json = self.ml_storage_service.load(f"{self.config.id}.json")
-
-        if model_json is None:
-            logger.error(f"Failed to load model -- {self.config.id}")
-            return None
-
-        model: Prophet = model_from_json(model_json)
-
-        return model
-
     def train_model(self, training_dataset: TrainingFeatureSet) -> Prophet | None:
         if training_dataset.target.datapoints is None or len(training_dataset.target.datapoints) == 0:
             logger.error("No target data provided, cannot train Prophet model")
@@ -124,16 +113,29 @@ class ProphetMLProvider(MLModelProvider[Prophet]):
 
         return model
 
+    def load_model(self, model_id: str) -> Prophet | None:
+        model_json = self.ml_storage_service.load_model(model_id, ".json")
+        if model_json is None:
+            logger.error(f"Failed to load model -- {model_id}")
+            return None
+
+        return model_from_json(model_json)
+
     def save_model(self, model: Prophet) -> bool:
-        if not self.ml_storage_service.save(model_to_json(model), f"{self.config.id}.json"):
-            logger.error(f"Failed to save trained model -- {self.config.id}")
+        try:
+            model_json = model_to_json(model)
+            if not self.ml_storage_service.save_model(model_json, self.config.id, ".json"):
+                logger.error(f"Failed to save trained model -- {self.config.id}")
+                return False
+
+            logger.info(f"Saved trained model -- {self.config.id}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to save trained model -- {self.config.id}: {e}")
             return False
 
-        logger.info(f"Saved trained model -- {self.config.id}")
-        return True
-
     def generate_forecast(self, forecast_feature_set: ForecastFeatureSet | None = None) -> ForecastResult | None:
-        model = self.__load_model()
+        model = self.load_model(self.config.id)
         if model is None:
             logger.error(f"Failed to load model -- {self.config.id}")
             return None
