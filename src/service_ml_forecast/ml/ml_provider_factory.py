@@ -22,7 +22,7 @@ from service_ml_forecast.ml.prophet_ml_provider import ProphetMLProvider
 from service_ml_forecast.models.ml_config import MLConfig, MLModelType, ProphetMLConfig
 
 
-class MLModelProviderFactory:
+class MLProviderFactory:
     """Factory for creating ML model providers based on the provided model config."""
 
     @staticmethod
@@ -35,8 +35,13 @@ class MLModelProviderFactory:
             config: The model configuration.
         """
         if config.type == MLModelType.PROPHET:
-            if not isinstance(config, ProphetMLConfig):
-                raise ValueError(f"Expected ProphetModelConfig for model type {MLModelType.PROPHET}")
-            return ProphetMLProvider(config=config)
+            try:
+                if not isinstance(config, ProphetMLConfig):
+                    prophet_config = ProphetMLConfig(**config.model_dump())
+                else:
+                    prophet_config = config
+                return ProphetMLProvider(config=prophet_config)
+            except Exception as e:
+                raise ValueError(f"Failed to convert config to ProphetMLConfig: {e}")
 
         raise ValueError(f"Unsupported model type: {config.type}")
