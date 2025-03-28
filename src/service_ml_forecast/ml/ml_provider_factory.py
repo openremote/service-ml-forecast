@@ -42,6 +42,6 @@ class MLProviderFactory:
                     prophet_config = config
                 return ProphetMLProvider(config=prophet_config)
             except Exception as e:
-                raise ValueError(f"Failed to convert config to ProphetMLConfig: {e}")
+                raise ValueError(f"Failed to convert config to ProphetMLConfig: {e}") from e
 
         raise ValueError(f"Unsupported model type: {config.type}")

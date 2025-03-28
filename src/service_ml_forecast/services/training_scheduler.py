@@ -18,13 +18,14 @@
 import logging
 import threading
 
+from apscheduler.executors.pool import ProcessPoolExecutor
+from apscheduler.jobstores.memory import MemoryJobStore
+from apscheduler.schedulers.background import BackgroundScheduler
+
+from service_ml_forecast.ml.ml_provider_factory import MLProviderFactory
 from service_ml_forecast.models.ml_config import MLConfig
 from service_ml_forecast.services.ml_config_storage_service import MLConfigStorageService
 from service_ml_forecast.util.singleton import Singleton
-from apscheduler.schedulers.background import BackgroundScheduler
-from apscheduler.jobstores.memory import MemoryJobStore
-from apscheduler.executors.pool import ProcessPoolExecutor
-from service_ml_forecast.ml.ml_provider_factory import MLProviderFactory
 
 logger = logging.getLogger(__name__)
 
@@ -35,40 +36,34 @@ class TrainingScheduler(Singleton):
     """
 
     def __init__(self) -> None:
-        self.config_storage  = MLConfigStorageService()
-        self.configs: list[MLConfig] = self.config_storage .get_all_configs() or []
+        self.config_storage = MLConfigStorageService()
+        self.configs: list[MLConfig] = self.config_storage.get_all_configs() or []
         self.scheduler_thread: threading.Thread | None = None
 
         # Job stores
-        self.jobstores = {
-            'default': MemoryJobStore()
-        }
+        self.jobstores = {"default": MemoryJobStore()}
 
         # Training jobs are done one at a time
-        executors = {
-            'default': ProcessPoolExecutor(max_workers=1)
-        }
+        executors = {"default": ProcessPoolExecutor(max_workers=1)}
 
         # Grace time for misfired jobs (in seconds)
         misfire_grace_time = 3600
 
         # Setup the scheduler
-        self.scheduler = BackgroundScheduler(jobstores=self.jobstores, executors=executors, misfire_grace_time=misfire_grace_time)
+        self.scheduler = BackgroundScheduler(
+            jobstores=self.jobstores, executors=executors, misfire_grace_time=misfire_grace_time
+        )
 
         self.scheduler.start()
 
         self.schedule_jobs()
 
-
     def schedule_jobs(self) -> None:
         """Schedule all the jobs for the available Model configurations."""
         for config in self.configs:
-
             try:
-                ml_provider = MLProviderFactory.create_provider(config)
+                _ml_provider = MLProviderFactory.create_provider(config)
                 logger.info(f"Scheduling training job for {config.id}")
 
             except Exception as e:
                 logger.error(f"Failed to schedule training job for {config.id}: {e}")
-
-
