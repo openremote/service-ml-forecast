@@ -20,11 +20,13 @@ dependencies = [
     "prophet>=1.1.6",
     "pandas>=2.2.3",
     "numpy>=2.2.4",
+    "pyzmq>=26.3.0",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=8.3.5",
+    "pytest-asyncio>=0.26.0",
     "pytest-cov>=6.0.0",
     "freezegun>=1.5.1",
     "mypy>=1.15.0",
@@ -94,6 +96,7 @@ combine-as-imports = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = "test_*.py"
+filterwarnings = ["ignore:.*"]
 
 [project.scripts]
 service_ml_forecast = "service_ml_forecast.main:app"

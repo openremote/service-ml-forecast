@@ -24,24 +24,27 @@ logger = logging.getLogger(__name__)
 
 
 class MLStorageService:
-    """Manages the persistence of ML models."""
+    """Manages the persistence of ML models.
+
+    Uses the file system to store and retrieve ML models.
+    """
 
     MODEL_FILE_PREFIX = "model"
 
     def save_model(self, model_content: str, model_id: str, model_file_extension: str) -> bool:
-        """Save the serialized ML model to a file."""
+        """Save the serialized ML model."""
         relative_path = f"{env.MODELS_DIR}/{self.MODEL_FILE_PREFIX}-{model_id}{model_file_extension}"
 
         return FsUtil.save_file(model_content, relative_path)
 
     def load_model(self, model_id: str, model_file_extension: str) -> str | None:
-        """Load the serialized ML model from a file."""
+        """Load the serialized ML model."""
         relative_path = f"{env.MODELS_DIR}/{self.MODEL_FILE_PREFIX}-{model_id}{model_file_extension}"
 
         return FsUtil.read_file(relative_path)
 
     def delete_model(self, model_id: str, model_file_extension: str) -> bool:
-        """Delete a serialized ML model file."""
+        """Delete a serialized ML model."""
         relative_path = f"{env.MODELS_DIR}/{self.MODEL_FILE_PREFIX}-{model_id}{model_file_extension}"
 
         return FsUtil.delete_file(relative_path)

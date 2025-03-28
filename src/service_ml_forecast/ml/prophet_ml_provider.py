@@ -140,7 +140,7 @@ class ProphetMLProvider(MLModelProvider[Prophet]):
             logger.error(f"Failed to load model -- {self.config.id}")
             return None
 
-        future = model.make_future_dataframe(periods=96, freq="30min")
+        future = model.make_future_dataframe(periods=self.config.forecast_periods, freq=self.config.forecast_frequency)
 
         # Add future regressor values to the future dataframe if provided
         if forecast_feature_set is not None:
