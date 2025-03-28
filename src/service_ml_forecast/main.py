@@ -26,6 +26,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from service_ml_forecast import __app_info__
 from service_ml_forecast.config import env
 from service_ml_forecast.logging_config import LOGGING_CONFIG
+from service_ml_forecast.services.training_scheduler import TrainingScheduler
 
 # Load the logging configuration
 logging.config.dictConfig(LOGGING_CONFIG)
@@ -43,6 +44,9 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     # Startup tasks
     logger.info("Starting application")
     logger.info("Application details: %s", __app_info__)
+
+    # Initialize background services
+    TrainingScheduler().start()
 
     yield
 

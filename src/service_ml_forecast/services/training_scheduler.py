@@ -16,7 +16,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 import logging
-import threading
 
 from apscheduler.executors.pool import ProcessPoolExecutor
 from apscheduler.jobstores.memory import MemoryJobStore
@@ -38,25 +37,30 @@ class TrainingScheduler(Singleton):
     def __init__(self) -> None:
         self.config_storage = MLConfigStorageService()
         self.configs: list[MLConfig] = self.config_storage.get_all_configs() or []
-        self.scheduler_thread: threading.Thread | None = None
 
-        # Job stores
-        self.jobstores = {"default": MemoryJobStore()}
-
-        # Training jobs are done one at a time
-        executors = {"default": ProcessPoolExecutor(max_workers=1)}
-
-        # Grace time for misfired jobs (in seconds)
+        # Scheduler configuration
         misfire_grace_time = 3600
+        executors = {"default": ProcessPoolExecutor(max_workers=1)}
+        jobstores = {"default": MemoryJobStore()}
 
         # Setup the scheduler
         self.scheduler = BackgroundScheduler(
-            jobstores=self.jobstores, executors=executors, misfire_grace_time=misfire_grace_time
+            jobstores=jobstores, executors=executors, misfire_grace_time=misfire_grace_time
         )
 
-        self.scheduler.start()
+    def start(self) -> None:
+        """Start the training scheduler and schedule all the jobs."""
 
-        self.schedule_jobs()
+        if self.scheduler.running:
+            logger.warning("Scheduler for ML Model Training already running")
+            return
+
+        try:
+            self.scheduler.start()
+            self.schedule_jobs()
+        except Exception as e:
+            logger.error(f"Failed to start training scheduler: {e}")
+            raise e
 
     def schedule_jobs(self) -> None:
         """Schedule all the jobs for the available Model configurations."""
