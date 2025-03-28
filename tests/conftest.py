@@ -1,15 +1,18 @@
+import json
 import logging.config
 from collections.abc import Generator
 from http import HTTPStatus
+from pathlib import Path
 
 import pytest
 import respx
 
 from service_ml_forecast import find_project_root
+from service_ml_forecast.clients.openremote.models import AssetDatapoint
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 from service_ml_forecast.config import env
 from service_ml_forecast.logging_config import LOGGING_CONFIG
-from service_ml_forecast.models.ml_config import MLFeature, MLModelType, ProphetMLConfig
+from service_ml_forecast.models.ml_config import ProphetMLConfig
 from service_ml_forecast.services.ml_config_storage_service import MLConfigStorageService
 from service_ml_forecast.util.fs_util import FsUtil
 
@@ -110,19 +113,31 @@ def ml_config_storage_service() -> MLConfigStorageService:
     return MLConfigStorageService()
 
 
-# Shared test config that is not used for any training or forecasting
 @pytest.fixture
-def test_ml_config() -> ProphetMLConfig:
-    return ProphetMLConfig(
-        id="test_config",
-        name="Test Config",
-        realm="master",
-        type=MLModelType.PROPHET,
-        target=MLFeature(
-            asset_id="test-asset-id", attribute_name="test-attribute-name", cutoff_timestamp=1716153600000
-        ),
-        forecast_interval="PT1H",
-        training_interval="PT1D",
-        forecast_periods=7,
-        forecast_frequency="1h",
-    )
+def prophet_basic_config() -> ProphetMLConfig:
+    config_path = Path(__file__).parent / "ml/resources/prophet-windspeed-config.json"
+    with open(config_path) as f:
+        return ProphetMLConfig(**json.load(f))
+
+
+@pytest.fixture
+def prophet_multi_variable_config() -> ProphetMLConfig:
+    config_path = Path(__file__).parent / "ml/resources/prophet-tariff-config.json"
+    with open(config_path) as f:
+        return ProphetMLConfig(**json.load(f))
+
+
+@pytest.fixture
+def windspeed_mock_datapoints() -> list[AssetDatapoint]:
+    windspeed_data_path = Path(__file__).parent / "ml/resources/mock-datapoints-windspeed.json"
+    with open(windspeed_data_path) as f:
+        datapoints: list[AssetDatapoint] = json.load(f)
+        return datapoints
+
+
+@pytest.fixture
+def tariff_mock_datapoints() -> list[AssetDatapoint]:
+    tariff_data_path = Path(__file__).parent / "ml/resources/mock-datapoints-tariff.json"
+    with open(tariff_data_path) as f:
+        datapoints: list[AssetDatapoint] = json.load(f)
+        return datapoints

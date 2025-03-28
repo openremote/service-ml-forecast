@@ -1,48 +1,21 @@
-import json
-from pathlib import Path
-
 import pytest
 
 from service_ml_forecast.clients.openremote.models import AssetDatapoint
 from service_ml_forecast.ml.ml_provider_factory import MLProviderFactory
 from service_ml_forecast.models.ml_config import ProphetMLConfig
 from service_ml_forecast.models.ml_data_models import FeatureDatapoints, ForecastFeatureSet, TrainingFeatureSet
-from service_ml_forecast.services.ml_storage_service import MLStorageService
-
-
-@pytest.fixture
-def prophet_basic_config() -> ProphetMLConfig:
-    config_path = Path(__file__).parent / "resources/prophet-windspeed-config.json"
-    with open(config_path) as f:
-        return ProphetMLConfig(**json.load(f))
-
-
-@pytest.fixture
-def prophet_multi_variable_config() -> ProphetMLConfig:
-    config_path = Path(__file__).parent / "resources/prophet-tariff-config.json"
-    with open(config_path) as f:
-        return ProphetMLConfig(**json.load(f))
-
-
-@pytest.fixture
-def model_storage_service() -> MLStorageService:
-    return MLStorageService()
 
 
 def test_model_provider_train(
-    model_storage_service: MLStorageService,
     prophet_basic_config: ProphetMLConfig,
+    windspeed_mock_datapoints: list[AssetDatapoint],
 ) -> None:
-    windspeed_data_path = Path(__file__).parent / "resources/mock-datapoints-windspeed.json"
-    with open(windspeed_data_path) as f:
-        windspeed_data: list[AssetDatapoint] = json.load(f)
-
     model_provider = MLProviderFactory.create_provider(prophet_basic_config)
 
     model = model_provider.train_model(
         TrainingFeatureSet(
             target=FeatureDatapoints(
-                attribute_name=prophet_basic_config.target.attribute_name, datapoints=windspeed_data
+                attribute_name=prophet_basic_config.target.attribute_name, datapoints=windspeed_mock_datapoints
             )
         )
     )
@@ -67,23 +40,16 @@ def test_model_provider_predict(prophet_basic_config: ProphetMLConfig) -> None:
 
 
 def test_model_provider_train_with_regressor(
-    model_storage_service: MLStorageService,
     prophet_multi_variable_config: ProphetMLConfig,
+    tariff_mock_datapoints: list[AssetDatapoint],
+    windspeed_mock_datapoints: list[AssetDatapoint],
 ) -> None:
-    wind_speed_data_path = Path(__file__).parent / "resources/mock-datapoints-windspeed.json"
-    with open(wind_speed_data_path) as f:
-        wind_speed_data: list[AssetDatapoint] = json.load(f)
-
-    tariff_data_path = Path(__file__).parent / "resources/mock-datapoints-tariff.json"
-    with open(tariff_data_path) as f:
-        tariff_data: list[AssetDatapoint] = json.load(f)
-
     # Create the model provider for the multi-variable model
     model_provider = MLProviderFactory.create_provider(prophet_multi_variable_config)
 
     # Create the target feature datapoints
     target_feature_datapoints = FeatureDatapoints(
-        attribute_name=prophet_multi_variable_config.target.attribute_name, datapoints=tariff_data
+        attribute_name=prophet_multi_variable_config.target.attribute_name, datapoints=tariff_mock_datapoints
     )
 
     # Create the regressor feature datapoints
@@ -91,7 +57,7 @@ def test_model_provider_train_with_regressor(
     assert len(prophet_multi_variable_config.regressors) > 0
 
     regressor_feature_datapoints = [
-        FeatureDatapoints(attribute_name=regressor.attribute_name, datapoints=wind_speed_data)
+        FeatureDatapoints(attribute_name=regressor.attribute_name, datapoints=windspeed_mock_datapoints)
         for regressor in prophet_multi_variable_config.regressors
     ]
 

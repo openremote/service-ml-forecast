@@ -37,7 +37,10 @@ class FsUtil:
 
         Args:
             content: The content to save.
-            path: The relative path from the project root to save the content to.
+            path: Relative path from the project root
+
+        Returns:
+            True if the content was saved successfully.
         """
         file_path = f"{find_project_root()}{relative_path}"
         dir_path = os.path.dirname(file_path)
@@ -60,7 +63,7 @@ class FsUtil:
         """Load content from a file.
 
         Args:
-            path: The relative path from the project root to load the content from.
+            path: Relative path from the project root
 
         Returns:
             The file contents.
@@ -78,7 +81,7 @@ class FsUtil:
         """Get all files in a directory.
 
         Args:
-            path: The relative path from the project root to get the files from.
+            path: Relative path from the project root
             extension: The extension of the files to get.
 
         Returns:
@@ -91,10 +94,13 @@ class FsUtil:
 
     @staticmethod
     def delete_file(relative_path: str) -> bool:
-        """Delete content from a file.
+        """Delete a file.
 
         Args:
-            path: The relative path from the project root to delete the content from.
+            path: Relative path from the project root
+
+        Returns:
+            True if the file was deleted successfully.
         """
         file_path = f"{find_project_root()}{relative_path}"
         os.remove(file_path)
@@ -106,7 +112,10 @@ class FsUtil:
         """Delete a directory.
 
         Args:
-            path: The relative path from the project root to delete the directory from and all its contents.
+            path: Relative path from the project root
+
+        Returns:
+            True if the directory was deleted successfully.
         """
         file_path = f"{find_project_root()}{relative_path}"
         shutil.rmtree(file_path)

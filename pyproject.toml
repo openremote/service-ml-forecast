@@ -21,6 +21,7 @@ dependencies = [
     "pandas>=2.2.3",
     "numpy>=2.2.4",
     "pyzmq>=26.3.0",
+    "isodate>=0.7.2",
 ]
 
 [project.optional-dependencies]

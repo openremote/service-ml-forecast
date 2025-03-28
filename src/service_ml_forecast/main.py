@@ -51,6 +51,7 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     yield
 
     # Shutdown tasks
+    TrainingScheduler().stop()
     logger.info("Shutting down application")
 
 

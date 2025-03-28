@@ -51,8 +51,8 @@ class MLConfigStorageService:
 
         try:
             config_files = FsUtil.get_all_file_names(env.CONFIGS_DIR, ".json")
-        except OSError as e:
-            logger.error(f"Failed to retrieve all config paths: {e}")
+        except OSError:
+            logger.error(f"No config files found in {env.CONFIGS_DIR}")
             return None
 
         for file in config_files:
@@ -75,7 +75,7 @@ class MLConfigStorageService:
             file_content = FsUtil.read_file(config_file_path)
             return MLConfig(**json.loads(file_content))
         except OSError as e:
-            logger.error(f"Failed to load config from {config_file_path}: {e}")
+            logger.error(f"Failed to get ML config with id {config_id}: {e}")
             return None
 
     def update_config(self, config: MLConfig) -> bool:
@@ -85,7 +85,7 @@ class MLConfigStorageService:
         try:
             return FsUtil.save_file(config.model_dump_json(), config_file_path)
         except OSError as e:
-            logger.error(f"Failed to update config {config.id}: {e}")
+            logger.error(f"Failed to update config with id {config.id}: {e}")
             return False
 
     def delete_config(self, config_id: str) -> bool:
@@ -95,5 +95,5 @@ class MLConfigStorageService:
         try:
             return FsUtil.delete_file(config_file_path)
         except OSError as e:
-            logger.error(f"Failed to delete config {config_id}: {e}")
+            logger.error(f"Failed to delete config with id {config_id}: {e}")
             return False
