@@ -23,6 +23,10 @@ install:
 test:
 	$(PYTEST) $(TEST_DIR) -v -o log_cli=true --cache-clear
 
+# Run tests with coverage
+test-cov:
+	$(PYTEST) $(TEST_DIR) -v -o log_cli=true --cache-clear --cov=src --cov-report=term:skip-covered
+
 # Run formatting, linting and type checking
 lint:
 	$(RUFF) check $(SRC_DIR) $(TEST_DIR)
@@ -57,6 +61,7 @@ help:
 	@echo "Available commands:"
 	@echo "  install  - Install package in development mode with all dependencies"
 	@echo "  test     - Run tests"
+	@echo "  test-cov - Run tests with coverage"
 	@echo "  lint     - Run linting and type checking"
 	@echo "  format   - Format code with ruff"
 	@echo "  clean    - Clean build artifacts"
