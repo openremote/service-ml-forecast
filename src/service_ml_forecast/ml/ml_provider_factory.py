@@ -15,26 +15,26 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-from service_ml_forecast.ml_models.model_provider import ModelProvider
-from service_ml_forecast.ml_models.prophet_model_provider import ProphetModelProvider
-from service_ml_forecast.schemas.model_config import ModelConfig, ModelType, ProphetModelConfig
+from service_ml_forecast.ml.ml_provider import MLModelProvider
+from service_ml_forecast.ml.prophet_ml_provider import ProphetMLProvider
+from service_ml_forecast.models.ml_config import MLConfig, MLModelType, ProphetMLConfig
 
 
-class ModelProviderFactory:
-    """Factory for creating model providers based on the provided model config."""
+class MLModelProviderFactory:
+    """Factory for creating ML model providers based on the provided model config."""
 
     @staticmethod
     def create_provider(
-        config: ModelConfig,
-    ) -> ModelProvider:
+        config: MLConfig,
+    ) -> MLModelProvider:
         """Create a model provider instance based on the model config type.
 
         Args:
             config: The model configuration.
         """
-        if config.type == ModelType.PROPHET:
-            if not isinstance(config, ProphetModelConfig):
-                raise ValueError(f"Expected ProphetModelConfig for model type {ModelType.PROPHET}")
-            return ProphetModelProvider(config=config)
+        if config.type == MLModelType.PROPHET:
+            if not isinstance(config, ProphetMLConfig):
+                raise ValueError(f"Expected ProphetModelConfig for model type {MLModelType.PROPHET}")
+            return ProphetMLProvider(config=config)
 
         raise ValueError(f"Unsupported model type: {config.type}")

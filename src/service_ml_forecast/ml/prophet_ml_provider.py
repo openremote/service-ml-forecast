@@ -22,15 +22,10 @@ from prophet import Prophet
 from prophet.serialize import model_from_json, model_to_json
 
 from service_ml_forecast.clients.openremote.models import AssetDatapoint
-from service_ml_forecast.ml_models.model_provider import ModelProvider
-from service_ml_forecast.ml_models.model_util import (
-    ForecastFeatureSet,
-    ForecastResult,
-    TrainingFeatureSet,
-    load_model,
-    save_model,
-)
-from service_ml_forecast.schemas.model_config import ProphetModelConfig
+from service_ml_forecast.ml.ml_provider import MLModelProvider
+from service_ml_forecast.models.ml_config import ProphetMLConfig
+from service_ml_forecast.models.ml_data_models import ForecastFeatureSet, ForecastResult, TrainingFeatureSet
+from service_ml_forecast.services.ml_storage_service import MLStorageService
 
 logger = logging.getLogger(__name__)
 
@@ -81,17 +76,18 @@ def _prepare_training_dataframe(training_dataset: TrainingFeatureSet) -> pd.Data
     return dataframe
 
 
-class ProphetModelProvider(ModelProvider[Prophet]):
+class ProphetMLProvider(MLModelProvider[Prophet]):
     """Prophet model provider."""
 
     def __init__(
         self,
-        config: ProphetModelConfig,
+        config: ProphetMLConfig,
     ) -> None:
         self.config = config
+        self.ml_storage_service = MLStorageService()
 
     def __load_model(self) -> Prophet | None:
-        model_json = load_model(f"{self.config.id}.json")
+        model_json = self.ml_storage_service.load(f"{self.config.id}.json")
 
         if model_json is None:
             logger.error(f"Failed to load model -- {self.config.id}")
@@ -129,7 +125,7 @@ class ProphetModelProvider(ModelProvider[Prophet]):
         return model
 
     def save_model(self, model: Prophet) -> bool:
-        if not save_model(model_to_json(model), f"{self.config.id}.json"):
+        if not self.ml_storage_service.save(model_to_json(model), f"{self.config.id}.json"):
             logger.error(f"Failed to save trained model -- {self.config.id}")
             return False
 

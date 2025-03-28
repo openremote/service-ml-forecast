@@ -14,3 +14,12 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
+
+
+class MLConfigStorageService:
+    """
+    Manages the persistence of ML model configurations.
+    """
+
+    def __init__(self) -> None:
+        pass

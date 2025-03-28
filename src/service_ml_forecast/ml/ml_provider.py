@@ -17,20 +17,20 @@
 
 from typing import Protocol, TypeVar
 
-from service_ml_forecast.ml_models.model_util import ForecastFeatureSet, ForecastResult, TrainingFeatureSet
+from service_ml_forecast.models.ml_data_models import ForecastFeatureSet, ForecastResult, TrainingFeatureSet
 
 # Define a generic type variable for the model
 # Enables type checking for different model type implementations
-ModelType = TypeVar("ModelType")
+MLModelType = TypeVar("MLModelType")
 
 
-class ModelProvider(Protocol[ModelType]):
+class MLModelProvider(Protocol[MLModelType]):
     """Base protocol for all ML models.
 
     This protocol defines the methods that all ML model providers must implement.
     """
 
-    def train_model(self, training_dataset: TrainingFeatureSet) -> ModelType:
+    def train_model(self, training_dataset: TrainingFeatureSet) -> MLModelType:
         """Train the model on the training dataset.
 
         Args:
@@ -40,8 +40,8 @@ class ModelProvider(Protocol[ModelType]):
             The trained model.
         """
 
-    def save_model(self, model: ModelType) -> bool:
-        """Save the trained model to a file.
+    def save_model(self, model: MLModelType) -> bool:
+        """Save the trained model to env.MODELS_DIR.
 
         Args:
             model: The trained model to save.

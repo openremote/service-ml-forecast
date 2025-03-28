@@ -20,7 +20,7 @@ from enum import Enum
 from pydantic import BaseModel, Field
 
 
-class ModelInputAssetAttribute(BaseModel):
+class MLFeature(BaseModel):
     asset_id: str = Field(description="The id of the asset. This is the id of the asset in the OpenRemote API.")
     attribute_name: str = Field(
         description="The name of the attribute of the asset from OpenRemote. This attribute requires historical data."
@@ -30,23 +30,23 @@ class ModelInputAssetAttribute(BaseModel):
     )
 
 
-class ModelType(str, Enum):
+class MLModelType(str, Enum):
     PROPHET = "prophet"
 
 
-class ModelConfig(BaseModel):
-    """Base model config for all ML models."""
+class MLConfig(BaseModel):
+    """Base configuration for all ML models."""
 
     id: str | None = Field(
         description="ID of the model configuration. If not provided, a random uuid will be generated."
     )
+    realm: str = Field(description="The realm of where the assets and their datapoints are available.")
     name: str = Field(description="A friendly name for the model configuration.")
-    realm: str = Field(description="The realm of where the assets are located.")
-    type: ModelType = Field(description="Which machine learning model to use.")
-    target: ModelInputAssetAttribute = Field(
+    type: MLModelType = Field(description="Which machine learning model to use.")
+    target: MLFeature = Field(
         description="The asset attribute to predict. This attribute must have historical data available."
     )
-    regressors: list[ModelInputAssetAttribute] | None = Field(
+    regressors: list[MLFeature] | None = Field(
         default=None,
         description="List of model input asset attributes that will be used as regressors. "
         "They must have historical data and predicted values available for the configured forecast period.",
@@ -59,10 +59,10 @@ class ModelConfig(BaseModel):
     )
 
 
-class ProphetModelConfig(ModelConfig):
-    """Prophet specific model config."""
+class ProphetMLConfig(MLConfig):
+    """Prophet specific configuration."""
 
-    type: ModelType = ModelType.PROPHET
+    type: MLModelType = MLModelType.PROPHET
     yearly_seasonality: bool = Field(
         default=True,
         description="Whether to include yearly seasonality in the model.",

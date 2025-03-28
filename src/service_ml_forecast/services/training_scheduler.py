@@ -16,9 +16,15 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 
-class TrainingService:
-    def __init__(self) -> None:
-        pass
+from service_ml_forecast.util.singleton import Singleton
 
-    def train(self) -> None:
+
+class TrainingScheduler(Singleton):
+    """
+    Manages the scheduling of training jobs for available Model configurations.
+
+    Uses a singleton pattern to ensure that only one instance of the class exists.
+    """
+
+    def __init__(self) -> None:
         pass
