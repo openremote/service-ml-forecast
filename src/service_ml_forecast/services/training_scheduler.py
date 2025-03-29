@@ -42,12 +42,9 @@ class TrainingScheduler(Singleton):
     def __init__(self) -> None:
         self.config_storage = MLConfigStorageService()
         self.configs: list[MLConfig] = self.config_storage.get_all_configs() or []
-        self.misfire_grace_time = 60 * 60
+        self.job_misfire_grace_time = 60 * 60  # grace period of 1 hour
 
         # Scheduler configuration
-
-        max_instances = 1
-        coalesce = True
         executors = {"default": ProcessPoolExecutor(max_workers=1)}
         jobstores = {"default": MemoryJobStore()}
 
@@ -56,8 +53,8 @@ class TrainingScheduler(Singleton):
             jobstores=jobstores,
             executors=executors,
             daemon=True,
-            coalesce=coalesce,
-            max_instances=max_instances,
+            coalesce=True,
+            max_instances=1,
         )
 
     def start(self) -> None:
@@ -69,9 +66,10 @@ class TrainingScheduler(Singleton):
         try:
             self.scheduler.start()
 
+            # TODO: This needs to be periodic, not just once, constantly checking for new configs
+            # Probably have to do a thread and then we while look i guess
             for config in self.configs:
                 try:
-                    # Schedule the job to train the model
                     seconds = TimeUtil.parse_iso_duration(config.training_interval)
 
                     self.scheduler.add_job(
@@ -80,7 +78,7 @@ class TrainingScheduler(Singleton):
                         args=[config],
                         seconds=seconds,
                         name=f"model-training-{config.id}",
-                        misfire_grace_time=self.misfire_grace_time,
+                        misfire_grace_time=self.job_misfire_grace_time,
                     )
 
                 except Exception as e:
@@ -102,6 +100,9 @@ def _execute_ml_training(config: MLConfig) -> None:
     logger.info(f"Training job for {config.id} started")
 
     ml_provider = MLProviderFactory.create_provider(config)
+
+    # TODO: Do we want to use a repository pattern here so we can swap data sources?
+    # YES
 
     openremote_client = OpenRemoteClient(
         openremote_url=env.OPENREMOTE_URL,
