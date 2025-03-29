@@ -1,9 +1,7 @@
 import time
 from http import HTTPStatus
 
-import pytest
 import respx
-from httpx import HTTPStatusError
 
 from service_ml_forecast.clients.openremote.models import Asset, AssetDatapoint, AssetDatapointPeriod
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
@@ -51,8 +49,8 @@ def test_retrieve_assets_invalid_realm(mock_openremote_client: OpenRemoteClient)
         respx_mock.post("/api/invalid_realm_name/asset/query").mock(
             return_value=respx.MockResponse(HTTPStatus.NOT_FOUND)
         )
-        with pytest.raises(HTTPStatusError):
-            mock_openremote_client.retrieve_assets("invalid_realm_name")
+        assets: list[Asset] = mock_openremote_client.retrieve_assets("invalid_realm_name")
+        assert len(assets) == 0
 
 
 def test_retrieve_asset_datapoint_period(mock_openremote_client: OpenRemoteClient) -> None:
@@ -71,7 +69,7 @@ def test_retrieve_asset_datapoint_period(mock_openremote_client: OpenRemoteClien
                 },
             )
         )
-        datapoint_period: AssetDatapointPeriod = mock_openremote_client.retrieve_asset_datapoint_period(
+        datapoint_period: AssetDatapointPeriod | None = mock_openremote_client.retrieve_asset_datapoint_period(
             TEST_ASSET_ID, TEST_ATTRIBUTE_NAME
         )
         assert datapoint_period is not None
@@ -85,8 +83,11 @@ def test_retrieve_asset_datapoint_period_invalid_asset_id(mock_openremote_client
         respx_mock.get(
             f"/api/master/asset/datapoint/periods?assetId=invalid_asset_id&attributeName={TEST_ATTRIBUTE_NAME}"
         ).mock(return_value=respx.MockResponse(HTTPStatus.NOT_FOUND))
-        with pytest.raises(HTTPStatusError):
-            mock_openremote_client.retrieve_asset_datapoint_period("invalid_asset_id", TEST_ATTRIBUTE_NAME)
+
+        datapoint_period: AssetDatapointPeriod | None = mock_openremote_client.retrieve_asset_datapoint_period(
+            "invalid_asset_id", TEST_ATTRIBUTE_NAME
+        )
+        assert datapoint_period is None
 
 
 def test_retrieve_historical_datapoints(mock_openremote_client: OpenRemoteClient) -> None:
@@ -117,10 +118,10 @@ def test_retrieve_historical_datapoints_invalid_asset_id(mock_openremote_client:
         respx_mock.post(f"/api/master/asset/datapoint/invalid_asset_id/{TEST_ATTRIBUTE_NAME}").mock(
             return_value=respx.MockResponse(HTTPStatus.NOT_FOUND)
         )
-        with pytest.raises(HTTPStatusError):
-            mock_openremote_client.retrieve_historical_datapoints(
-                "invalid_asset_id", TEST_ATTRIBUTE_NAME, TEST_OLDEST_TIMESTAMP, int(time.time() * 1000)
-            )
+        datapoints: list[AssetDatapoint] = mock_openremote_client.retrieve_historical_datapoints(
+            "invalid_asset_id", TEST_ATTRIBUTE_NAME, TEST_OLDEST_TIMESTAMP, int(time.time() * 1000)
+        )
+        assert len(datapoints) == 0
 
 
 def test_write_retrieve_predicted_datapoints(mock_openremote_client: OpenRemoteClient) -> None:

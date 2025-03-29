@@ -1,8 +1,5 @@
 import time
 
-import pytest
-from httpx import HTTPStatusError
-
 from service_ml_forecast.clients.openremote.models import Asset, AssetDatapoint, AssetDatapointPeriod
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 
@@ -16,20 +13,22 @@ def test_retrieve_assets(openremote_client: OpenRemoteClient) -> None:
 
 
 def test_retrieve_assets_invalid_realm(openremote_client: OpenRemoteClient) -> None:
-    with pytest.raises(HTTPStatusError):
-        openremote_client.retrieve_assets("invalid_realm_name")
+    assets: list[Asset] = openremote_client.retrieve_assets("invalid_realm_name")
+    assert len(assets) == 0, "Assets should be empty"
 
 
 def test_retrieve_asset_datapoint_period(openremote_client: OpenRemoteClient) -> None:
-    datapoint_period: AssetDatapointPeriod = openremote_client.retrieve_asset_datapoint_period(
+    datapoint_period: AssetDatapointPeriod | None = openremote_client.retrieve_asset_datapoint_period(
         TEST_ASSET_ID, TEST_ATTRIBUTE_NAME
     )
     assert datapoint_period is not None, "No asset datapoint period retrieved"
 
 
 def test_retrieve_asset_datapoint_period_invalid_asset_id(openremote_client: OpenRemoteClient) -> None:
-    with pytest.raises(HTTPStatusError):
-        openremote_client.retrieve_asset_datapoint_period("invalid_asset_id", TEST_ATTRIBUTE_NAME)
+    datapoint_period: AssetDatapointPeriod | None = openremote_client.retrieve_asset_datapoint_period(
+        "invalid_asset_id", TEST_ATTRIBUTE_NAME
+    )
+    assert datapoint_period is None, "Asset datapoint period should be None"
 
 
 def test_retrieve_historical_datapoints(openremote_client: OpenRemoteClient) -> None:
@@ -40,10 +39,10 @@ def test_retrieve_historical_datapoints(openremote_client: OpenRemoteClient) -> 
 
 
 def test_retrieve_historical_datapoints_invalid_asset_id(openremote_client: OpenRemoteClient) -> None:
-    with pytest.raises(HTTPStatusError):
-        openremote_client.retrieve_historical_datapoints(
-            "invalid_asset_id", TEST_ATTRIBUTE_NAME, 1716153600000, int(time.time() * 1000)
-        )
+    datapoints: list[AssetDatapoint] = openremote_client.retrieve_historical_datapoints(
+        "invalid_asset_id", TEST_ATTRIBUTE_NAME, 1716153600000, int(time.time() * 1000)
+    )
+    assert len(datapoints) == 0, "Historical datapoints should be empty"
 
 
 def test_write_retrieve_predicted_datapoints(openremote_client: OpenRemoteClient) -> None:
