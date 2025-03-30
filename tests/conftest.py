@@ -10,7 +10,7 @@ import respx
 from service_ml_forecast import find_project_root
 from service_ml_forecast.clients.openremote.models import AssetDatapoint
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
-from service_ml_forecast.config import env
+from service_ml_forecast.config import ENV
 from service_ml_forecast.logging_config import LOGGING_CONFIG
 from service_ml_forecast.models.ml_config import ProphetMLConfig
 from service_ml_forecast.services.ml_config_storage_service import MLConfigStorageService
@@ -37,18 +37,18 @@ MOCK_TOKEN_EXPIRY_SECONDS = 60
 TEST_TMP_DIR = "/tests/.tmp"
 
 # Overwrite model and config storage paths for testing purposes
-env.MODELS_DIR = f"{TEST_TMP_DIR}/models"
-env.CONFIGS_DIR = f"{TEST_TMP_DIR}/configs"
+ENV.MODELS_DIR = f"{TEST_TMP_DIR}/models"
+ENV.CONFIGS_DIR = f"{TEST_TMP_DIR}/configs"
 
 
 def cleanup_test_configs() -> None:
     """Cleanup test configs after all tests have run."""
-    FsUtil.delete_directory(env.CONFIGS_DIR)
+    FsUtil.delete_directory(ENV.CONFIGS_DIR)
 
 
 def cleanup_test_models() -> None:
     """Cleanup test models after all tests have run."""
-    FsUtil.delete_directory(env.MODELS_DIR)
+    FsUtil.delete_directory(ENV.MODELS_DIR)
 
 
 # Automatically clean up test files after all tests have run

@@ -19,7 +19,7 @@
 import json
 import logging
 
-from service_ml_forecast.config import env
+from service_ml_forecast.config import ENV
 from service_ml_forecast.models.ml_config import MLConfig
 from service_ml_forecast.util.fs_util import FsUtil
 
@@ -37,7 +37,7 @@ class MLConfigStorageService:
 
     def save_config(self, config: MLConfig) -> bool:
         """Save ML model configuration."""
-        config_file_path = f"{env.CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config.id}.json"
+        config_file_path = f"{ENV.CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config.id}.json"
 
         try:
             return FsUtil.save_file(config.model_dump_json(), config_file_path)
@@ -50,13 +50,13 @@ class MLConfigStorageService:
         configs = []
 
         try:
-            config_files = FsUtil.get_all_file_names(env.CONFIGS_DIR, ".json")
+            config_files = FsUtil.get_all_file_names(ENV.CONFIGS_DIR, ".json")
         except OSError:
-            logger.error(f"No config files found in {env.CONFIGS_DIR}")
+            logger.error(f"No config files found in {ENV.CONFIGS_DIR}")
             return None
 
         for file in config_files:
-            config_file_path = f"{env.CONFIGS_DIR}/{file}"
+            config_file_path = f"{ENV.CONFIGS_DIR}/{file}"
 
             try:
                 file_content = FsUtil.read_file(config_file_path)
@@ -70,7 +70,7 @@ class MLConfigStorageService:
 
     def get_config(self, config_id: str) -> MLConfig | None:
         """Get ML model configuration."""
-        config_file_path = f"{env.CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config_id}.json"
+        config_file_path = f"{ENV.CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config_id}.json"
         try:
             file_content = FsUtil.read_file(config_file_path)
             return MLConfig(**json.loads(file_content))
@@ -80,7 +80,7 @@ class MLConfigStorageService:
 
     def update_config(self, config: MLConfig) -> bool:
         """Update ML model configuration."""
-        config_file_path = f"{env.CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config.id}.json"
+        config_file_path = f"{ENV.CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config.id}.json"
 
         try:
             return FsUtil.save_file(config.model_dump_json(), config_file_path)
@@ -90,7 +90,7 @@ class MLConfigStorageService:
 
     def delete_config(self, config_id: str) -> bool:
         """Delete ML model configuration."""
-        config_file_path = f"{env.CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config_id}.json"
+        config_file_path = f"{ENV.CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config_id}.json"
 
         try:
             return FsUtil.delete_file(config_file_path)

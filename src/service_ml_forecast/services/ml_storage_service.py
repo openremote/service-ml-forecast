@@ -17,7 +17,7 @@
 
 import logging
 
-from service_ml_forecast.config import env
+from service_ml_forecast.config import ENV
 from service_ml_forecast.util.fs_util import FsUtil
 
 logger = logging.getLogger(__name__)
@@ -33,18 +33,18 @@ class MLStorageService:
 
     def save_model(self, model_content: str, model_id: str, model_file_extension: str) -> bool:
         """Save the serialized ML model."""
-        relative_path = f"{env.MODELS_DIR}/{self.MODEL_FILE_PREFIX}-{model_id}{model_file_extension}"
+        relative_path = f"{ENV.MODELS_DIR}/{self.MODEL_FILE_PREFIX}-{model_id}{model_file_extension}"
 
         return FsUtil.save_file(model_content, relative_path)
 
     def load_model(self, model_id: str, model_file_extension: str) -> str | None:
         """Load the serialized ML model."""
-        relative_path = f"{env.MODELS_DIR}/{self.MODEL_FILE_PREFIX}-{model_id}{model_file_extension}"
+        relative_path = f"{ENV.MODELS_DIR}/{self.MODEL_FILE_PREFIX}-{model_id}{model_file_extension}"
 
         return FsUtil.read_file(relative_path)
 
     def delete_model(self, model_id: str, model_file_extension: str) -> bool:
         """Delete a serialized ML model."""
-        relative_path = f"{env.MODELS_DIR}/{self.MODEL_FILE_PREFIX}-{model_id}{model_file_extension}"
+        relative_path = f"{ENV.MODELS_DIR}/{self.MODEL_FILE_PREFIX}-{model_id}{model_file_extension}"
 
         return FsUtil.delete_file(relative_path)

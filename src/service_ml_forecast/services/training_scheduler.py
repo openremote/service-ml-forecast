@@ -23,7 +23,7 @@ from apscheduler.jobstores.memory import MemoryJobStore
 from apscheduler.schedulers.background import BackgroundScheduler
 
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
-from service_ml_forecast.config import env
+from service_ml_forecast.config import ENV
 from service_ml_forecast.ml.ml_provider_factory import MLProviderFactory
 from service_ml_forecast.models.ml_config import MLConfig
 from service_ml_forecast.models.ml_data_models import FeatureDatapoints, TrainingFeatureSet
@@ -105,24 +105,29 @@ def _execute_ml_training(config: MLConfig) -> None:
     # YES
 
     openremote_client = OpenRemoteClient(
-        openremote_url=env.OPENREMOTE_URL,
-        keycloak_url=env.OPENREMOTE_KEYCLOAK_URL,
-        service_user=env.OPENREMOTE_SERVICE_USER,
-        service_user_secret=env.OPENREMOTE_SERVICE_USER_SECRET,
+        openremote_url=ENV.OPENREMOTE_URL,
+        keycloak_url=ENV.OPENREMOTE_KEYCLOAK_URL,
+        service_user=ENV.OPENREMOTE_SERVICE_USER,
+        service_user_secret=ENV.OPENREMOTE_SERVICE_USER_SECRET,
     )
 
     # Retrieve the target feature datapoints
     target_feature_datapoints: FeatureDatapoints
 
     try:
+        datapoints = openremote_client.retrieve_historical_datapoints(
+            config.target.asset_id,
+            config.target.attribute_name,
+            config.target.cutoff_timestamp,
+            TimeUtil.get_timestamp_ms(),
+        )
+        if datapoints is None:
+            logger.error(f"Failed to retrieve target feature datapoints for {config.id}")
+            return
+
         target_feature_datapoints = FeatureDatapoints(
             attribute_name=config.target.attribute_name,
-            datapoints=openremote_client.retrieve_historical_datapoints(
-                config.target.asset_id,
-                config.target.attribute_name,
-                config.target.cutoff_timestamp,
-                TimeUtil.get_timestamp_ms(),
-            ),
+            datapoints=datapoints,
         )
     except Exception as e:
         logger.error(f"Failed to retrieve target feature datapoints for {config.id}: {e}")
