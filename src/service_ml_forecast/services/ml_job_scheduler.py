@@ -45,17 +45,10 @@ class MLJobScheduler(Singleton):
     Manages the scheduling of ML model training and forecasting jobs.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, openremote_client: OpenRemoteClient) -> None:
         self.config_storage = MLConfigStorageService()
         self.config_refresh_interval = 30  # 30 seconds
-
-        # Setup the OpenRemote client
-        self.openremote_client = OpenRemoteClient(
-            openremote_url=ENV.OPENREMOTE_URL,
-            keycloak_url=ENV.OPENREMOTE_KEYCLOAK_URL,
-            service_user=ENV.OPENREMOTE_SERVICE_USER,
-            service_user_secret=ENV.OPENREMOTE_SERVICE_USER_SECRET,
-        )
+        self.openremote_client = openremote_client
 
         executors = {
             "process_pool": ProcessPoolExecutor(max_workers=1),  # For CPU-intensive training tasks

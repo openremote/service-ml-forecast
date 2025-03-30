@@ -24,6 +24,7 @@ from fastapi.concurrency import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 
 from service_ml_forecast import __app_info__
+from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 from service_ml_forecast.config import ENV
 from service_ml_forecast.logging_config import LOGGING_CONFIG
 from service_ml_forecast.services.ml_job_scheduler import MLJobScheduler
@@ -45,8 +46,17 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info("Starting application")
     logger.info("Application details: %s", __app_info__)
 
+
+    # Initialize the OpenRemote client
+    openremote_client = OpenRemoteClient(
+        openremote_url=ENV.OPENREMOTE_URL,
+        keycloak_url=ENV.OPENREMOTE_KEYCLOAK_URL,
+        service_user=ENV.OPENREMOTE_SERVICE_USER,
+        service_user_secret=ENV.OPENREMOTE_SERVICE_USER_SECRET,
+    )
+
     # Initialize the ML scheduler
-    ml_scheduler = MLJobScheduler()
+    ml_scheduler = MLJobScheduler(openremote_client)
     ml_scheduler.start()
 
     yield
