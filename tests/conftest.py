@@ -63,22 +63,22 @@ def cleanup_test_tmp_dir() -> Generator[None, None, None]:
 @pytest.fixture
 def openremote_client() -> OpenRemoteClient | None:
     """Create an OpenRemote client for testing against a real instance."""
-    from service_ml_forecast.config import env
+    from service_ml_forecast.config import ENV
 
     try:
         client = OpenRemoteClient(
-            openremote_url=env.OPENREMOTE_URL,
-            keycloak_url=env.OPENREMOTE_KEYCLOAK_URL,
-            service_user=env.OPENREMOTE_SERVICE_USER,
-            service_user_secret=env.OPENREMOTE_SERVICE_USER_SECRET,
+            openremote_url=ENV.OPENREMOTE_URL,
+            keycloak_url=ENV.OPENREMOTE_KEYCLOAK_URL,
+            service_user=ENV.OPENREMOTE_SERVICE_USER,
+            service_user_secret=ENV.OPENREMOTE_SERVICE_USER_SECRET,
         )
         if not client.health_check():
-            pytest.skip(reason="OpenRemote API not available")
+            pytest.skip(reason="Unable to reach the OpenRemote Manager API")
 
         return client
 
     except Exception as e:
-        pytest.skip(reason=f"Failed to create OpenRemoteClient: {e}")
+        pytest.skip(reason=f"Failed to create OpenRemote client: {e}")
 
 
 # Create a mock OpenRemote client with mocked authentication
@@ -86,7 +86,7 @@ def openremote_client() -> OpenRemoteClient | None:
 def mock_openremote_client() -> OpenRemoteClient | None:
     """Create a mock OpenRemote client with mocked authentication."""
     with respx.mock(base_url=MOCK_KEYCLOAK_URL) as respx_mock:
-        # Mock the token endpoint
+        # Mock the authentication endpoint
         respx_mock.post("/auth/realms/master/protocol/openid-connect/token").mock(
             return_value=respx.MockResponse(
                 HTTPStatus.OK,

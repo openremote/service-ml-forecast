@@ -71,11 +71,6 @@ class OpenRemoteClient:
         self.__authenticate()
 
     def __authenticate(self) -> bool:
-        """Try to authenticate with OpenRemote and set the OAuth token.
-
-        Returns:
-            bool: True if authenticated, False if not.
-        """
         token = self.__get_token()
         if token is not None:
             self.oauth_token = token
@@ -84,11 +79,6 @@ class OpenRemoteClient:
         return False
 
     def __get_token(self) -> OAuthTokenResponse | None:
-        """Get OAuth2 token for the Service User from Keycloak.
-
-        Returns:
-            OAuthTokenResponse | None: The OAuth2 token.
-        """
         url = f"{self.keycloak_url}/auth/realms/master/protocol/openid-connect/token"
 
         data = OAuthTokenRequest(
@@ -103,16 +93,11 @@ class OpenRemoteClient:
                 response.raise_for_status()
                 token_data = OAuthTokenResponse(**response.json())
                 return token_data
-            except Exception as e:
+            except httpx.HTTPStatusError as e:
                 self.logger.warning(f"Error getting authentication token: {e}")
                 return None
 
     def __check_and_refresh_auth(self) -> bool:
-        """Check authentication status and refresh token if needed.
-
-        Returns:
-            bool: True if authenticated, False if not.
-        """
         if self.oauth_token is None or (
             self.token_expiration_timestamp is not None and time.time() > self.token_expiration_timestamp - 10
         ):
@@ -120,22 +105,12 @@ class OpenRemoteClient:
         return True
 
     def __build_headers(self) -> dict[str, str]:
-        """Build headers dictionary with the correct authorization and content type.
-
-        Returns:
-            dict[str, str]: Headers dictionary.
-        """
         headers = {"Content-Type": "application/json"}
         if self.oauth_token is not None:
             headers["Authorization"] = f"Bearer {self.oauth_token.access_token}"
         return headers
 
     def __build_request(self, method: str, url: str, data: Any | None = None) -> httpx.Request:
-        """Build a HTTPX request object with the correct headers and data.
-
-        Returns:
-            httpx.Request: HTTPX request object.
-        """
         self.__check_and_refresh_auth()
         headers = self.__build_headers()
         return httpx.Request(method, url, headers=headers, json=data)
@@ -147,8 +122,6 @@ class OpenRemoteClient:
             bool: True if healthy, False if not.
         """
         url = f"{self.openremote_url}/api/master/health"
-        if not self.__check_and_refresh_auth():
-            return False
 
         request = self.__build_request("GET", url)
         with httpx.Client() as client:
@@ -156,25 +129,21 @@ class OpenRemoteClient:
                 response = client.send(request)
                 response.raise_for_status()
                 return response.status_code == HTTPStatus.OK
-            except Exception as e:
+            except httpx.HTTPStatusError as e:
                 self.logger.error(f"OpenRemote API is not healthy: {e}")
                 return False
 
-    def retrieve_assets(self, realm: str) -> list[Asset]:
+    def retrieve_assets(self, realm: str) -> list[Asset] | None:
         """Retrieve all assets for a given realm.
 
         Args:
             realm: The realm to retrieve assets from.
 
         Returns:
-            list[Asset]: List of assets or empty list if an error occurs.
+            list[Asset] | None: List of assets or None
         """
-        url = f"{self.openremote_url}/api/{realm}/asset/query"
+        url = f"{self.openremote_url}/api/master/asset/query"
         asset_query = {"recursive": True, "realm": {"name": realm}}
-
-        if not self.__check_and_refresh_auth():
-            self.logger.error("Failed to authenticate with OpenRemote")
-            return []
 
         request = self.__build_request("POST", url, data=asset_query)
 
@@ -184,9 +153,9 @@ class OpenRemoteClient:
                 response.raise_for_status()
                 assets = response.json()
                 return [Asset(**asset) for asset in assets]
-            except Exception as e:
+            except httpx.HTTPStatusError as e:
                 self.logger.error(f"Error retrieving assets: {e}")
-                return []
+                return None
 
     def retrieve_asset_datapoint_period(self, asset_id: str, attribute_name: str) -> AssetDatapointPeriod | None:
         """Retrieve the datapoints timestamp period of a given asset attribute.
@@ -201,10 +170,6 @@ class OpenRemoteClient:
         query = f"?assetId={asset_id}&attributeName={attribute_name}"
         url = f"{self.openremote_url}/api/master/asset/datapoint/periods{query}"
 
-        if not self.__check_and_refresh_auth():
-            self.logger.error("Failed to authenticate with OpenRemote")
-            return None
-
         request = self.__build_request("GET", url)
 
         with httpx.Client() as client:
@@ -213,13 +178,13 @@ class OpenRemoteClient:
                 response.raise_for_status()
                 datapoint_period = AssetDatapointPeriod(**response.json())
                 return datapoint_period
-            except Exception as e:
+            except httpx.HTTPStatusError as e:
                 self.logger.error(f"Error retrieving asset datapoint period: {e}")
                 return None
 
     def retrieve_historical_datapoints(
         self, asset_id: str, attribute_name: str, from_timestamp: int, to_timestamp: int
-    ) -> list[AssetDatapoint]:
+    ) -> list[AssetDatapoint] | None:
         """Retrieve the historical data points of a given asset attribute.
 
         Args:
@@ -229,7 +194,7 @@ class OpenRemoteClient:
             to_timestamp: The end timestamp.
 
         Returns:
-            list[AssetDatapoint]: List of historical data points
+            list[AssetDatapoint] | None: List of historical data points or None
         """
         params = f"{asset_id}/{attribute_name}"
         url = f"{self.openremote_url}/api/master/asset/datapoint/{params}"
@@ -239,10 +204,6 @@ class OpenRemoteClient:
             toTimestamp=to_timestamp,
         )
 
-        if not self.__check_and_refresh_auth():
-            self.logger.error("Failed to authenticate with OpenRemote")
-            return []
-
         request = self.__build_request("POST", url, data=request_body.model_dump())
 
         with httpx.Client() as client:
@@ -251,9 +212,9 @@ class OpenRemoteClient:
                 response.raise_for_status()
                 datapoints = response.json()
                 return [AssetDatapoint(**datapoint) for datapoint in datapoints]
-            except Exception as e:
+            except httpx.HTTPStatusError as e:
                 self.logger.error(f"Error retrieving historical datapoints: {e}")
-                return []
+                return None
 
     def write_predicted_datapoints(self, asset_id: str, attribute_name: str, datapoints: list[AssetDatapoint]) -> bool:
         """Write the predicted data points of a given asset attribute.
@@ -271,10 +232,6 @@ class OpenRemoteClient:
 
         datapoints_json = [datapoint.model_dump() for datapoint in datapoints]
 
-        if not self.__check_and_refresh_auth():
-            self.logger.error("Failed to authenticate with OpenRemote")
-            return False
-
         request = self.__build_request("PUT", url, data=datapoints_json)
 
         with httpx.Client() as client:
@@ -282,13 +239,13 @@ class OpenRemoteClient:
                 response = client.send(request)
                 response.raise_for_status()
                 return response.status_code == HTTPStatus.NO_CONTENT
-            except Exception as e:
+            except httpx.HTTPStatusError as e:
                 self.logger.error(f"Error writing predicted datapoints: {e}")
                 return False
 
     def retrieve_predicted_datapoints(
         self, asset_id: str, attribute_name: str, from_timestamp: int, to_timestamp: int
-    ) -> list[AssetDatapoint]:
+    ) -> list[AssetDatapoint] | None:
         """Retrieve the predicted data points of a given asset attribute.
 
         Args:
@@ -298,7 +255,7 @@ class OpenRemoteClient:
             to_timestamp: The end timestamp.
 
         Returns:
-            list[AssetDatapoint]: List of predicted data points.
+            list[AssetDatapoint] | None: List of predicted data points or None
         """
         params = f"{asset_id}/{attribute_name}"
         url = f"{self.openremote_url}/api/master/asset/predicted/{params}"
@@ -308,10 +265,6 @@ class OpenRemoteClient:
             toTimestamp=to_timestamp,
         )
 
-        if not self.__check_and_refresh_auth():
-            self.logger.error("Failed to authenticate with OpenRemote")
-            return []
-
         request = self.__build_request("POST", url, data=request_body.model_dump())
 
         with httpx.Client() as client:
@@ -320,6 +273,6 @@ class OpenRemoteClient:
                 response.raise_for_status()
                 datapoints = response.json()
                 return [AssetDatapoint(**datapoint) for datapoint in datapoints]
-            except Exception as e:
+            except httpx.HTTPStatusError as e:
                 self.logger.error(f"Error retrieving predicted datapoints: {e}")
-                return []
+                return None

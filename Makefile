@@ -1,4 +1,4 @@
-.PHONY: install test lint format clean build run
+.PHONY: install test lint format clean clean-install build run
 
 # Python and pip
 PYTHON = python
@@ -44,9 +44,10 @@ clean:
 	rm -rf *.egg-info
 	find . -type d -name __pycache__ -exec rm -rf {} +
 	find . -type f -name "*.pyc" -delete
-	$(PIP) freeze > requirements.txt
-	$(PIP) uninstall -r requirements.txt -y
-	rm -rf requirements.txt
+	$(PIP) freeze | grep -v "^-e" | xargs $(PIP) uninstall -y
+
+# Clean and install dependencies
+clean-install: clean install
 
 # Build package
 build:
@@ -59,12 +60,13 @@ run:
 # Help command
 help:
 	@echo "Available commands:"
-	@echo "  install  - Install package in development mode with all dependencies"
+	@echo "  install  - Install dependencies"
 	@echo "  test     - Run tests"
 	@echo "  test-cov - Run tests with coverage"
 	@echo "  lint     - Run linting and type checking"
 	@echo "  format   - Format code with ruff"
-	@echo "  clean    - Clean build artifacts"
+	@echo "  clean    - Clean virtual environment"
+	@echo "  clean-install - Clean and install dependencies"
 	@echo "  build    - Build package for distribution"
 	@echo "  run      - Run the application in development mode"
 	@echo "  help     - Show this help message"
