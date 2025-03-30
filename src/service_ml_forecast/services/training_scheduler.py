@@ -35,24 +35,17 @@ from service_ml_forecast.util.time_util import TimeUtil
 logger = logging.getLogger(__name__)
 
 CONFIG_REFRESH_JOB_ID = "training:config-refresh"
+JOB_GRACE_PERIOD = 60  # 1 minute
 
 
 # Standalone function for training that can be pickled and sent to a process
-def _execute_ml_training(config: MLConfig) -> None:
+def _execute_ml_training(config: MLConfig, openremote_client: OpenRemoteClient) -> None:
     """Train the model for the given configuration."""
 
     start_time = time.perf_counter()
     logger.info(f"Training job for {config.id} started")
 
     ml_provider = MLProviderFactory.create_provider(config)
-
-    # Todo use DI for the client, so we can swap client implementations
-    openremote_client = OpenRemoteClient(
-        openremote_url=ENV.OPENREMOTE_URL,
-        keycloak_url=ENV.OPENREMOTE_KEYCLOAK_URL,
-        service_user=ENV.OPENREMOTE_SERVICE_USER,
-        service_user_secret=ENV.OPENREMOTE_SERVICE_USER_SECRET,
-    )
 
     # Retrieve the target feature datapoints
     target_feature_datapoints: FeatureDatapoints
@@ -98,8 +91,15 @@ class TrainingScheduler(Singleton):
 
     def __init__(self) -> None:
         self.config_storage = MLConfigStorageService()
-        self.job_misfire_grace_time = 60  # grace period of 1 minute
         self.config_refresh_interval = 30  # 30 seconds
+
+        # Setup the OpenRemote client
+        self.openremote_client = OpenRemoteClient(
+            openremote_url=ENV.OPENREMOTE_URL,
+            keycloak_url=ENV.OPENREMOTE_KEYCLOAK_URL,
+            service_user=ENV.OPENREMOTE_SERVICE_USER,
+            service_user_secret=ENV.OPENREMOTE_SERVICE_USER_SECRET,
+        )
 
         executors = {
             "process_pool": ProcessPoolExecutor(max_workers=1),  # For CPU-intensive training tasks
@@ -114,7 +114,7 @@ class TrainingScheduler(Singleton):
             daemon=True,
             coalesce=True,
             max_instances=1,
-            job_defaults={"misfire_grace_time": self.job_misfire_grace_time},
+            job_defaults={"misfire_grace_time": JOB_GRACE_PERIOD},
         )
 
     def start(self) -> None:
@@ -157,7 +157,7 @@ class TrainingScheduler(Singleton):
         self.scheduler.add_job(
             _execute_ml_training,
             trigger="interval",
-            args=[config],
+            args=[config, self.openremote_client],
             seconds=seconds,
             id=job_id,
             name=job_id,
