@@ -13,7 +13,6 @@ jobs:
     timeout-minutes: 5
 
     steps:
-
     - name: Cancel previous runs
       uses: styfle/cancel-workflow-action@85880fa0301c86cca9da44039ee3bb12d3bedbfa # 0.12.1
       with:
@@ -22,28 +21,20 @@ jobs:
     - name: Checkout
       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
-    - name: GNU Make version
-      run: make --version
-
-    - name: Set up Python 3.12
-      uses: actions/setup-python@8d9ed9ac5c53483de85588cdf95a591a75ab9f55 # v5
-      with:
-        python-version: '3.12'
-        cache: 'pip'
+    - name: Install uv package manager
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
 
     - name: Create and activate Python virtual environment
       run: |
-        python -m venv venv
-        source venv/bin/activate
-
-    - name: Install all project dependencies
-      run: make install
+        uv venv
+        source .venv/bin/activate
 
     - name: Run linting and type checking
-      run: make lint
+      run: uv run lint
 
     - name: Run tests
-      run: make test
+      run: uv run test
 
     - name: Run build steps
-      run: make build
+      run: uv run build

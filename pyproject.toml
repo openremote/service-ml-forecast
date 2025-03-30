@@ -18,9 +18,10 @@ dependencies = [
     "pydantic-settings>=2.8.1",
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
     "pytest>=8.3.5",
+    "pytest-cov>=6.0.0",
     "mypy>=1.15.0",
     "ruff>=0.11.0",
     "build>=1.2.2",
@@ -32,8 +33,8 @@ dev = [
 "Bug Tracker" = "https://github.com/openremote/service-ml-forecast/issues"
 
 [tool.setuptools]
-packages = ["service_ml_forecast"]
-package-dir = {"service_ml_forecast" = "src/service_ml_forecast"}
+packages = ["service_ml_forecast", "scripts"]
+package-dir = {"service_ml_forecast" = "src/service_ml_forecast", "scripts" = "scripts"}
 
 [tool.ruff]
 line-length = 120
@@ -89,3 +90,11 @@ python_files = "test_*.py"
 
 [project.scripts]
 service_ml_forecast = "service_ml_forecast.main:app"
+
+# CLI commands for development tasks
+lint = "scripts.tools:lint"
+serve = "scripts.tools:serve"
+test = "scripts.tools:test"
+test-coverage = "scripts.tools:test_coverage"
+format = "scripts.tools:format"
+build = "scripts.tools:build"
