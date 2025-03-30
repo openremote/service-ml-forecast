@@ -34,6 +34,8 @@ from service_ml_forecast.util.time_util import TimeUtil
 
 logger = logging.getLogger(__name__)
 
+CONFIG_REFRESH_JOB_ID = "training:config-refresh"
+
 
 # Standalone function for training that can be pickled and sent to a process
 def _execute_ml_training(config: MLConfig) -> None:
@@ -131,7 +133,8 @@ class TrainingScheduler(Singleton):
                 self._refresh_configs,
                 trigger="interval",
                 seconds=self.config_refresh_interval,
-                name="training:config-refresh",
+                id=CONFIG_REFRESH_JOB_ID,
+                name=CONFIG_REFRESH_JOB_ID,
                 executor="thread_pool",
             )
 
@@ -147,7 +150,7 @@ class TrainingScheduler(Singleton):
         job_id = f"training:model-training-{config.id}"
         seconds = TimeUtil.parse_iso_duration(config.training_interval)
 
-        # skip training job if interval is the same
+        # skip adding if theres a job with the same ID and interval
         if self._has_same_interval(job_id, seconds):
             return
 
