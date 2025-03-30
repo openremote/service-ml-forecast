@@ -21,7 +21,7 @@ from uuid import uuid4
 from pydantic import BaseModel, Field
 
 
-class MLFeature(BaseModel):
+class MLModelFeature(BaseModel):
     asset_id: str = Field(description="The id of the asset. This is the id of the asset in the OpenRemote API.")
     attribute_name: str = Field(
         description="The name of the attribute of the asset from OpenRemote. This attribute requires historical data."
@@ -35,7 +35,7 @@ class MLModelType(str, Enum):
     PROPHET = "prophet"
 
 
-class MLConfig(BaseModel):
+class MLModelConfig(BaseModel):
     """Base configuration for all ML models."""
 
     id: str = Field(
@@ -45,10 +45,10 @@ class MLConfig(BaseModel):
     realm: str = Field(description="The realm of where the assets and their datapoints are available.")
     name: str = Field(description="A friendly name for the model configuration.")
     type: MLModelType = Field(description="Which machine learning model to use.")
-    target: MLFeature = Field(
+    target: MLModelFeature = Field(
         description="The asset attribute to predict. This attribute must have historical data available."
     )
-    regressors: list[MLFeature] | None = Field(
+    regressors: list[MLModelFeature] | None = Field(
         default=None,
         description="List of model input asset attributes that will be used as regressors. "
         "They must have historical data and predicted values available for the configured forecast period.",
@@ -61,7 +61,7 @@ class MLConfig(BaseModel):
     )
 
 
-class ProphetMLConfig(MLConfig):
+class ProphetMLModelConfig(MLModelConfig):
     """Prophet specific configuration."""
 
     type: MLModelType = MLModelType.PROPHET

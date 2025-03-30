@@ -1,16 +1,16 @@
 import pytest
 
 from service_ml_forecast.clients.openremote.models import AssetDatapoint
-from service_ml_forecast.ml.ml_provider_factory import MLProviderFactory
-from service_ml_forecast.models.ml_config import ProphetMLConfig
+from service_ml_forecast.ml.ml_model_provider_factory import MLModelProviderFactory
 from service_ml_forecast.models.ml_data_models import FeatureDatapoints, ForecastFeatureSet, TrainingFeatureSet
+from service_ml_forecast.models.ml_model_config import ProphetMLModelConfig
 
 
 def test_model_provider_train(
-    prophet_basic_config: ProphetMLConfig,
+    prophet_basic_config: ProphetMLModelConfig,
     windspeed_mock_datapoints: list[AssetDatapoint],
 ) -> None:
-    model_provider = MLProviderFactory.create_provider(prophet_basic_config)
+    model_provider = MLModelProviderFactory.create_provider(prophet_basic_config)
 
     model = model_provider.train_model(
         TrainingFeatureSet(
@@ -29,8 +29,8 @@ def test_model_provider_train(
     assert model_provider.load_model(prophet_basic_config.id) is not None
 
 
-def test_model_provider_predict(prophet_basic_config: ProphetMLConfig) -> None:
-    model_provider = MLProviderFactory.create_provider(prophet_basic_config)
+def test_model_provider_predict(prophet_basic_config: ProphetMLModelConfig) -> None:
+    model_provider = MLModelProviderFactory.create_provider(prophet_basic_config)
 
     forecast = model_provider.generate_forecast()
 
@@ -40,12 +40,12 @@ def test_model_provider_predict(prophet_basic_config: ProphetMLConfig) -> None:
 
 
 def test_model_provider_train_with_regressor(
-    prophet_multi_variable_config: ProphetMLConfig,
+    prophet_multi_variable_config: ProphetMLModelConfig,
     tariff_mock_datapoints: list[AssetDatapoint],
     windspeed_mock_datapoints: list[AssetDatapoint],
 ) -> None:
     # Create the model provider for the multi-variable model
-    model_provider = MLProviderFactory.create_provider(prophet_multi_variable_config)
+    model_provider = MLModelProviderFactory.create_provider(prophet_multi_variable_config)
 
     # Create the target feature datapoints
     target_feature_datapoints = FeatureDatapoints(
@@ -75,10 +75,10 @@ def test_model_provider_train_with_regressor(
 
 
 def test_model_provider_predict_with_regressor_datapoints(
-    prophet_multi_variable_config: ProphetMLConfig, prophet_basic_config: ProphetMLConfig
+    prophet_multi_variable_config: ProphetMLModelConfig, prophet_basic_config: ProphetMLModelConfig
 ) -> None:
     # Generate a forecast for the regressor
-    windspeed_model_provider = MLProviderFactory.create_provider(prophet_basic_config)
+    windspeed_model_provider = MLModelProviderFactory.create_provider(prophet_basic_config)
     windspeed_forecast = windspeed_model_provider.generate_forecast()
 
     # Assert future datapoints are generated
@@ -92,7 +92,7 @@ def test_model_provider_predict_with_regressor_datapoints(
     forecast_featureset = ForecastFeatureSet(regressors=[windspeed_feature_datapoints])
 
     # Generate a forecast for the target whilst providing the regressor forecast for the future datapoints
-    tariff_model_provider = MLProviderFactory.create_provider(prophet_multi_variable_config)
+    tariff_model_provider = MLModelProviderFactory.create_provider(prophet_multi_variable_config)
     tariff_forecast = tariff_model_provider.generate_forecast(forecast_featureset)
 
     # Assert future datapoints are generated
@@ -102,9 +102,9 @@ def test_model_provider_predict_with_regressor_datapoints(
 
 
 def test_model_provider_predict_with_missing_regressor_datapoints(
-    prophet_multi_variable_config: ProphetMLConfig,
+    prophet_multi_variable_config: ProphetMLModelConfig,
 ) -> None:
-    model_provider = MLProviderFactory.create_provider(prophet_multi_variable_config)
+    model_provider = MLModelProviderFactory.create_provider(prophet_multi_variable_config)
 
     with pytest.raises(ValueError):
         model_provider.generate_forecast()

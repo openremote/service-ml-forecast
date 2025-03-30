@@ -12,7 +12,7 @@ from service_ml_forecast.clients.openremote.models import AssetDatapoint
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 from service_ml_forecast.config import ENV
 from service_ml_forecast.logging_config import LOGGING_CONFIG
-from service_ml_forecast.models.ml_config import ProphetMLConfig
+from service_ml_forecast.models.ml_model_config import ProphetMLModelConfig
 from service_ml_forecast.services.ml_config_storage_service import MLConfigStorageService
 from service_ml_forecast.util.fs_util import FsUtil
 
@@ -114,17 +114,17 @@ def ml_config_storage_service() -> MLConfigStorageService:
 
 
 @pytest.fixture
-def prophet_basic_config() -> ProphetMLConfig:
+def prophet_basic_config() -> ProphetMLModelConfig:
     config_path = Path(__file__).parent / "ml/resources/prophet-windspeed-config.json"
     with open(config_path) as f:
-        return ProphetMLConfig(**json.load(f))
+        return ProphetMLModelConfig(**json.load(f))
 
 
 @pytest.fixture
-def prophet_multi_variable_config() -> ProphetMLConfig:
+def prophet_multi_variable_config() -> ProphetMLModelConfig:
     config_path = Path(__file__).parent / "ml/resources/prophet-tariff-config.json"
     with open(config_path) as f:
-        return ProphetMLConfig(**json.load(f))
+        return ProphetMLModelConfig(**json.load(f))
 
 
 @pytest.fixture

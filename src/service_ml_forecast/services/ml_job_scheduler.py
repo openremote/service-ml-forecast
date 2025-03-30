@@ -17,7 +17,6 @@
 
 import logging
 import time
-from datetime import timedelta
 
 from apscheduler.executors.pool import ProcessPoolExecutor, ThreadPoolExecutor
 from apscheduler.jobstores.memory import MemoryJobStore
@@ -25,9 +24,9 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 from service_ml_forecast.config import ENV
-from service_ml_forecast.ml.ml_provider_factory import MLProviderFactory
-from service_ml_forecast.models.ml_config import MLConfig
+from service_ml_forecast.ml.ml_model_provider_factory import MLModelProviderFactory
 from service_ml_forecast.models.ml_data_models import FeatureDatapoints, TrainingFeatureSet
+from service_ml_forecast.models.ml_model_config import MLModelConfig
 from service_ml_forecast.services.ml_config_storage_service import MLConfigStorageService
 from service_ml_forecast.util.singleton import Singleton
 from service_ml_forecast.util.time_util import TimeUtil
@@ -39,6 +38,7 @@ TRAINING_JOB_ID_PREFIX = "ml:training"
 FORECASTING_JOB_ID_PREFIX = "ml:forecasting"
 
 JOB_GRACE_PERIOD = 60  # 1 minute (time to run the job after the scheduled time)
+
 
 class MLJobScheduler(Singleton):
     """
@@ -102,12 +102,12 @@ class MLJobScheduler(Singleton):
         """Stop the scheduler"""
         self.scheduler.shutdown()
 
-    def _add_training_job(self, config: MLConfig) -> None:
+    def _add_training_job(self, config: MLModelConfig) -> None:
         job_id = f"{TRAINING_JOB_ID_PREFIX}:{config.id}"
         seconds = TimeUtil.parse_iso_duration(config.training_interval)
 
-        # skip adding if theres a job with the same ID and interval
-        if self._has_same_interval(job_id, seconds):
+        # skip if config has not changed
+        if self._has_no_config_changes(job_id, config):
             return
 
         self.scheduler.add_job(
@@ -133,16 +133,17 @@ class MLJobScheduler(Singleton):
         except Exception as e:
             logger.error(f"Failed to refresh configurations: {e}")
 
-    def _has_same_interval(self, job_id: str, seconds: int) -> bool:
+    def _has_no_config_changes(self, job_id: str, config: MLModelConfig) -> bool:
         existing_job = self.scheduler.get_job(job_id)
-        if existing_job is not None and existing_job.trigger.interval is not None:
-            existing_job_interval: timedelta = existing_job.trigger.interval
-            return existing_job_interval.total_seconds() == seconds
+
+        if existing_job is not None and existing_job.args is not None:
+            job_config: MLModelConfig = existing_job.args[0]
+            return job_config == config
+
         return False
 
 
-
-def _execute_ml_training(config: MLConfig, openremote_client: OpenRemoteClient) -> None:
+def _execute_ml_training(config: MLModelConfig, openremote_client: OpenRemoteClient) -> None:
     """Standalone function for ML model training (can be sent to a process)
 
     Args:
@@ -150,7 +151,7 @@ def _execute_ml_training(config: MLConfig, openremote_client: OpenRemoteClient) 
         openremote_client: The OpenRemote client to retrieve datapoints from
     """
     start_time = time.perf_counter()
-    ml_provider = MLProviderFactory.create_provider(config)
+    provider = MLModelProviderFactory.create_provider(config)
 
     # Retrieve the target feature datapoints
     target_feature_datapoints: FeatureDatapoints
@@ -182,17 +183,16 @@ def _execute_ml_training(config: MLConfig, openremote_client: OpenRemoteClient) 
     # TODO: Handle regressors
 
     # Train the model
-    model = ml_provider.train_model(training_feature_set)
+    model = provider.train_model(training_feature_set)
 
     # Save the model
-    ml_provider.save_model(model)
+    provider.save_model(model)
 
     end_time = time.perf_counter()
     logger.info(f"Training job for {config.id} completed - duration: {end_time - start_time}s")
 
 
-
-def _execute_ml_forecasting(config: MLConfig, openremote_client: OpenRemoteClient) -> None:
+def _execute_ml_forecasting(config: MLModelConfig, openremote_client: OpenRemoteClient) -> None:
     """Standalone function for ML model forecasting (can be sent to a process)
 
     Args:

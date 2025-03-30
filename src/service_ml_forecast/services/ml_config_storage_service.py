@@ -20,7 +20,7 @@ import json
 import logging
 
 from service_ml_forecast.config import ENV
-from service_ml_forecast.models.ml_config import MLConfig
+from service_ml_forecast.models.ml_model_config import MLModelConfig
 from service_ml_forecast.util.fs_util import FsUtil
 
 logger = logging.getLogger(__name__)
@@ -35,7 +35,7 @@ class MLConfigStorageService:
 
     CONFIG_FILE_PREFIX = "config"
 
-    def save_config(self, config: MLConfig) -> bool:
+    def save_config(self, config: MLModelConfig) -> bool:
         """Save ML model configuration."""
         config_file_path = f"{ENV.CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config.id}.json"
 
@@ -46,7 +46,7 @@ class MLConfigStorageService:
 
         return file_saved
 
-    def get_all_configs(self) -> list[MLConfig] | None:
+    def get_all_configs(self) -> list[MLModelConfig] | None:
         """Get all ML model configurations."""
         configs = []
         config_files = FsUtil.get_all_file_names(ENV.CONFIGS_DIR, ".json")
@@ -63,11 +63,11 @@ class MLConfigStorageService:
             if file_content is None:
                 logger.error(f"Failed to read config file {config_file_path}")
                 continue
-            configs.append(MLConfig(**json.loads(file_content)))
+            configs.append(MLModelConfig(**json.loads(file_content)))
 
         return configs
 
-    def get_config(self, config_id: str) -> MLConfig | None:
+    def get_config(self, config_id: str) -> MLModelConfig | None:
         """Get ML model configuration."""
         config_file_path = f"{ENV.CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config_id}.json"
 
@@ -77,9 +77,9 @@ class MLConfigStorageService:
             logger.error(f"Failed to read config file {config_file_path}")
             return None
 
-        return MLConfig(**json.loads(file_content))
+        return MLModelConfig(**json.loads(file_content))
 
-    def update_config(self, config: MLConfig) -> bool:
+    def update_config(self, config: MLModelConfig) -> bool:
         """Update ML model configuration."""
         config_file_path = f"{ENV.CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config.id}.json"
 

@@ -17,17 +17,17 @@
 
 from typing import Any
 
-from service_ml_forecast.ml.ml_provider import MLModelProvider
-from service_ml_forecast.ml.prophet_ml_provider import ProphetMLProvider
-from service_ml_forecast.models.ml_config import MLConfig, MLModelType, ProphetMLConfig
+from service_ml_forecast.ml.ml_model_provider import MLModelProvider
+from service_ml_forecast.ml.prophet_model_provider import ProphetModelProvider
+from service_ml_forecast.models.ml_model_config import MLModelConfig, MLModelType, ProphetMLModelConfig
 
 
-class MLProviderFactory:
+class MLModelProviderFactory:
     """Factory for creating ML model providers based on the provided model config."""
 
     @staticmethod
     def create_provider(
-        config: MLConfig,
+        config: MLModelConfig,
     ) -> MLModelProvider[Any]:
         """Create a model provider instance based on the model config type.
 
@@ -36,11 +36,11 @@ class MLProviderFactory:
         """
         if config.type == MLModelType.PROPHET:
             try:
-                if not isinstance(config, ProphetMLConfig):
-                    prophet_config = ProphetMLConfig(**config.model_dump())
+                if not isinstance(config, ProphetMLModelConfig):
+                    prophet_config = ProphetMLModelConfig(**config.model_dump())
                 else:
                     prophet_config = config
-                return ProphetMLProvider(config=prophet_config)
+                return ProphetModelProvider(config=prophet_config)
             except Exception as e:
                 raise ValueError(f"Failed to convert config to ProphetMLConfig: {e}") from e
 

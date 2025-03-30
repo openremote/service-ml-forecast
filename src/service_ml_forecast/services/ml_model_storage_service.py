@@ -23,7 +23,7 @@ from service_ml_forecast.util.fs_util import FsUtil
 logger = logging.getLogger(__name__)
 
 
-class MLStorageService:
+class MLModelStorageService:
     """Manages the persistence of ML models.
 
     Uses the file system to store and retrieve ML models.

@@ -22,10 +22,10 @@ from prophet import Prophet
 from prophet.serialize import model_from_json, model_to_json
 
 from service_ml_forecast.clients.openremote.models import AssetDatapoint
-from service_ml_forecast.ml.ml_provider import MLModelProvider
-from service_ml_forecast.models.ml_config import ProphetMLConfig
+from service_ml_forecast.ml.ml_model_provider import MLModelProvider
 from service_ml_forecast.models.ml_data_models import ForecastFeatureSet, ForecastResult, TrainingFeatureSet
-from service_ml_forecast.services.ml_storage_service import MLStorageService
+from service_ml_forecast.models.ml_model_config import ProphetMLModelConfig
+from service_ml_forecast.services.ml_model_storage_service import MLModelStorageService
 
 logger = logging.getLogger(__name__)
 
@@ -76,15 +76,15 @@ def _prepare_training_dataframe(training_dataset: TrainingFeatureSet) -> pd.Data
     return dataframe
 
 
-class ProphetMLProvider(MLModelProvider[Prophet]):
+class ProphetModelProvider(MLModelProvider[Prophet]):
     """Prophet model provider."""
 
     def __init__(
         self,
-        config: ProphetMLConfig,
+        config: ProphetMLModelConfig,
     ) -> None:
         self.config = config
-        self.ml_storage_service = MLStorageService()
+        self.ml_storage_service = MLModelStorageService()
 
     def train_model(self, training_dataset: TrainingFeatureSet) -> Prophet | None:
         if training_dataset.target.datapoints is None or len(training_dataset.target.datapoints) == 0:
