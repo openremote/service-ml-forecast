@@ -15,7 +15,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-from service_ml_forecast.config import env
+from service_ml_forecast.config import ENV
 
 LOGGING_CONFIG = {
     "version": 1,
@@ -28,7 +28,7 @@ LOGGING_CONFIG = {
     },
     "handlers": {
         "default": {
-            "level": env.LOG_LEVEL,
+            "level": ENV.LOG_LEVEL,
             "formatter": "standard",
             "class": "logging.StreamHandler",
             "stream": "ext://sys.stdout",
@@ -37,18 +37,18 @@ LOGGING_CONFIG = {
     "loggers": {
         "": {
             "handlers": ["default"],
-            "level": env.LOG_LEVEL,
+            "level": ENV.LOG_LEVEL,
             "propagate": False,
         },
-        "uvicorn": {"handlers": ["default"], "level": env.LOG_LEVEL, "propagate": False},
+        "uvicorn": {"handlers": ["default"], "level": ENV.LOG_LEVEL, "propagate": False},
         "uvicorn.error": {
             "handlers": ["default"],
-            "level": env.LOG_LEVEL,
+            "level": ENV.LOG_LEVEL,
             "propagate": False,
         },
         "uvicorn.access": {
             "handlers": ["default"],
-            "level": env.LOG_LEVEL,
+            "level": ENV.LOG_LEVEL,
             "propagate": False,
         },
     },

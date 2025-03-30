@@ -24,7 +24,7 @@ from fastapi.concurrency import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 
 from service_ml_forecast import __app_info__
-from service_ml_forecast.config import env
+from service_ml_forecast.config import ENV
 from service_ml_forecast.logging_config import LOGGING_CONFIG
 
 # Load the logging configuration
@@ -60,7 +60,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-if not env.PUBLISH_DOCS:
+if not ENV.PUBLISH_DOCS:
     app.docs_url = None
     app.redoc_url = None
     app.openapi_url = None
@@ -76,5 +76,5 @@ app.add_middleware(
 
 
 if __name__ == "__main__":
-    reload = env.is_development()
+    reload = ENV.is_development()
     uvicorn.run("service_ml_forecast.main:app", host="0.0.0.0", port=8000, reload=reload)
