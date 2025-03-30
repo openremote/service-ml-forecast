@@ -7,7 +7,6 @@ This project uses [uv](https://docs.astral.sh/uv/) for project management. `uv` 
 
 For more information about uv, visit the [official documentation](https://docs.astral.sh/uv/).
 
-
 ### Prerequisites
 [uv](https://docs.astral.sh/uv/) - Python package and project manager
 - Install with curl (macOS/Linux): `curl -LsSf https://astral.sh/uv/install.sh | sh`
@@ -22,6 +21,11 @@ For more information about uv, visit the [official documentation](https://docs.a
 # Create a virtual environment
 uv venv --python 3.12
 source .venv/bin/activate # On Windows: .venv\Scripts\activate
+```
+
+### Install dependencies
+```bash
+uv sync
 ```
 
 ### Helper Scripts
