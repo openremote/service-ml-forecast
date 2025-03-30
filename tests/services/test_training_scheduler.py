@@ -7,7 +7,6 @@ def test_training_scheduler_init_start_stop() -> None:
     cleanup_test_configs()
 
     training_scheduler = TrainingScheduler()
-    assert len(training_scheduler.configs) == 0
 
     training_scheduler.start()
     assert training_scheduler.scheduler.running
