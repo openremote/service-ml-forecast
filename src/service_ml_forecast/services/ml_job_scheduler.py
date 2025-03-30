@@ -34,59 +34,15 @@ from service_ml_forecast.util.time_util import TimeUtil
 
 logger = logging.getLogger(__name__)
 
-CONFIG_REFRESH_JOB_ID = "training:config-refresh"
-JOB_GRACE_PERIOD = 60  # 1 minute
+CONFIG_REFRESH_JOB_ID = "ml:config-refresh"
+TRAINING_JOB_ID_PREFIX = "ml:training"
+FORECASTING_JOB_ID_PREFIX = "ml:forecasting"
 
+JOB_GRACE_PERIOD = 60  # 1 minute (time to run the job after the scheduled time)
 
-# Standalone function for training that can be pickled and sent to a process
-def _execute_ml_training(config: MLConfig, openremote_client: OpenRemoteClient) -> None:
-    """Train the model for the given configuration."""
-
-    start_time = time.perf_counter()
-    logger.info(f"Training job for {config.id} started")
-
-    ml_provider = MLProviderFactory.create_provider(config)
-
-    # Retrieve the target feature datapoints
-    target_feature_datapoints: FeatureDatapoints
-
-    try:
-        datapoints = openremote_client.retrieve_historical_datapoints(
-            config.target.asset_id,
-            config.target.attribute_name,
-            config.target.cutoff_timestamp,
-            TimeUtil.get_timestamp_ms(),
-        )
-        if datapoints is None:
-            logger.error(f"Failed to retrieve target feature datapoints for {config.id}")
-            return
-
-        target_feature_datapoints = FeatureDatapoints(
-            attribute_name=config.target.attribute_name,
-            datapoints=datapoints,
-        )
-    except Exception as e:
-        logger.error(f"Failed to retrieve target feature datapoints for {config.id}: {e}")
-        return
-
-    # Create the training feature set
-    training_feature_set = TrainingFeatureSet(
-        target=target_feature_datapoints,
-    )
-
-    # Train the model
-    model = ml_provider.train_model(training_feature_set)
-
-    # Save the model
-    ml_provider.save_model(model)
-
-    end_time = time.perf_counter()
-    logger.info(f"Training job for {config.id} completed - duration: {end_time - start_time}s")
-
-
-class TrainingScheduler(Singleton):
+class MLJobScheduler(Singleton):
     """
-    Manages the scheduling of training jobs for available Model configurations.
+    Manages the scheduling of ML model training and forecasting jobs.
     """
 
     def __init__(self) -> None:
@@ -118,7 +74,7 @@ class TrainingScheduler(Singleton):
         )
 
     def start(self) -> None:
-        """Start the training scheduler and schedule all the jobs."""
+        """Start the scheduler"""
 
         if self.scheduler.running:
             logger.warning("Scheduler for ML Model Training already running")
@@ -143,11 +99,11 @@ class TrainingScheduler(Singleton):
             raise e
 
     def stop(self) -> None:
-        """Stop the training scheduler."""
+        """Stop the scheduler"""
         self.scheduler.shutdown()
 
     def _add_training_job(self, config: MLConfig) -> None:
-        job_id = f"training:model-training-{config.id}"
+        job_id = f"{TRAINING_JOB_ID_PREFIX}:{config.id}"
         seconds = TimeUtil.parse_iso_duration(config.training_interval)
 
         # skip adding if theres a job with the same ID and interval
@@ -165,6 +121,7 @@ class TrainingScheduler(Singleton):
         )
 
     def _refresh_configs(self) -> None:
+        """Refresh the configurations and schedule the jobs based on the new configs"""
         try:
             configs = self.config_storage.get_all_configs()
             if not configs:
@@ -182,3 +139,64 @@ class TrainingScheduler(Singleton):
             existing_job_interval: timedelta = existing_job.trigger.interval
             return existing_job_interval.total_seconds() == seconds
         return False
+
+
+
+def _execute_ml_training(config: MLConfig, openremote_client: OpenRemoteClient) -> None:
+    """Standalone function for ML model training (can be sent to a process)
+
+    Args:
+        config: The configuration to use for training
+        openremote_client: The OpenRemote client to retrieve datapoints from
+    """
+    start_time = time.perf_counter()
+    ml_provider = MLProviderFactory.create_provider(config)
+
+    # Retrieve the target feature datapoints
+    target_feature_datapoints: FeatureDatapoints
+
+    try:
+        datapoints = openremote_client.retrieve_historical_datapoints(
+            config.target.asset_id,
+            config.target.attribute_name,
+            config.target.cutoff_timestamp,
+            TimeUtil.get_timestamp_ms(),
+        )
+        if datapoints is None:
+            logger.error(f"Failed to retrieve target feature datapoints for {config.id}")
+            return
+
+        target_feature_datapoints = FeatureDatapoints(
+            attribute_name=config.target.attribute_name,
+            datapoints=datapoints,
+        )
+    except Exception as e:
+        logger.error(f"Failed to retrieve target feature datapoints for {config.id}: {e}")
+        return
+
+    # Create the training feature set
+    training_feature_set = TrainingFeatureSet(
+        target=target_feature_datapoints,
+    )
+
+    # TODO: Handle regressors
+
+    # Train the model
+    model = ml_provider.train_model(training_feature_set)
+
+    # Save the model
+    ml_provider.save_model(model)
+
+    end_time = time.perf_counter()
+    logger.info(f"Training job for {config.id} completed - duration: {end_time - start_time}s")
+
+
+
+def _execute_ml_forecasting(config: MLConfig, openremote_client: OpenRemoteClient) -> None:
+    """Standalone function for ML model forecasting (can be sent to a process)
+
+    Args:
+        config: The configuration to use for forecasting
+        openremote_client: The OpenRemote client to retrieve datapoints from
+    """
+    pass

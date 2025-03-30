@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 class FsUtil:
     """Utility class for file system operations.
 
-    Methods raise OSError if any IO operation fails.
+    Methods return None if a sensible error occurs, otherwise exceptions are propagated.
     """
 
     @staticmethod
@@ -40,44 +40,50 @@ class FsUtil:
             path: Relative path from the project root
 
         Returns:
-            True if the content was saved successfully.
+            True if the content was saved successfully, None if an error occurred.
         """
-        file_path = f"{find_project_root()}{relative_path}"
-        dir_path = os.path.dirname(file_path)
+        try:
+            file_path = f"{find_project_root()}{relative_path}"
+            dir_path = os.path.dirname(file_path)
 
-        os.makedirs(dir_path, exist_ok=True)
+            os.makedirs(dir_path, exist_ok=True)
 
-        with tempfile.NamedTemporaryFile(mode="w", dir=dir_path, delete=False) as temp_file:
-            temp_file.write(content)
-            temp_file.flush()
-            os.fsync(temp_file.fileno())
+            with tempfile.NamedTemporaryFile(mode="w", dir=dir_path, delete=False) as temp_file:
+                temp_file.write(content)
+                temp_file.flush()
+                os.fsync(temp_file.fileno())
 
-            # Replace the existing file with the new content
-            os.replace(temp_file.name, file_path)
+                # Replace the existing file with the new content
+                os.replace(temp_file.name, file_path)
 
-        logger.debug(f"Saved content to {file_path}")
-        return True
+            logger.debug(f"Saved content to {file_path}")
+            return True
+        except OSError as e:
+            logger.error(f"Failed to save content to {relative_path}: {e!s}")
+            return False
 
     @staticmethod
-    def read_file(relative_path: str) -> str:
+    def read_file(relative_path: str) -> str | None:
         """Load content from a file.
 
         Args:
             path: Relative path from the project root
 
         Returns:
-            The file contents.
+            The file contents, or None if the file couldn't be read.
         """
-        file_path = f"{find_project_root()}{relative_path}"
         try:
+            file_path = f"{find_project_root()}{relative_path}"
             with open(file_path) as file:
+                content = file.read()
                 logger.debug(f"Loaded content from {file_path}")
-                return file.read()
+                return content
         except OSError as e:
-            raise e
+            logger.error(f"Failed to read file {relative_path}: {e!s}")
+            return None
 
     @staticmethod
-    def get_all_file_names(relative_path: str, extension: str) -> list[str]:
+    def get_all_file_names(relative_path: str, extension: str) -> list[str] | None:
         """Get all files in a directory.
 
         Args:
@@ -85,12 +91,16 @@ class FsUtil:
             extension: The extension of the files to get.
 
         Returns:
-            A list of all the file names in the directory.
+            A list of all the file names in the directory, or None if an error occurred.
         """
-        file_path = f"{find_project_root()}{relative_path}"
-        files = [f for f in os.listdir(file_path) if f.endswith(extension)]
-        logger.debug(f"Found {len(files)} files in {relative_path}")
-        return files
+        try:
+            file_path = f"{find_project_root()}{relative_path}"
+            files = [f for f in os.listdir(file_path) if f.endswith(extension)]
+            logger.debug(f"Found {len(files)} files in {relative_path}")
+            return files
+        except (OSError, FileNotFoundError) as e:
+            logger.error(f"Failed to list files in {relative_path}: {e!s}")
+            return None
 
     @staticmethod
     def delete_file(relative_path: str) -> bool:
@@ -100,12 +110,16 @@ class FsUtil:
             path: Relative path from the project root
 
         Returns:
-            True if the file was deleted successfully.
+            True if the file was deleted successfully, None if an error occurred.
         """
-        file_path = f"{find_project_root()}{relative_path}"
-        os.remove(file_path)
-        logger.debug(f"Deleted content from {file_path}")
-        return True
+        try:
+            file_path = f"{find_project_root()}{relative_path}"
+            os.remove(file_path)
+            logger.debug(f"Deleted content from {file_path}")
+            return True
+        except (OSError, FileNotFoundError) as e:
+            logger.error(f"Failed to delete file {relative_path}: {e!s}")
+            return False
 
     @staticmethod
     def delete_directory(relative_path: str) -> bool:
@@ -115,9 +129,13 @@ class FsUtil:
             path: Relative path from the project root
 
         Returns:
-            True if the directory was deleted successfully.
+            True if the directory was deleted successfully, None if an error occurred.
         """
-        file_path = f"{find_project_root()}{relative_path}"
-        shutil.rmtree(file_path)
-        logger.debug(f"Deleted directory {file_path}")
-        return True
+        try:
+            file_path = f"{find_project_root()}{relative_path}"
+            shutil.rmtree(file_path)
+            logger.debug(f"Deleted directory {file_path}")
+            return True
+        except (OSError, FileNotFoundError) as e:
+            logger.error(f"Failed to delete directory {relative_path}: {e!s}")
+            return False

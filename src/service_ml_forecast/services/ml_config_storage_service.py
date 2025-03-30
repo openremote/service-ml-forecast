@@ -39,61 +39,64 @@ class MLConfigStorageService:
         """Save ML model configuration."""
         config_file_path = f"{ENV.CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config.id}.json"
 
-        try:
-            return FsUtil.save_file(config.model_dump_json(), config_file_path)
-        except OSError as e:
-            logger.error(f"Failed to save config {config.id}: {e}")
-            return False
+        file_saved = FsUtil.save_file(config.model_dump_json(), config_file_path)
+
+        if not file_saved:
+            logger.error(f"Failed to save config {config.id}")
+
+        return file_saved
 
     def get_all_configs(self) -> list[MLConfig] | None:
         """Get all ML model configurations."""
         configs = []
+        config_files = FsUtil.get_all_file_names(ENV.CONFIGS_DIR, ".json")
 
-        try:
-            config_files = FsUtil.get_all_file_names(ENV.CONFIGS_DIR, ".json")
-        except OSError:
-            logger.error(f"No config files found in {ENV.CONFIGS_DIR}")
+        if config_files is None:
+            logger.error("No config files found in {ENV.CONFIGS_DIR}")
             return None
 
         for file in config_files:
             config_file_path = f"{ENV.CONFIGS_DIR}/{file}"
 
-            try:
-                file_content = FsUtil.read_file(config_file_path)
-                configs.append(MLConfig(**json.loads(file_content)))
+            file_content = FsUtil.read_file(config_file_path)
 
-            except OSError as e:
-                logger.error(f"Failed to load config from {config_file_path}: {e}")
+            if file_content is None:
+                logger.error(f"Failed to read config file {config_file_path}")
                 continue
+            configs.append(MLConfig(**json.loads(file_content)))
 
         return configs
 
     def get_config(self, config_id: str) -> MLConfig | None:
         """Get ML model configuration."""
         config_file_path = f"{ENV.CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config_id}.json"
-        try:
-            file_content = FsUtil.read_file(config_file_path)
-            return MLConfig(**json.loads(file_content))
-        except OSError as e:
-            logger.error(f"Failed to get ML config with id {config_id}: {e}")
+
+        file_content = FsUtil.read_file(config_file_path)
+
+        if file_content is None:
+            logger.error(f"Failed to read config file {config_file_path}")
             return None
+
+        return MLConfig(**json.loads(file_content))
 
     def update_config(self, config: MLConfig) -> bool:
         """Update ML model configuration."""
         config_file_path = f"{ENV.CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config.id}.json"
 
-        try:
-            return FsUtil.save_file(config.model_dump_json(), config_file_path)
-        except OSError as e:
-            logger.error(f"Failed to update config with id {config.id}: {e}")
-            return False
+        file_saved = FsUtil.save_file(config.model_dump_json(), config_file_path)
+
+        if not file_saved:
+            logger.error(f"Failed to update config {config.id}")
+
+        return file_saved
 
     def delete_config(self, config_id: str) -> bool:
         """Delete ML model configuration."""
         config_file_path = f"{ENV.CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config_id}.json"
 
-        try:
-            return FsUtil.delete_file(config_file_path)
-        except OSError as e:
-            logger.error(f"Failed to delete config with id {config_id}: {e}")
-            return False
+        file_deleted = FsUtil.delete_file(config_file_path)
+
+        if not file_deleted:
+            logger.error(f"Failed to delete config {config_id}")
+
+        return file_deleted
