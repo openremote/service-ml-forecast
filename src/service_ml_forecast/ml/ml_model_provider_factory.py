@@ -15,11 +15,12 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-from typing import Any
+from typing import Any, cast
 
 from service_ml_forecast.ml.ml_model_provider import MLModelProvider
 from service_ml_forecast.ml.prophet_model_provider import ProphetModelProvider
-from service_ml_forecast.models.ml_model_config import MLModelConfig, MLModelType, ProphetMLModelConfig
+from service_ml_forecast.models.ml_model_config import MLModelConfig, ProphetModelConfig
+from service_ml_forecast.models.ml_model_type import MLModelTypeEnum
 
 
 class MLModelProviderFactory:
@@ -33,14 +34,18 @@ class MLModelProviderFactory:
 
         Args:
             config: The model configuration.
+
+        Returns:
+            The model provider instance.
         """
-        if config.type == MLModelType.PROPHET:
+        if config.type == MLModelTypeEnum.PROPHET:
             try:
-                if not isinstance(config, ProphetMLModelConfig):
-                    prophet_config = ProphetMLModelConfig(**config.model_dump())
+                if not isinstance(config, ProphetModelConfig):
+                    prophet_config = ProphetModelConfig(**config.model_dump())
                 else:
                     prophet_config = config
-                return ProphetModelProvider(config=prophet_config)
+
+                return cast(MLModelProvider[Any], ProphetModelProvider(config=prophet_config))
             except Exception as e:
                 raise ValueError(f"Failed to convert config to ProphetMLConfig: {e}") from e
 

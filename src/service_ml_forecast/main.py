@@ -27,7 +27,7 @@ from service_ml_forecast import __app_info__
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 from service_ml_forecast.config import ENV
 from service_ml_forecast.logging_config import LOGGING_CONFIG
-from service_ml_forecast.services.ml_job_scheduler import MLJobScheduler
+from service_ml_forecast.services.ml_model_scheduler import MLModelScheduler
 
 # Load the logging configuration
 logging.config.dictConfig(LOGGING_CONFIG)
@@ -54,14 +54,14 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
         service_user_secret=ENV.OPENREMOTE_SERVICE_USER_SECRET,
     )
 
-    # Initialize the ML scheduler
-    ml_scheduler = MLJobScheduler(openremote_client)
-    ml_scheduler.start()
+    # Initialize the Model scheduler
+    model_scheduler = MLModelScheduler(openremote_client)
+    model_scheduler.start()
 
-    yield
+    yield  # yield to the FastAPI app
 
     # Shutdown tasks
-    ml_scheduler.stop()
+    model_scheduler.stop()
     logger.info("Shutting down application")
 
 

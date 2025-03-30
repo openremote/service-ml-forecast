@@ -15,13 +15,14 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-from enum import Enum
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
+from service_ml_forecast.models.ml_model_type import MLModelTypeEnum
 
-class MLModelFeature(BaseModel):
+
+class AssetAttributeFeature(BaseModel):
     asset_id: str = Field(description="The id of the asset. This is the id of the asset in the OpenRemote API.")
     attribute_name: str = Field(
         description="The name of the attribute of the asset from OpenRemote. This attribute requires historical data."
@@ -29,10 +30,6 @@ class MLModelFeature(BaseModel):
     cutoff_timestamp: int = Field(
         description="The timestamp to use for training, all data after this timestamp will be used."
     )
-
-
-class MLModelType(str, Enum):
-    PROPHET = "prophet"
 
 
 class MLModelConfig(BaseModel):
@@ -44,11 +41,11 @@ class MLModelConfig(BaseModel):
     )
     realm: str = Field(description="The realm of where the assets and their datapoints are available.")
     name: str = Field(description="A friendly name for the model configuration.")
-    type: MLModelType = Field(description="Which machine learning model to use.")
-    target: MLModelFeature = Field(
-        description="The asset attribute to predict. This attribute must have historical data available."
+    type: MLModelTypeEnum = Field(description="Which machine learning model to use.")
+    target: AssetAttributeFeature = Field(
+        description="The asset attribute datapoint to predict. This datapoint must have historical data available."
     )
-    regressors: list[MLModelFeature] | None = Field(
+    regressors: list[AssetAttributeFeature] | None = Field(
         default=None,
         description="List of model input asset attributes that will be used as regressors. "
         "They must have historical data and predicted values available for the configured forecast period.",
@@ -61,10 +58,10 @@ class MLModelConfig(BaseModel):
     )
 
 
-class ProphetMLModelConfig(MLModelConfig):
+class ProphetModelConfig(MLModelConfig):
     """Prophet specific configuration."""
 
-    type: MLModelType = MLModelType.PROPHET
+    type: MLModelTypeEnum = MLModelTypeEnum.PROPHET
     yearly_seasonality: bool = Field(
         default=True,
         description="Whether to include yearly seasonality in the model.",

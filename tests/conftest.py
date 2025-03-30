@@ -12,8 +12,8 @@ from service_ml_forecast.clients.openremote.models import AssetDatapoint
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 from service_ml_forecast.config import ENV
 from service_ml_forecast.logging_config import LOGGING_CONFIG
-from service_ml_forecast.models.ml_model_config import ProphetMLModelConfig
-from service_ml_forecast.services.ml_config_storage_service import MLConfigStorageService
+from service_ml_forecast.models.ml_model_config import ProphetModelConfig
+from service_ml_forecast.services.ml_model_config_service import MLModelConfigService
 from service_ml_forecast.util.fs_util import FsUtil
 
 PROJECT_ROOT = find_project_root()
@@ -107,24 +107,23 @@ def mock_openremote_client() -> OpenRemoteClient | None:
         return client
 
 
-# Fixture for the MLConfigStorageService
 @pytest.fixture
-def ml_config_storage_service() -> MLConfigStorageService:
-    return MLConfigStorageService()
+def config_service() -> MLModelConfigService:
+    return MLModelConfigService()
 
 
 @pytest.fixture
-def prophet_basic_config() -> ProphetMLModelConfig:
+def prophet_basic_config() -> ProphetModelConfig:
     config_path = Path(__file__).parent / "ml/resources/prophet-windspeed-config.json"
     with open(config_path) as f:
-        return ProphetMLModelConfig(**json.load(f))
+        return ProphetModelConfig(**json.load(f))
 
 
 @pytest.fixture
-def prophet_multi_variable_config() -> ProphetMLModelConfig:
+def prophet_multi_variable_config() -> ProphetModelConfig:
     config_path = Path(__file__).parent / "ml/resources/prophet-tariff-config.json"
     with open(config_path) as f:
-        return ProphetMLModelConfig(**json.load(f))
+        return ProphetModelConfig(**json.load(f))
 
 
 @pytest.fixture

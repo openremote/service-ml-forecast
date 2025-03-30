@@ -2,12 +2,12 @@ import pytest
 
 from service_ml_forecast.clients.openremote.models import AssetDatapoint
 from service_ml_forecast.ml.ml_model_provider_factory import MLModelProviderFactory
-from service_ml_forecast.models.ml_data_models import FeatureDatapoints, ForecastFeatureSet, TrainingFeatureSet
-from service_ml_forecast.models.ml_model_config import ProphetMLModelConfig
+from service_ml_forecast.models.ml_data_wrappers import FeatureDatapoints, ForecastFeatureSet, TrainingFeatureSet
+from service_ml_forecast.models.ml_model_config import ProphetModelConfig
 
 
 def test_model_provider_train(
-    prophet_basic_config: ProphetMLModelConfig,
+    prophet_basic_config: ProphetModelConfig,
     windspeed_mock_datapoints: list[AssetDatapoint],
 ) -> None:
     model_provider = MLModelProviderFactory.create_provider(prophet_basic_config)
@@ -29,7 +29,7 @@ def test_model_provider_train(
     assert model_provider.load_model(prophet_basic_config.id) is not None
 
 
-def test_model_provider_predict(prophet_basic_config: ProphetMLModelConfig) -> None:
+def test_model_provider_predict(prophet_basic_config: ProphetModelConfig) -> None:
     model_provider = MLModelProviderFactory.create_provider(prophet_basic_config)
 
     forecast = model_provider.generate_forecast()
@@ -40,7 +40,7 @@ def test_model_provider_predict(prophet_basic_config: ProphetMLModelConfig) -> N
 
 
 def test_model_provider_train_with_regressor(
-    prophet_multi_variable_config: ProphetMLModelConfig,
+    prophet_multi_variable_config: ProphetModelConfig,
     tariff_mock_datapoints: list[AssetDatapoint],
     windspeed_mock_datapoints: list[AssetDatapoint],
 ) -> None:
@@ -75,7 +75,7 @@ def test_model_provider_train_with_regressor(
 
 
 def test_model_provider_predict_with_regressor_datapoints(
-    prophet_multi_variable_config: ProphetMLModelConfig, prophet_basic_config: ProphetMLModelConfig
+    prophet_multi_variable_config: ProphetModelConfig, prophet_basic_config: ProphetModelConfig
 ) -> None:
     # Generate a forecast for the regressor
     windspeed_model_provider = MLModelProviderFactory.create_provider(prophet_basic_config)
@@ -102,7 +102,7 @@ def test_model_provider_predict_with_regressor_datapoints(
 
 
 def test_model_provider_predict_with_missing_regressor_datapoints(
-    prophet_multi_variable_config: ProphetMLModelConfig,
+    prophet_multi_variable_config: ProphetModelConfig,
 ) -> None:
     model_provider = MLModelProviderFactory.create_provider(prophet_multi_variable_config)
 

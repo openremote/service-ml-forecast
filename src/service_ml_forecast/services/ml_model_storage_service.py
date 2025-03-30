@@ -31,20 +31,36 @@ class MLModelStorageService:
 
     MODEL_FILE_PREFIX = "model"
 
-    def save_model(self, model_content: str, model_id: str, model_file_extension: str) -> bool:
-        """Save the serialized ML model."""
+    def save(self, model_content: str, model_id: str, model_file_extension: str) -> bool:
+        """Save the serialized ML model.
+
+        Args:
+            model_content: The serialized ML model. (e.g. JSON, Pickle, etc.)
+            model_id: The ID of the model.
+            model_file_extension: The file extension of the model.
+        """
         relative_path = f"{ENV.MODELS_DIR}/{self.MODEL_FILE_PREFIX}-{model_id}{model_file_extension}"
 
         return FsUtil.save_file(model_content, relative_path)
 
-    def load_model(self, model_id: str, model_file_extension: str) -> str | None:
-        """Load the serialized ML model."""
+    def load(self, model_id: str, model_file_extension: str) -> str | None:
+        """Load the serialized ML model.
+
+        Args:
+            model_id: The ID of the model.
+            model_file_extension: The file extension of the model.
+        """
         relative_path = f"{ENV.MODELS_DIR}/{self.MODEL_FILE_PREFIX}-{model_id}{model_file_extension}"
 
         return FsUtil.read_file(relative_path)
 
-    def delete_model(self, model_id: str, model_file_extension: str) -> bool:
-        """Delete a serialized ML model."""
+    def delete(self, model_id: str, model_file_extension: str) -> bool:
+        """Delete a serialized ML model.
+
+        Args:
+            model_id: The ID of the model.
+            model_file_extension: The file extension of the model.
+        """
         relative_path = f"{ENV.MODELS_DIR}/{self.MODEL_FILE_PREFIX}-{model_id}{model_file_extension}"
 
         return FsUtil.delete_file(relative_path)

@@ -24,9 +24,9 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 from service_ml_forecast.ml.ml_model_provider_factory import MLModelProviderFactory
-from service_ml_forecast.models.ml_data_models import FeatureDatapoints, TrainingFeatureSet
+from service_ml_forecast.models.ml_data_wrappers import FeatureDatapoints, TrainingFeatureSet
 from service_ml_forecast.models.ml_model_config import MLModelConfig
-from service_ml_forecast.services.ml_config_storage_service import MLConfigStorageService
+from service_ml_forecast.services.ml_model_config_service import MLModelConfigService
 from service_ml_forecast.util.singleton import Singleton
 from service_ml_forecast.util.time_util import TimeUtil
 
@@ -39,13 +39,13 @@ FORECASTING_JOB_ID_PREFIX = "ml:forecasting"
 JOB_GRACE_PERIOD = 60  # 1 minute (time to run the job after the scheduled time)
 
 
-class MLJobScheduler(Singleton):
+class MLModelScheduler(Singleton):
     """
     Manages the scheduling of ML model training and forecasting jobs.
     """
 
     def __init__(self, openremote_client: OpenRemoteClient) -> None:
-        self.config_storage = MLConfigStorageService()
+        self.config_storage = MLModelConfigService()
         self.config_refresh_interval = 30  # 30 seconds
         self.openremote_client = openremote_client
 
@@ -66,7 +66,10 @@ class MLJobScheduler(Singleton):
         )
 
     def start(self) -> None:
-        """Start the scheduler"""
+        """Start the scheduler for ML model training and forecasting.
+
+        If the scheduler is already running, it will not be started again.
+        """
 
         if self.scheduler.running:
             logger.warning("Scheduler for ML Model Training already running")
@@ -115,7 +118,7 @@ class MLJobScheduler(Singleton):
     def _refresh_configs(self) -> None:
         """Refresh the configurations and schedule the jobs based on the new configs"""
         try:
-            configs = self.config_storage.get_all_configs()
+            configs = self.config_storage.get_all()
             if not configs:
                 return
 

@@ -23,8 +23,8 @@ from prophet.serialize import model_from_json, model_to_json
 
 from service_ml_forecast.clients.openremote.models import AssetDatapoint
 from service_ml_forecast.ml.ml_model_provider import MLModelProvider
-from service_ml_forecast.models.ml_data_models import ForecastFeatureSet, ForecastResult, TrainingFeatureSet
-from service_ml_forecast.models.ml_model_config import ProphetMLModelConfig
+from service_ml_forecast.models.ml_data_wrappers import ForecastFeatureSet, ForecastResult, TrainingFeatureSet
+from service_ml_forecast.models.ml_model_config import ProphetModelConfig
 from service_ml_forecast.services.ml_model_storage_service import MLModelStorageService
 
 logger = logging.getLogger(__name__)
@@ -81,10 +81,10 @@ class ProphetModelProvider(MLModelProvider[Prophet]):
 
     def __init__(
         self,
-        config: ProphetMLModelConfig,
+        config: ProphetModelConfig,
     ) -> None:
         self.config = config
-        self.ml_storage_service = MLModelStorageService()
+        self.model_storage_service = MLModelStorageService()
 
     def train_model(self, training_dataset: TrainingFeatureSet) -> Prophet | None:
         if training_dataset.target.datapoints is None or len(training_dataset.target.datapoints) == 0:
@@ -114,7 +114,7 @@ class ProphetModelProvider(MLModelProvider[Prophet]):
         return model
 
     def load_model(self, model_id: str) -> Prophet | None:
-        model_json = self.ml_storage_service.load_model(model_id, ".json")
+        model_json = self.model_storage_service.load(model_id, ".json")
         if model_json is None:
             logger.error(f"Failed to load model -- {model_id}")
             return None
@@ -124,7 +124,7 @@ class ProphetModelProvider(MLModelProvider[Prophet]):
     def save_model(self, model: Prophet) -> bool:
         try:
             model_json = model_to_json(model)
-            if not self.ml_storage_service.save_model(model_json, self.config.id, ".json"):
+            if not self.model_storage_service.save(model_json, self.config.id, ".json"):
                 logger.error(f"Failed to save trained model -- {self.config.id}")
                 return False
 
