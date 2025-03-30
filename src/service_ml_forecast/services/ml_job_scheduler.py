@@ -23,7 +23,6 @@ from apscheduler.jobstores.memory import MemoryJobStore
 from apscheduler.schedulers.background import BackgroundScheduler
 
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
-from service_ml_forecast.config import ENV
 from service_ml_forecast.ml.ml_model_provider_factory import MLModelProviderFactory
 from service_ml_forecast.models.ml_data_models import FeatureDatapoints, TrainingFeatureSet
 from service_ml_forecast.models.ml_model_config import MLModelConfig

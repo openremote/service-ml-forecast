@@ -46,7 +46,6 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info("Starting application")
     logger.info("Application details: %s", __app_info__)
 
-
     # Initialize the OpenRemote client
     openremote_client = OpenRemoteClient(
         openremote_url=ENV.OPENREMOTE_URL,
