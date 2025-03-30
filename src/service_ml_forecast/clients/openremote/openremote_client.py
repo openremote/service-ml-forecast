@@ -93,7 +93,7 @@ class OpenRemoteClient:
                 response.raise_for_status()
                 token_data = OAuthTokenResponse(**response.json())
                 return token_data
-            except httpx.HTTPStatusError as e:
+            except (httpx.HTTPStatusError, httpx.ConnectError) as e:
                 self.logger.warning(f"Error getting authentication token: {e}")
                 return None
 
@@ -129,7 +129,7 @@ class OpenRemoteClient:
                 response = client.send(request)
                 response.raise_for_status()
                 return response.status_code == HTTPStatus.OK
-            except httpx.HTTPStatusError as e:
+            except (httpx.HTTPStatusError, httpx.ConnectError) as e:
                 self.logger.error(f"OpenRemote API is not healthy: {e}")
                 return False
 
@@ -153,7 +153,7 @@ class OpenRemoteClient:
                 response.raise_for_status()
                 assets = response.json()
                 return [Asset(**asset) for asset in assets]
-            except httpx.HTTPStatusError as e:
+            except (httpx.HTTPStatusError, httpx.ConnectError) as e:
                 self.logger.error(f"Error retrieving assets: {e}")
                 return None
 
@@ -178,7 +178,7 @@ class OpenRemoteClient:
                 response.raise_for_status()
                 datapoint_period = AssetDatapointPeriod(**response.json())
                 return datapoint_period
-            except httpx.HTTPStatusError as e:
+            except (httpx.HTTPStatusError, httpx.ConnectError) as e:
                 self.logger.error(f"Error retrieving asset datapoint period: {e}")
                 return None
 
@@ -212,7 +212,7 @@ class OpenRemoteClient:
                 response.raise_for_status()
                 datapoints = response.json()
                 return [AssetDatapoint(**datapoint) for datapoint in datapoints]
-            except httpx.HTTPStatusError as e:
+            except (httpx.HTTPStatusError, httpx.ConnectError) as e:
                 self.logger.error(f"Error retrieving historical datapoints: {e}")
                 return None
 
@@ -239,7 +239,7 @@ class OpenRemoteClient:
                 response = client.send(request)
                 response.raise_for_status()
                 return response.status_code == HTTPStatus.NO_CONTENT
-            except httpx.HTTPStatusError as e:
+            except (httpx.HTTPStatusError, httpx.ConnectError) as e:
                 self.logger.error(f"Error writing predicted datapoints: {e}")
                 return False
 
@@ -273,6 +273,6 @@ class OpenRemoteClient:
                 response.raise_for_status()
                 datapoints = response.json()
                 return [AssetDatapoint(**datapoint) for datapoint in datapoints]
-            except httpx.HTTPStatusError as e:
+            except (httpx.HTTPStatusError, httpx.ConnectError) as e:
                 self.logger.error(f"Error retrieving predicted datapoints: {e}")
                 return None
