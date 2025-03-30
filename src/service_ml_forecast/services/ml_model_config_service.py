@@ -62,7 +62,7 @@ class MLModelConfigService:
         config_files = FsUtil.get_all_file_names(ENV.CONFIGS_DIR, ".json")
 
         if config_files is None:
-            logger.error("No config files found in {ENV.CONFIGS_DIR}")
+            logger.error(f"No config files found in {ENV.CONFIGS_DIR}")
             return None
 
         for file in config_files:

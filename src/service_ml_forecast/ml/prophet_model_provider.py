@@ -30,52 +30,6 @@ from service_ml_forecast.services.ml_model_storage_service import MLModelStorage
 logger = logging.getLogger(__name__)
 
 
-def _convert_prophet_forecast_to_datapoints(dataframe: pd.DataFrame) -> list[AssetDatapoint]:
-    datapoints = []
-    # Convert ds datetime to milliseconds since epoch
-    for _, row in dataframe.iterrows():
-        datapoints.append(AssetDatapoint(x=int(row["ds"].timestamp() * 1000), y=row["yhat"]))
-
-    return datapoints
-
-
-def _convert_datapoints_to_dataframe(datapoints: list[AssetDatapoint], rename_y: str | None = None) -> pd.DataFrame:
-    dataframe = pd.DataFrame([{"ds": point.x, "y": point.y} for point in datapoints])
-    dataframe["ds"] = pd.to_datetime(dataframe["ds"], unit="ms")
-    if rename_y is not None:
-        dataframe = dataframe.rename(columns={"y": rename_y})
-
-    # Sort dataframe by timestamp
-    dataframe = dataframe.sort_values("ds")
-
-    return dataframe
-
-
-def _prepare_training_dataframe(training_dataset: TrainingFeatureSet) -> pd.DataFrame | None:
-    target = training_dataset.target
-    regressors = training_dataset.regressors
-
-    # Convert the datapoints to a dataframe - prophet expects the target data to be 'ds' and 'y' structure
-    dataframe = _convert_datapoints_to_dataframe(target.datapoints)
-
-    # Add regressors if they are provided
-    if regressors is not None:
-        for regressor in regressors:
-            regressor_dataframe = _convert_datapoints_to_dataframe(
-                regressor.datapoints, rename_y=regressor.attribute_name
-            )
-
-            # Interpolate the regressor values to the target data point timestamps
-            dataframe = pd.merge_asof(
-                dataframe,
-                regressor_dataframe[["ds", regressor.attribute_name]],
-                on="ds",
-                direction="nearest",
-            )
-
-    return dataframe
-
-
 class ProphetModelProvider(MLModelProvider[Prophet]):
     """Prophet model provider."""
 
@@ -174,3 +128,49 @@ class ProphetModelProvider(MLModelProvider[Prophet]):
             attribute_name=self.config.target.attribute_name,
             datapoints=datapoints,
         )
+
+
+def _convert_prophet_forecast_to_datapoints(dataframe: pd.DataFrame) -> list[AssetDatapoint]:
+    datapoints = []
+    # Convert ds datetime to milliseconds since epoch
+    for _, row in dataframe.iterrows():
+        datapoints.append(AssetDatapoint(x=int(row["ds"].timestamp() * 1000), y=row["yhat"]))
+
+    return datapoints
+
+
+def _convert_datapoints_to_dataframe(datapoints: list[AssetDatapoint], rename_y: str | None = None) -> pd.DataFrame:
+    dataframe = pd.DataFrame([{"ds": point.x, "y": point.y} for point in datapoints])
+    dataframe["ds"] = pd.to_datetime(dataframe["ds"], unit="ms")
+    if rename_y is not None:
+        dataframe = dataframe.rename(columns={"y": rename_y})
+
+    # Sort dataframe by timestamp
+    dataframe = dataframe.sort_values("ds")
+
+    return dataframe
+
+
+def _prepare_training_dataframe(training_dataset: TrainingFeatureSet) -> pd.DataFrame | None:
+    target = training_dataset.target
+    regressors = training_dataset.regressors
+
+    # Convert the datapoints to a dataframe - prophet expects the target data to be 'ds' and 'y' structure
+    dataframe = _convert_datapoints_to_dataframe(target.datapoints)
+
+    # Add regressors if they are provided
+    if regressors is not None:
+        for regressor in regressors:
+            regressor_dataframe = _convert_datapoints_to_dataframe(
+                regressor.datapoints, rename_y=regressor.attribute_name
+            )
+
+            # Interpolate the regressor values to the target data point timestamps
+            dataframe = pd.merge_asof(
+                dataframe,
+                regressor_dataframe[["ds", regressor.attribute_name]],
+                on="ds",
+                direction="nearest",
+            )
+
+    return dataframe
