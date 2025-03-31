@@ -121,7 +121,9 @@ class ProphetModelProvider(MLModelProvider[Prophet]):
         # noinspection PyTypeChecker
         datapoints = _convert_prophet_forecast_to_datapoints(forecast_future)
 
-        logger.info(f"Generated {len(datapoints)} forecasted datapoints")
+        if datapoints is None or len(datapoints) == 0:
+            logger.error(f"Failed to generate forecast -- {self.config.id}")
+            return None
 
         return ForecastResult(
             asset_id=self.config.target.asset_id,

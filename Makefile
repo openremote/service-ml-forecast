@@ -25,7 +25,7 @@ test:
 
 # Run tests with coverage
 test-coverage:
-	$(PYTEST) $(TEST_DIR) -v -o log_cli=true --cache-clear --cov=src --cov-report=term:skip-covered
+	$(PYTEST) $(TEST_DIR) -v -o log_cli=true --cache-clear --cov=src --cov-report=term
 
 # Run linting and type checking
 lint:

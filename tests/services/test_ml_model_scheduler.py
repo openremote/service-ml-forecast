@@ -12,6 +12,7 @@ from service_ml_forecast.services.ml_model_scheduler import (
     FORECAST_JOB_ID_PREFIX,
     TRAINING_JOB_ID_PREFIX,
     MLModelScheduler,
+    _execute_ml_forecast,
     _execute_ml_training,
 )
 from service_ml_forecast.services.ml_model_storage_service import MLModelStorageService
@@ -95,9 +96,23 @@ def test_ml_model_scheduler_execute_training_job(
                 json=windspeed_mock_datapoints,
             )
         )
-
-        # Execute the training job
         _execute_ml_training(prophet_basic_config, mock_openremote_client)
 
-    # Check that the training job has executed
     assert model_storage.load(prophet_basic_config.id, ".json") is not None
+
+
+def test_ml_model_scheduler_execute_forecast_job(
+    mock_openremote_client: OpenRemoteClient,
+    config_service: MLModelConfigService,
+    prophet_basic_config: ProphetModelConfig,
+) -> None:
+    assert config_service.save(prophet_basic_config)
+
+    # add mock for writing forecast datapoints
+    with respx.mock(base_url=MOCK_OPENREMOTE_URL) as respx_mock:
+        respx_mock.put(
+            f"/api/master/asset/predicted/{prophet_basic_config.target.asset_id}/{prophet_basic_config.target.attribute_name}"
+        ).mock(
+            return_value=respx.MockResponse(HTTPStatus.NO_CONTENT),
+        )
+        _execute_ml_forecast(prophet_basic_config, mock_openremote_client)

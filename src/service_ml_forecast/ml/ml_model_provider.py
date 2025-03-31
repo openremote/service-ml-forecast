@@ -30,14 +30,14 @@ class MLModelProvider(Protocol[ModelType]):
     This protocol defines the methods that all ML model providers must implement.
     """
 
-    def train_model(self, training_dataset: TrainingFeatureSet) -> ModelType:
+    def train_model(self, training_dataset: TrainingFeatureSet) -> ModelType | None:
         """Train the model on the training dataset.
 
         Args:
             training_dataset: The training dataset to train the model on.
 
         Returns:
-            The trained model.
+            The trained model or None if the model could not be trained.
         """
 
     def generate_forecast(self, forecast_featureset: ForecastFeatureSet | None = None) -> ForecastResult | None:
@@ -47,7 +47,7 @@ class MLModelProvider(Protocol[ModelType]):
             forecast_featureset: The forecast featureset to generate a forecast for.
 
         Returns:
-            The forecast result.
+            The forecast result or None if the forecast could not be generated.
         """
 
     def save_model(self, model: ModelType) -> bool:
