@@ -26,6 +26,7 @@ from service_ml_forecast.ml.ml_model_provider import MLModelProvider
 from service_ml_forecast.models.ml_data_wrappers import ForecastFeatureSet, ForecastResult, TrainingFeatureSet
 from service_ml_forecast.models.ml_model_config import ProphetModelConfig
 from service_ml_forecast.services.ml_model_storage_service import MLModelStorageService
+from service_ml_forecast.util.time_util import TimeUtil
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +95,12 @@ class ProphetModelProvider(MLModelProvider[Prophet]):
             logger.error(f"Failed to load model -- {self.config.id}")
             return None
 
-        future = model.make_future_dataframe(periods=self.config.forecast_periods, freq=self.config.forecast_frequency)
+        future = model.make_future_dataframe(
+            periods=self.config.forecast_periods, freq=self.config.forecast_frequency, include_history=False
+        )
+
+        # round the future timestamps to the forecast frequency
+        future["ds"] = future["ds"].dt.round(self.config.forecast_frequency)
 
         # Add future regressor values to the future dataframe if provided
         if forecast_feature_set is not None:
@@ -114,12 +120,8 @@ class ProphetModelProvider(MLModelProvider[Prophet]):
 
         forecast = model.predict(future)
 
-        # Remove historical data from the forecast dataframe - prophet returns the entire history
-        last_train_date = model.history["ds"].max()
-        forecast_future = forecast[forecast["ds"] > last_train_date]
-
         # noinspection PyTypeChecker
-        datapoints = _convert_prophet_forecast_to_datapoints(forecast_future)
+        datapoints = _convert_prophet_forecast_to_datapoints(forecast)
 
         if datapoints is None or len(datapoints) == 0:
             logger.error(f"Failed to generate forecast -- {self.config.id}")
@@ -134,20 +136,23 @@ class ProphetModelProvider(MLModelProvider[Prophet]):
 
 def _convert_prophet_forecast_to_datapoints(dataframe: pd.DataFrame) -> list[AssetDatapoint]:
     datapoints = []
-    # Convert ds datetime to milliseconds since epoch
     for _, row in dataframe.iterrows():
-        datapoints.append(AssetDatapoint(x=int(row["ds"].timestamp() * 1000), y=row["yhat"]))
+        # Convert the `ds` timestamp to milliseconds since that is what OpenRemote expects
+        millis = TimeUtil.sec_to_ms(int(row["ds"].timestamp()))
+        datapoints.append(AssetDatapoint(x=millis, y=row["yhat"]))
 
     return datapoints
 
 
 def _convert_datapoints_to_dataframe(datapoints: list[AssetDatapoint], rename_y: str | None = None) -> pd.DataFrame:
     dataframe = pd.DataFrame([{"ds": point.x, "y": point.y} for point in datapoints])
+
+    # Convert the millis timestamp to seconds for Prophet
     dataframe["ds"] = pd.to_datetime(dataframe["ds"], unit="ms")
     if rename_y is not None:
         dataframe = dataframe.rename(columns={"y": rename_y})
 
-    # Sort dataframe by timestamp
+    # Sort the dataframe by timestamp
     dataframe = dataframe.sort_values("ds")
 
     return dataframe

@@ -5,6 +5,7 @@ import respx
 
 from service_ml_forecast.clients.openremote.models import Asset, AssetDatapoint, AssetDatapointPeriod
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
+from service_ml_forecast.util.time_util import TimeUtil
 from tests.conftest import (
     MOCK_OPENREMOTE_URL,
     TEST_ASSET_ID,
@@ -18,6 +19,8 @@ def test_retrieve_assets(mock_openremote_client: OpenRemoteClient) -> None:
 
     # Mock assets query endpoint
     with respx.mock(base_url=MOCK_OPENREMOTE_URL) as respx_mock:
+        timestamp = TimeUtil.sec_to_ms(int(time.time()))
+
         respx_mock.post("/api/master/asset/query").mock(
             return_value=respx.MockResponse(
                 HTTPStatus.OK,
@@ -29,7 +32,7 @@ def test_retrieve_assets(mock_openremote_client: OpenRemoteClient) -> None:
                             TEST_ATTRIBUTE_NAME: {
                                 "name": TEST_ATTRIBUTE_NAME,
                                 "value": mock_power_value,
-                                "timestamp": int(time.time() * 1000),
+                                "timestamp": timestamp,
                             }
                         },
                     }
@@ -62,7 +65,7 @@ def test_retrieve_asset_datapoint_period(mock_openremote_client: OpenRemoteClien
                     "assetId": TEST_ASSET_ID,
                     "attributeName": TEST_ATTRIBUTE_NAME,
                     "oldestTimestamp": TEST_OLDEST_TIMESTAMP,
-                    "latestTimestamp": int(time.time() * 1000),
+                    "latestTimestamp": TimeUtil.sec_to_ms(int(time.time())),
                 },
             )
         )
@@ -102,7 +105,7 @@ def test_retrieve_historical_datapoints(mock_openremote_client: OpenRemoteClient
             )
         )
         datapoints: list[AssetDatapoint] | None = mock_openremote_client.retrieve_historical_datapoints(
-            TEST_ASSET_ID, TEST_ATTRIBUTE_NAME, TEST_OLDEST_TIMESTAMP, int(time.time() * 1000)
+            TEST_ASSET_ID, TEST_ATTRIBUTE_NAME, TEST_OLDEST_TIMESTAMP, TimeUtil.sec_to_ms(int(time.time()))
         )
         assert datapoints is not None
         assert len(datapoints) > 0
@@ -117,7 +120,7 @@ def test_retrieve_historical_datapoints_invalid_asset_id(mock_openremote_client:
             return_value=respx.MockResponse(HTTPStatus.NOT_FOUND)
         )
         datapoints: list[AssetDatapoint] | None = mock_openremote_client.retrieve_historical_datapoints(
-            "invalid_asset_id", TEST_ATTRIBUTE_NAME, TEST_OLDEST_TIMESTAMP, int(time.time() * 1000)
+            "invalid_asset_id", TEST_ATTRIBUTE_NAME, TEST_OLDEST_TIMESTAMP, TimeUtil.sec_to_ms(int(time.time()))
         )
         assert datapoints is None
 

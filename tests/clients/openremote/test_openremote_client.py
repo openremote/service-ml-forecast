@@ -2,6 +2,7 @@ import time
 
 from service_ml_forecast.clients.openremote.models import Asset, AssetDatapoint, AssetDatapointPeriod
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
+from service_ml_forecast.util.time_util import TimeUtil
 from tests.conftest import TEST_ASSET_ID, TEST_ATTRIBUTE_NAME
 
 
@@ -32,7 +33,7 @@ def test_retrieve_asset_datapoint_period_invalid_asset_id(openremote_client: Ope
 
 def test_retrieve_historical_datapoints(openremote_client: OpenRemoteClient) -> None:
     datapoints: list[AssetDatapoint] | None = openremote_client.retrieve_historical_datapoints(
-        TEST_ASSET_ID, TEST_ATTRIBUTE_NAME, 1716153600000, int(time.time() * 1000)
+        TEST_ASSET_ID, TEST_ATTRIBUTE_NAME, 1716153600000, TimeUtil.sec_to_ms(int(time.time()))
     )
     assert datapoints is not None
     assert len(datapoints) > 0
@@ -40,7 +41,7 @@ def test_retrieve_historical_datapoints(openremote_client: OpenRemoteClient) -> 
 
 def test_retrieve_historical_datapoints_invalid_asset_id(openremote_client: OpenRemoteClient) -> None:
     datapoints: list[AssetDatapoint] | None = openremote_client.retrieve_historical_datapoints(
-        "invalid_asset_id", TEST_ATTRIBUTE_NAME, 1716153600000, int(time.time() * 1000)
+        "invalid_asset_id", TEST_ATTRIBUTE_NAME, 1716153600000, TimeUtil.sec_to_ms(int(time.time()))
     )
     assert datapoints is None
 

@@ -24,7 +24,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 from service_ml_forecast.ml.ml_model_provider_factory import MLModelProviderFactory
-from service_ml_forecast.models.ml_data_wrappers import FeatureDatapoints, TrainingFeatureSet
+from service_ml_forecast.models.ml_data_wrappers import FeatureDatapoints, ForecastFeatureSet, TrainingFeatureSet
 from service_ml_forecast.models.ml_model_config import MLModelConfig
 from service_ml_forecast.services.ml_model_config_service import MLModelConfigService
 from service_ml_forecast.util.singleton import Singleton
@@ -240,14 +240,39 @@ def _execute_ml_forecast(config: MLModelConfig, openremote_client: OpenRemoteCli
         config: The configuration to use for forecasting
         openremote_client: The OpenRemote client to retrieve datapoints from
     """
-
     start_time = time.perf_counter()
     provider = MLModelProviderFactory.create_provider(config)
 
-    # TODO: Handle regressors (we need provide multi-regressor models with the forecasted datapoints for each regressor)
+    regressors: list[FeatureDatapoints] = []
 
-    # Generate the forecast
-    forecast = provider.generate_forecast()
+    if config.regressors is not None:
+        for regressor in config.regressors:
+            # Retrieve regressor feature datapoints from OpenRemote
+            regressor_datapoints = openremote_client.retrieve_predicted_datapoints(
+                regressor.asset_id,
+                regressor.attribute_name,
+                regressor.cutoff_timestamp,
+                TimeUtil.pd_future_timestamp(config.forecast_periods, config.forecast_frequency),
+            )
+
+            if regressor_datapoints is None:
+                logger.error(
+                    f"Forecasting failed, could not retrieve regressor datapoints for {config.id}"
+                    f" - {regressor.asset_id} - {regressor.attribute_name}"
+                )
+                return
+
+            regressors.append(
+                FeatureDatapoints(
+                    attribute_name=regressor.attribute_name,
+                    datapoints=regressor_datapoints,
+                )
+            )
+
+    forecast_feature_set = ForecastFeatureSet(regressors=regressors)
+
+    # Generate the forecast (pass None if there are no regressors)
+    forecast = provider.generate_forecast(forecast_feature_set if len(forecast_feature_set.regressors) > 0 else None)
 
     if forecast is None:
         logger.error(f"Forecasting failed, could not generate forecast for {config.id}")

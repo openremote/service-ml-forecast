@@ -65,11 +65,10 @@ class AssetDatapoint(BaseModel):
     y: Any
 
 
-class DatapointsRequestBody(BaseModel):
+class AssetDatapointQuery(BaseModel):
     """Request body for retrieving either historical or predicted data points of an asset attribute."""
 
     fromTimestamp: int
     toTimestamp: int
     fromTime: str = ""
     toTime: str = ""
-    type: str = "string"

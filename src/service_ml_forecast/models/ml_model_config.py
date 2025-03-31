@@ -24,12 +24,12 @@ from service_ml_forecast.models.ml_model_type import MLModelTypeEnum
 
 
 class AssetAttributeFeature(BaseModel):
-    asset_id: str = Field(description="The id of the asset. This is the id of the asset in the OpenRemote API.")
+    asset_id: str = Field(description="The id of the asset.")
     attribute_name: str = Field(
-        description="The name of the attribute of the asset from OpenRemote. This attribute requires historical data."
+        description="The name of the attribute of the asset. This attribute requires historical data."
     )
     cutoff_timestamp: int = Field(
-        description="The timestamp to use for training, all data after this timestamp will be used."
+        description="The timestamp in milliseconds since epoch, all data after this timestamp will be used."
     )
 
 

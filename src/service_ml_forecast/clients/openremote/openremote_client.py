@@ -27,7 +27,7 @@ from service_ml_forecast.clients.openremote.models import (
     Asset,
     AssetDatapoint,
     AssetDatapointPeriod,
-    DatapointsRequestBody,
+    AssetDatapointQuery,
 )
 
 
@@ -190,8 +190,8 @@ class OpenRemoteClient:
         Args:
             asset_id: The ID of the asset.
             attribute_name: The name of the attribute.
-            from_timestamp: The start timestamp.
-            to_timestamp: The end timestamp.
+            from_timestamp: Epoch timestamp in milliseconds.
+            to_timestamp: Epoch timestamp in milliseconds.
 
         Returns:
             list[AssetDatapoint] | None: List of historical data points or None
@@ -199,7 +199,7 @@ class OpenRemoteClient:
         params = f"{asset_id}/{attribute_name}"
         url = f"{self.openremote_url}/api/master/asset/datapoint/{params}"
 
-        request_body = DatapointsRequestBody(
+        request_body = AssetDatapointQuery(
             fromTimestamp=from_timestamp,
             toTimestamp=to_timestamp,
         )
@@ -251,8 +251,8 @@ class OpenRemoteClient:
         Args:
             asset_id: The ID of the asset.
             attribute_name: The name of the attribute.
-            from_timestamp: The start timestamp.
-            to_timestamp: The end timestamp.
+            from_timestamp: Epoch timestamp in milliseconds.
+            to_timestamp: Epoch timestamp in milliseconds.
 
         Returns:
             list[AssetDatapoint] | None: List of predicted data points or None
@@ -260,7 +260,7 @@ class OpenRemoteClient:
         params = f"{asset_id}/{attribute_name}"
         url = f"{self.openremote_url}/api/master/asset/predicted/{params}"
 
-        request_body = DatapointsRequestBody(
+        request_body = AssetDatapointQuery(
             fromTimestamp=from_timestamp,
             toTimestamp=to_timestamp,
         )

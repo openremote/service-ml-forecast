@@ -18,6 +18,7 @@
 import logging
 import time
 
+import pandas as pd
 from isodate import Duration, parse_duration
 
 logger = logging.getLogger(__name__)
@@ -29,7 +30,9 @@ class TimeUtil:
     @staticmethod
     def get_timestamp_ms() -> int:
         """Get the current timestamp in milliseconds."""
-        return int(time.time() * 1000)
+        timestamp = int(time.time())
+        millis = TimeUtil.sec_to_ms(timestamp)
+        return millis
 
     @staticmethod
     def parse_iso_duration(duration: str) -> int:
@@ -48,3 +51,32 @@ class TimeUtil:
         # Convert the duration object to seconds
         duration_seconds = int(duration_obj.total_seconds())
         return duration_seconds
+
+    @staticmethod
+    def pd_future_timestamp(periods: int, frequency: str) -> int:
+        """Get the future timestamp based on the number of periods and frequency.
+
+        Args:
+            periods: The number of periods.
+            frequency: The frequency. (Pandas offset string)
+
+        Returns:
+            The future timestamp in milliseconds.
+        """
+        future_time = pd.Timestamp.now() + periods * pd.tseries.frequencies.to_offset(frequency)
+        timestamp = int(future_time.timestamp())
+        millis = TimeUtil.sec_to_ms(timestamp)
+
+        return millis
+
+    @staticmethod
+    def sec_to_ms(timestamp: int) -> int:
+        """Convert the epoch timestamp in seconds to milliseconds.
+
+        Args:
+            timestamp: The epoch timestamp in seconds.
+
+        Returns:
+            The epoch timestamp in milliseconds. (last 3 digits will be 000)
+        """
+        return int(timestamp * 1000)
