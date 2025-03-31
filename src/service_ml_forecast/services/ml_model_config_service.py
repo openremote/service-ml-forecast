@@ -43,8 +43,8 @@ class MLModelConfigService:
         Returns:
             True if the configuration was saved successfully, False otherwise.
         """
-        config_file_path = f"{ENV.CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config.id}.json"
 
+        config_file_path = f"{ENV.CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config.id}.json"
         file_saved = FsUtil.save_file(config.model_dump_json(), config_file_path)
 
         if not file_saved:

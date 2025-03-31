@@ -14,6 +14,7 @@ from service_ml_forecast.config import ENV
 from service_ml_forecast.logging_config import LOGGING_CONFIG
 from service_ml_forecast.models.ml_model_config import ProphetModelConfig
 from service_ml_forecast.services.ml_model_config_service import MLModelConfigService
+from service_ml_forecast.services.ml_model_storage_service import MLModelStorageService
 from service_ml_forecast.util.fs_util import FsUtil
 
 PROJECT_ROOT = find_project_root()
@@ -110,6 +111,11 @@ def mock_openremote_client() -> OpenRemoteClient | None:
 @pytest.fixture
 def config_service() -> MLModelConfigService:
     return MLModelConfigService()
+
+
+@pytest.fixture
+def model_storage() -> MLModelStorageService:
+    return MLModelStorageService()
 
 
 @pytest.fixture

@@ -11,6 +11,17 @@ def test_save_config(config_service: MLModelConfigService, prophet_basic_config:
     assert config_service.get(prophet_basic_config.id) is not None
 
 
+def test_get_config(config_service: MLModelConfigService, prophet_basic_config: ProphetModelConfig) -> None:
+    config = config_service.get(prophet_basic_config.id)
+    assert config is not None
+    assert config.id == prophet_basic_config.id
+
+
+def test_get_config_not_found(config_service: MLModelConfigService) -> None:
+    config = config_service.get("non-existent-id")
+    assert config is None
+
+
 def test_get_all_configs(config_service: MLModelConfigService) -> None:
     configs = config_service.get_all()
     assert configs is not None
