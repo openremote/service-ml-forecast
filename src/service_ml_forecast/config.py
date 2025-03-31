@@ -15,6 +15,8 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
+import os
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -50,4 +52,6 @@ class AppEnvironment(BaseSettings):
         return self.ENV == "development"
 
 
-env = AppEnvironment()
+# Clear environment before initialization
+os.environ.clear()
+ENV = AppEnvironment()
