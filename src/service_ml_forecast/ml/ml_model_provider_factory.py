@@ -19,7 +19,7 @@ from typing import Any, cast
 
 from service_ml_forecast.ml.ml_model_provider import MLModelProvider
 from service_ml_forecast.ml.prophet_model_provider import ProphetModelProvider
-from service_ml_forecast.models.ml_model_config import MLModelConfig, ProphetModelConfig
+from service_ml_forecast.models.ml_model_config import MLModelConfig
 from service_ml_forecast.models.ml_model_type import MLModelTypeEnum
 
 
@@ -40,12 +40,7 @@ class MLModelProviderFactory:
         """
         if config.type == MLModelTypeEnum.PROPHET:
             try:
-                if not isinstance(config, ProphetModelConfig):
-                    prophet_config = ProphetModelConfig(**config.model_dump())
-                else:
-                    prophet_config = config
-
-                return cast(MLModelProvider[Any], ProphetModelProvider(config=prophet_config))
+                return cast(MLModelProvider[Any], ProphetModelProvider(config=config))
             except Exception as e:
                 raise ValueError(f"Failed to convert config to ProphetMLConfig: {e}") from e
 

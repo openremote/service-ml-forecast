@@ -15,8 +15,9 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-import json
 import logging
+
+from pydantic import TypeAdapter, ValidationError
 
 from service_ml_forecast.config import ENV
 from service_ml_forecast.models.ml_model_config import MLModelConfig
@@ -73,7 +74,12 @@ class MLModelConfigService:
             if file_content is None:
                 logger.error(f"Failed to read config file {config_file_path}")
                 continue
-            configs.append(MLModelConfig(**json.loads(file_content)))
+
+            try:
+                configs.append(self.parse(file_content))
+            except ValidationError as e:
+                logger.error(f"Failed to parse config file {config_file_path}: {e}")
+                continue
 
         return configs
 
@@ -93,7 +99,11 @@ class MLModelConfigService:
             logger.error(f"Failed to read config file {config_file_path}")
             return None
 
-        return MLModelConfig(**json.loads(file_content))
+        try:
+            return self.parse(file_content)
+        except ValidationError as e:
+            logger.error(f"Failed to parse config file {config_file_path}: {e}")
+            return None
 
     def update(self, config: MLModelConfig) -> bool:
         """Update ML model configuration.
@@ -128,3 +138,8 @@ class MLModelConfigService:
             logger.error(f"Failed to delete config {config_id}")
 
         return file_deleted
+
+    def parse(self, json: str) -> MLModelConfig:
+        """Parse a JSON string into the concrete type."""
+        model_adapter: TypeAdapter[MLModelConfig] = TypeAdapter(MLModelConfig)
+        return model_adapter.validate_json(json)

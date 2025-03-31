@@ -15,6 +15,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
+from typing import Annotated, Literal
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
@@ -32,7 +33,7 @@ class AssetAttributeFeature(BaseModel):
     )
 
 
-class MLModelConfig(BaseModel):
+class BaseMLModelConfig(BaseModel):
     """Base configuration for all ML models."""
 
     id: str = Field(
@@ -58,10 +59,10 @@ class MLModelConfig(BaseModel):
     )
 
 
-class ProphetModelConfig(MLModelConfig):
+class ProphetModelConfig(BaseMLModelConfig):
     """Prophet specific configuration."""
 
-    type: MLModelTypeEnum = MLModelTypeEnum.PROPHET
+    type: Literal[MLModelTypeEnum.PROPHET] = MLModelTypeEnum.PROPHET
     yearly_seasonality: bool = Field(
         default=True,
         description="Whether to include yearly seasonality in the model.",
@@ -74,3 +75,9 @@ class ProphetModelConfig(MLModelConfig):
         default=True,
         description="Whether to include daily seasonality in the model.",
     )
+
+
+MLModelConfig = Annotated[
+    ProphetModelConfig,
+    Field(discriminator="type"),
+]

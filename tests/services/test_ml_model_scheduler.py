@@ -9,6 +9,7 @@ from service_ml_forecast.models.ml_model_config import ProphetModelConfig
 from service_ml_forecast.services.ml_model_config_service import MLModelConfigService
 from service_ml_forecast.services.ml_model_scheduler import (
     CONFIG_REFRESH_JOB_ID,
+    FORECASTING_JOB_ID_PREFIX,
     TRAINING_JOB_ID_PREFIX,
     MLModelScheduler,
     _execute_ml_training,
@@ -56,6 +57,7 @@ def test_ml_model_scheduler_config_present(
     expected_jobs = [
         CONFIG_REFRESH_JOB_ID,
         f"{TRAINING_JOB_ID_PREFIX}:{prophet_basic_config.id}",
+        f"{FORECASTING_JOB_ID_PREFIX}:{prophet_basic_config.id}",
     ]
     assert len(model_scheduler.scheduler.get_jobs()) == len(expected_jobs)
     for job in expected_jobs:

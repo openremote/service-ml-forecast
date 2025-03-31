@@ -38,6 +38,9 @@ class MLModelStorageService:
             model_content: The serialized ML model. (e.g. JSON, Pickle, etc.)
             model_id: The ID of the model.
             model_file_extension: The file extension of the model.
+
+        Returns:
+            True if the model was saved successfully, False otherwise.
         """
         relative_path = f"{ENV.MODELS_DIR}/{self.MODEL_FILE_PREFIX}-{model_id}{model_file_extension}"
 
@@ -49,6 +52,9 @@ class MLModelStorageService:
         Args:
             model_id: The ID of the model.
             model_file_extension: The file extension of the model.
+
+        Returns:
+            The serialized ML model, or None
         """
         relative_path = f"{ENV.MODELS_DIR}/{self.MODEL_FILE_PREFIX}-{model_id}{model_file_extension}"
 
@@ -60,6 +66,9 @@ class MLModelStorageService:
         Args:
             model_id: The ID of the model.
             model_file_extension: The file extension of the model.
+
+        Returns:
+            True if the model was deleted successfully, False otherwise.
         """
         relative_path = f"{ENV.MODELS_DIR}/{self.MODEL_FILE_PREFIX}-{model_id}{model_file_extension}"
 
