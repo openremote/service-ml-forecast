@@ -93,7 +93,7 @@ service_ml_forecast = "service_ml_forecast.main:app"
 
 # CLI commands for development tasks
 lint = "scripts.tools:lint"
-serve = "scripts.tools:serve"
+start = "scripts.tools:start"
 test = "scripts.tools:test"
 test-coverage = "scripts.tools:test_coverage"
 format = "scripts.tools:format"

@@ -33,6 +33,6 @@ uv sync
 - Run linting - `uv run lint`
 - Format code - `uv run format`
 - Run tests - `uv run test`
-- Run the application - `uv run serve`
+- Run the application - `uv run start`
 
 

@@ -26,8 +26,8 @@ def step(cmd: str, description: str = "") -> None:
         sys.exit(1)
 
 
-def serve() -> None:
-    """Serve the application."""
+def start() -> None:
+    """Start the application."""
     step("uv run -m service_ml_forecast.main", "service-ml-forecast")
 
 
