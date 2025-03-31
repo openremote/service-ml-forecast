@@ -15,11 +15,11 @@ For more information about uv, visit the [official documentation](https://docs.a
 - Or with Homebrew (macOS): `brew install uv`
 
 ### Setup python environment
-`uv` automatically creates and manages virtual environments:
+`uv venv` automatically creates a virtual environment with the python version specified in the `pyproject.toml` file.
 
 ```bash
 # Create a virtual environment
-uv venv --python 3.12
+uv venv
 source .venv/bin/activate # On Windows: .venv\Scripts\activate
 ```
 
@@ -29,7 +29,7 @@ uv sync
 ```
 
 ### Helper Scripts
-*Make sure you have created a virtual environment via `uv venv --python 3.12`*
+*Make sure you have created a virtual environment via `uv venv`*
 - Run linting - `uv run lint`
 - Format code - `uv run format`
 - Run tests - `uv run test`
