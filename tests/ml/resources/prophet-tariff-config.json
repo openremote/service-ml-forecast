@@ -8,8 +8,8 @@
       "attribute_name": "tariff",
       "cutoff_timestamp": 1716153600000
     },
-    "forecast_interval": "PT1H",
-    "training_interval": "PT1D",
+    "forecast_interval": "PT120S",
+    "training_interval": "PT60S",
     "forecast_periods": 7,
     "forecast_frequency": "1h",
     "regressors": [

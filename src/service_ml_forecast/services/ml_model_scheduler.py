@@ -148,9 +148,9 @@ def _execute_ml_training(config: MLModelConfig, openremote_client: OpenRemoteCli
     start_time = time.perf_counter()
     provider = MLModelProviderFactory.create_provider(config)
 
-    # Retrieve the target feature datapoints
     target_feature_datapoints: FeatureDatapoints
 
+    # Handle target feature datapoints
     try:
         datapoints = openremote_client.retrieve_historical_datapoints(
             config.target.asset_id,
@@ -170,12 +170,39 @@ def _execute_ml_training(config: MLModelConfig, openremote_client: OpenRemoteCli
         logger.error(f"Failed to retrieve target feature datapoints for {config.id}: {e}")
         return
 
+    regressors: list[FeatureDatapoints] = []
+
+    # Handle regressor feature datapoints
+    try:
+        if config.regressors is not None:
+            for regressor in config.regressors:
+                regressor_datapoints = openremote_client.retrieve_historical_datapoints(
+                    regressor.asset_id,
+                    regressor.attribute_name,
+                    regressor.cutoff_timestamp,
+                    TimeUtil.get_timestamp_ms(),
+                )
+                if regressor_datapoints is None:
+                    logger.error(
+                        f"Failed to retrieve regressor datapoints {regressor.asset_id} - {regressor.attribute_name}"
+                    )
+                    return
+
+                regressors.append(
+                    FeatureDatapoints(
+                        attribute_name=regressor.attribute_name,
+                        datapoints=regressor_datapoints,
+                    )
+                )
+    except Exception as e:
+        logger.error(f"Failed to retrieve regressor feature datapoints for {config.id}: {e}")
+        return
+
     # Create the training feature set
     training_feature_set = TrainingFeatureSet(
         target=target_feature_datapoints,
+        regressors=regressors if regressors else None,
     )
-
-    # TODO: Handle regressors
 
     # Train the model
     model = provider.train_model(training_feature_set)
