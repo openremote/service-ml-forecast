@@ -55,7 +55,8 @@ class BaseMLModelConfig(BaseModel):
     training_interval: str = Field(description="Model training interval. Expects ISO 8601 duration strings.")
     forecast_periods: int = Field(description="The number of periods to forecast.")
     forecast_frequency: str = Field(
-        description="The frequency of each forecasted datapoint. Expects a pandas offset string. E.g. '30min' or '1h'."
+        description="The frequency of each forecasted datapoint. Expects a pandas offset string. E.g. '30min' or '1h'. "
+        "Generated forecast datapoints are rounded to the nearest frequency. Example: 15:30 -> 16:00 -> 16:30 etc."
     )
 
 
