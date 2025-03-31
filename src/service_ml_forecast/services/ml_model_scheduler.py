@@ -115,6 +115,24 @@ class MLModelScheduler(Singleton):
             executor="process_pool",
         )
 
+    def _add_forecast_job(self, config: MLModelConfig) -> None:
+        job_id = f"{FORECASTING_JOB_ID_PREFIX}:{config.id}"
+        seconds = TimeUtil.parse_iso_duration(config.forecast_interval)
+
+        # skip if config has not changed
+        if self._has_no_config_changes(job_id, config):
+            return
+
+        self.scheduler.add_job(
+            _execute_ml_forecast,
+            trigger="interval",
+            args=[config, self.openremote_client],
+            seconds=seconds,
+            id=job_id,
+            name=job_id,
+            executor="process_pool",
+        )
+
     def _refresh_configs(self) -> None:
         """Refresh the configurations and schedule the jobs based on the new configs"""
         try:
@@ -123,10 +141,11 @@ class MLModelScheduler(Singleton):
                 return
 
             for config in configs:
+                # Order is important here (train -> forecast)
                 self._add_training_job(config)
-
+                self._add_forecast_job(config)
         except Exception as e:
-            logger.error(f"Failed to refresh configurations: {e}")
+            logger.error(f"Failed to refresh configurations and schedule jobs: {e}")
 
     def _has_no_config_changes(self, job_id: str, config: MLModelConfig) -> bool:
         existing_job = self.scheduler.get_job(job_id)
@@ -214,11 +233,31 @@ def _execute_ml_training(config: MLModelConfig, openremote_client: OpenRemoteCli
     logger.info(f"Training job for {config.id} completed - duration: {end_time - start_time}s")
 
 
-def _execute_ml_forecasting(config: MLModelConfig, openremote_client: OpenRemoteClient) -> None:
+def _execute_ml_forecast(config: MLModelConfig, openremote_client: OpenRemoteClient) -> None:
     """Standalone function for ML model forecasting (can be sent to a process)
 
     Args:
         config: The configuration to use for forecasting
         openremote_client: The OpenRemote client to retrieve datapoints from
     """
-    pass
+
+    start_time = time.perf_counter()
+    provider = MLModelProviderFactory.create_provider(config)
+
+    forecast = provider.generate_forecast()
+    if forecast is None:
+        logger.error(f"Failed to generate forecast for {config.id}")
+        return
+
+    # TODO: Handle regressors - either we retrieve the datapoints from OpenRemote
+    # Or we use the forecast from the regressor model (if we have it)
+
+    # Write the forecast to OpenRemote
+    openremote_client.write_predicted_datapoints(
+        config.target.asset_id,
+        config.target.attribute_name,
+        forecast.datapoints,
+    )
+
+    end_time = time.perf_counter()
+    logger.info(f"Forecasting job for {config.id} completed - duration: {end_time - start_time}s")

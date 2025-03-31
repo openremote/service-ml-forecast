@@ -1,3 +1,4 @@
+import datetime
 from http import HTTPStatus
 
 import respx
@@ -13,6 +14,7 @@ from service_ml_forecast.services.ml_model_scheduler import (
     _execute_ml_training,
 )
 from service_ml_forecast.services.ml_model_storage_service import MLModelStorageService
+from service_ml_forecast.util.time_util import TimeUtil
 from tests.conftest import MOCK_OPENREMOTE_URL, cleanup_test_configs
 
 # Ensure clean configs directory
@@ -58,6 +60,13 @@ def test_ml_model_scheduler_config_present(
     assert len(model_scheduler.scheduler.get_jobs()) == len(expected_jobs)
     for job in expected_jobs:
         assert model_scheduler.scheduler.get_job(job) is not None
+
+    # Training job has the correct parameters
+    training_job = model_scheduler.scheduler.get_job(f"{TRAINING_JOB_ID_PREFIX}:{prophet_basic_config.id}")
+    assert training_job is not None
+    assert training_job.func == _execute_ml_training
+    expected_interval = datetime.timedelta(seconds=TimeUtil.parse_iso_duration(prophet_basic_config.training_interval))
+    assert training_job.trigger.interval == expected_interval
 
     # Stop the scheduler and check that the jobs are removed
     model_scheduler.stop()
