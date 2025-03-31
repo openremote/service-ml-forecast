@@ -32,9 +32,9 @@ from service_ml_forecast.util.time_util import TimeUtil
 
 logger = logging.getLogger(__name__)
 
-CONFIG_REFRESH_JOB_ID = "ml:config-refresh"
+CONFIG_WATCHER_JOB_ID = "ml:config-watcher"
 TRAINING_JOB_ID_PREFIX = "ml:training"
-FORECASTING_JOB_ID_PREFIX = "ml:forecasting"
+FORECAST_JOB_ID_PREFIX = "ml:forecast"
 
 JOB_GRACE_PERIOD = 60  # 1 minute (time to run the job after the scheduled time)
 
@@ -84,8 +84,8 @@ class MLModelScheduler(Singleton):
                 self._refresh_configs,
                 trigger="interval",
                 seconds=self.config_refresh_interval,
-                id=CONFIG_REFRESH_JOB_ID,
-                name=CONFIG_REFRESH_JOB_ID,
+                id=CONFIG_WATCHER_JOB_ID,
+                name=CONFIG_WATCHER_JOB_ID,
                 executor="thread_pool",
             )
 
@@ -116,7 +116,7 @@ class MLModelScheduler(Singleton):
         )
 
     def _add_forecast_job(self, config: MLModelConfig) -> None:
-        job_id = f"{FORECASTING_JOB_ID_PREFIX}:{config.id}"
+        job_id = f"{FORECAST_JOB_ID_PREFIX}:{config.id}"
         seconds = TimeUtil.parse_iso_duration(config.forecast_interval)
 
         # skip if config has not changed

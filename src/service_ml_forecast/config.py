@@ -19,6 +19,10 @@ import os
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from service_ml_forecast import find_project_root
+
+ENVFILE = os.path.join(find_project_root(), ".env")
+
 
 class AppEnvironment(BaseSettings):
     """Application environment settings.
@@ -43,7 +47,7 @@ class AppEnvironment(BaseSettings):
     OPENREMOTE_SERVICE_USER: str = "serviceuser"
     OPENREMOTE_SERVICE_USER_SECRET: str = "secret"
 
-    model_config = SettingsConfigDict(case_sensitive=True, env_prefix="", env_file=".env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(case_sensitive=True, env_prefix="", env_file=ENVFILE, env_file_encoding="utf-8")
 
     def is_production(self) -> bool:
         """Check if the environment is production."""

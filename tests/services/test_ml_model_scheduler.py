@@ -8,8 +8,8 @@ from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteC
 from service_ml_forecast.models.ml_model_config import ProphetModelConfig
 from service_ml_forecast.services.ml_model_config_service import MLModelConfigService
 from service_ml_forecast.services.ml_model_scheduler import (
-    CONFIG_REFRESH_JOB_ID,
-    FORECASTING_JOB_ID_PREFIX,
+    CONFIG_WATCHER_JOB_ID,
+    FORECAST_JOB_ID_PREFIX,
     TRAINING_JOB_ID_PREFIX,
     MLModelScheduler,
     _execute_ml_training,
@@ -30,7 +30,7 @@ def test_ml_model_scheduler_init_start_stop(mock_openremote_client: OpenRemoteCl
 
     # It is expected that the config refresh job is always present
     expected_jobs = [
-        CONFIG_REFRESH_JOB_ID,
+        CONFIG_WATCHER_JOB_ID,
     ]
     assert len(model_scheduler.scheduler.get_jobs()) == len(expected_jobs)
     for job in expected_jobs:
@@ -55,9 +55,9 @@ def test_ml_model_scheduler_config_present(
 
     # It is expected that the training job has been added to the scheduler
     expected_jobs = [
-        CONFIG_REFRESH_JOB_ID,
+        CONFIG_WATCHER_JOB_ID,
         f"{TRAINING_JOB_ID_PREFIX}:{prophet_basic_config.id}",
-        f"{FORECASTING_JOB_ID_PREFIX}:{prophet_basic_config.id}",
+        f"{FORECAST_JOB_ID_PREFIX}:{prophet_basic_config.id}",
     ]
     assert len(model_scheduler.scheduler.get_jobs()) == len(expected_jobs)
     for job in expected_jobs:
