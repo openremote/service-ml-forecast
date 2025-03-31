@@ -32,7 +32,7 @@ source .venv/bin/activate # On Windows: .venv\Scripts\activate
 
 - List all available commands - `make help`
 
-- Install all dependencies - `make install`
+- Install dependencies - `make install`
 
 - Run all tests - `make test`
 
@@ -40,7 +40,9 @@ source .venv/bin/activate # On Windows: .venv\Scripts\activate
 
 - Format code - `make format`
 
-- Clean dependencies and build artifacts - `make clean`
+- Clean virtual environment - `make clean`
+
+- Clean virtual environment and install dependencies - `make clean-install`
 
 - Run the application - `make run`
 
