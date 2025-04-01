@@ -93,11 +93,6 @@ def test_retrieve_historical_datapoints_invalid_asset_id(openremote_client: Open
 def test_write_retrieve_predicted_datapoints(openremote_client: OpenRemoteClient) -> None:
     """Test writing and retrieving predicted datapoints on a real OpenRemote instance.
 
-    This test performs an end-to-end validation of the prediction workflow:
-    1. Writing future predictions to OpenRemote
-    2. Retrieving those predictions back
-    3. Verifying the retrieved data matches what was written
-
     Verifies that:
     - The client can write predicted datapoints to OpenRemote
     - The client can retrieve those predictions within a specified time range
