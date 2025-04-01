@@ -43,7 +43,7 @@ ENV.CONFIGS_DIR = TEST_TMP_DIR / "configs"
 
 # Clean up temporary directory after each test call
 @pytest.fixture(scope="function", autouse=True)
-def cleanup_test_tmp_dir() -> Generator[None, None, None]:
+def cleanup_test_tmp_dir() -> Generator[None]:
     yield
     shutil.rmtree(TEST_TMP_DIR, ignore_errors=True)
 

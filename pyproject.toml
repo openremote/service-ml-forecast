@@ -7,7 +7,7 @@ name = "service-ml-forecast"
 version = "0.1.0"
 description = "Machine Learning Forecast Service"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.13"
 dependencies = [
     "fastapi>=0.115.11",
     "uvicorn>=0.34.0",
@@ -46,7 +46,7 @@ package-dir = {"service_ml_forecast" = "src/service_ml_forecast"}
 
 [tool.ruff]
 line-length = 120
-target-version = "py312"
+target-version = "py313"
 fix = true
 unsafe-fixes = false
 indent-width = 4
@@ -79,7 +79,7 @@ indent-style = "space"
 
 
 [tool.mypy]
-python_version = "3.12"
+python_version = "3.13"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true

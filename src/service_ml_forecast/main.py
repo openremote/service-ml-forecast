@@ -42,7 +42,7 @@ if __app_info__ is None:
 
 # FastAPI Lifecycle, handles startup and shutdown tasks
 @asynccontextmanager
-async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
+async def lifespan(_app: FastAPI) -> AsyncGenerator[None]:
     # Startup tasks
     logger.info("Starting application")
     logger.info("Application details: %s", __app_info__)

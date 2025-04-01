@@ -4,7 +4,7 @@ from service_ml_forecast.models.ml_data_wrappers import FeatureDatapoints, Forec
 from service_ml_forecast.models.ml_model_config import ProphetModelConfig
 
 
-def test_model_provider_train_and_predict(
+def test_train_and_predict(
     prophet_basic_config: ProphetModelConfig,
     windspeed_mock_datapoints: list[AssetDatapoint],
 ) -> None:
@@ -40,7 +40,7 @@ def test_model_provider_train_and_predict(
     assert len(forecast.datapoints) > 0
 
 
-def test_model_provider_train_and_predict_with_regressor(
+def test_train_and_predict_with_regressor(
     prophet_multi_variable_config: ProphetModelConfig,
     prophet_basic_config: ProphetModelConfig,
     tariff_mock_datapoints: list[AssetDatapoint],

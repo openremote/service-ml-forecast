@@ -49,11 +49,11 @@ class MLModelConfigService:
 
         return file_saved
 
-    def get_all(self) -> list[MLModelConfig] | None:
+    def get_all(self) -> list[MLModelConfig]:
         """Get all available ML model configurations.
 
         Returns:
-            list[MLModelConfig] | None: The list of ML model configurations, or None if no configurations are found
+            list[MLModelConfig]: The list of ML model configurations
         """
 
         configs = []
@@ -61,7 +61,7 @@ class MLModelConfigService:
 
         if config_files is None or len(config_files) == 0:
             logger.error(f"No config files found in {ENV.CONFIGS_DIR}")
-            return None
+            return []
 
         for file in config_files:
             path = Path(f"{ENV.CONFIGS_DIR}/{file}")

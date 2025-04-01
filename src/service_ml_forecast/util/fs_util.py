@@ -47,7 +47,7 @@ class FsUtil:
 
             logger.debug(f"Saved content to {path}")
             return True
-        except (PermissionError, OSError) as e:
+        except OSError as e:
             logger.exception(f"Failed to save content to {path}: {e!s}")
             return False
 
@@ -65,12 +65,12 @@ class FsUtil:
         except FileNotFoundError:
             logger.error(f"File not found: {path}")
             return None
-        except (PermissionError, OSError) as e:
+        except OSError as e:
             logger.exception(f"Failed to read file {path}: {e!s}")
             return None
 
     @staticmethod
-    def get_all_file_names(path: Path, extension: str) -> list[str] | None:
+    def get_all_file_names(path: Path, extension: str) -> list[str]:
         """Get all files in a directory.
 
         Args:
@@ -78,7 +78,7 @@ class FsUtil:
             extension: The extension of the files to get. (e.g. "json", "pkl")
 
         Returns:
-            A list of all the file names in the directory, or None if an error occurred.
+            A list of all the file names in the directory
         """
         try:
             files = [f.name for f in path.glob(f"*.{extension}")]
@@ -86,10 +86,10 @@ class FsUtil:
             return files
         except FileNotFoundError:
             logger.error(f"Directory not found: {path}")
-            return None
-        except (PermissionError, NotADirectoryError, OSError) as e:
+            return []
+        except OSError as e:
             logger.exception(f"Failed to list files in {path}: {e!s}")
-            return None
+            return []
 
     @staticmethod
     def delete_file(path: Path) -> bool:
@@ -105,6 +105,6 @@ class FsUtil:
             path.unlink(missing_ok=True)  # missing_ok=True prevents FileNotFoundError
             logger.debug(f"Deleted content from {path}")
             return True
-        except (PermissionError, IsADirectoryError, OSError) as e:
+        except OSError as e:
             logger.exception(f"Failed to delete file {path}: {e!s}")
             return False

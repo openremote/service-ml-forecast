@@ -43,9 +43,9 @@ CONFIG_REFRESH_INTERVAL = 30  # 30 seconds
 class MLModelScheduler(Singleton):
     """Manages the scheduling of ML model training and forecasting jobs."""
 
-    def __init__(self, ml_data_service: OpenRemoteMLDataService) -> None:
+    def __init__(self, data_service: OpenRemoteMLDataService) -> None:
         self.config_storage = MLModelConfigService()
-        self.data_service = ml_data_service
+        self.data_service = data_service
 
         executors = {
             "process_pool": ProcessPoolExecutor(max_workers=1),  # For CPU-intensive training tasks
@@ -60,6 +60,7 @@ class MLModelScheduler(Singleton):
             coalesce=True,
             max_instances=1,
             job_defaults={"misfire_grace_time": JOB_GRACE_PERIOD},
+            logger=logger,
         )
 
     def start(self) -> None:
@@ -100,7 +101,7 @@ class MLModelScheduler(Singleton):
         seconds = TimeUtil.parse_iso_duration(config.training_interval)
 
         # Do not add the job if the config has not changed
-        if self._has_no_config_changes(job_id, config):
+        if self.is_job_config_unchanged(job_id, config):
             return
 
         self.scheduler.add_job(
@@ -119,7 +120,7 @@ class MLModelScheduler(Singleton):
         seconds = TimeUtil.parse_iso_duration(config.forecast_interval)
 
         # Do not add the job if the config has not changed
-        if self._has_no_config_changes(job_id, config):
+        if self.is_job_config_unchanged(job_id, config):
             return
 
         self.scheduler.add_job(
@@ -145,10 +146,28 @@ class MLModelScheduler(Singleton):
                 # Order is important here (train -> forecast)
                 self._add_training_job(config)
                 self._add_forecast_job(config)
+
+                # Check for removed configs and remove the corresponding jobs
+                self._cleanup_stale_jobs(configs)
+
         except Exception as e:
             logger.exception(f"Failed to poll configurations and schedule jobs: {e}")
 
-    def _has_no_config_changes(self, job_id: str, config: MLModelConfig) -> bool:
+    def _cleanup_stale_jobs(self, configs: list[MLModelConfig]) -> None:
+        """Remove jobs for configs that are no longer present in the config storage"""
+
+        # training and forecast jobs for the given configs
+        training_jobs = [f"{TRAINING_JOB_ID_PREFIX}:{config.id}" for config in configs]
+        forecast_jobs = [f"{FORECAST_JOB_ID_PREFIX}:{config.id}" for config in configs]
+
+        # All valid jobs (expected to be in the job store)
+        valid_jobs = training_jobs + forecast_jobs + [CONFIG_WATCHER_JOB_ID]
+
+        for job in self.scheduler.get_jobs():
+            if job.id not in valid_jobs:  # Remove jobs if they are not in the valid jobs list
+                self.scheduler.remove_job(job.id)
+
+    def is_job_config_unchanged(self, job_id: str, config: MLModelConfig) -> bool:
         existing_job = self.scheduler.get_job(job_id)
 
         if existing_job is not None and existing_job.args is not None:

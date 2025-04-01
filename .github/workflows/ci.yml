@@ -25,10 +25,10 @@ jobs:
     - name: GNU Make version
       run: make --version
 
-    - name: Set up Python 3.12
+    - name: Set up Python 3.13
       uses: actions/setup-python@8d9ed9ac5c53483de85588cdf95a591a75ab9f55 # v5
       with:
-        python-version: '3.12'
+        python-version: '3.13'
         cache: 'pip'
 
     - name: Create and activate Python virtual environment

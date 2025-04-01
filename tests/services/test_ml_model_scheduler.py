@@ -22,7 +22,7 @@ from service_ml_forecast.util.time_util import TimeUtil
 from tests.conftest import MOCK_OPENREMOTE_URL
 
 
-def test_ml_model_scheduler_init_start_stop(mock_ml_data_service: OpenRemoteMLDataService) -> None:
+def test_scheduler_lifecycle(mock_ml_data_service: OpenRemoteMLDataService) -> None:
     """Test the initialization, starting and stopping of the MLModelScheduler.
 
     Verifies that:
@@ -50,7 +50,7 @@ def test_ml_model_scheduler_init_start_stop(mock_ml_data_service: OpenRemoteMLDa
     assert len(model_scheduler.scheduler.get_jobs()) == 0
 
 
-def test_ml_model_scheduler_config_present(
+def test_scheduler_job_management(
     mock_ml_data_service: OpenRemoteMLDataService,
     config_service: MLModelConfigService,
     prophet_basic_config: ProphetModelConfig,
@@ -60,6 +60,7 @@ def test_ml_model_scheduler_config_present(
     Verifies that:
     - Training and forecast jobs are created for the config
     - Jobs have correct parameters and intervals
+    - Jobs are properly removed when the config is deleted
     - All jobs are properly cleaned up on stop
     """
 
@@ -86,13 +87,22 @@ def test_ml_model_scheduler_config_present(
     expected_interval = datetime.timedelta(seconds=TimeUtil.parse_iso_duration(prophet_basic_config.training_interval))
     assert training_job.trigger.interval == expected_interval
 
+    # Remove the config and check that the jobs are removed
+    assert config_service.delete(prophet_basic_config.id)
+    configs = config_service.get_all()
+    model_scheduler._cleanup_stale_jobs(configs)  # trigger cleanup of stale jobs
+
+    # Check that the jobs are removed
+    assert model_scheduler.scheduler.get_job(f"{TRAINING_JOB_ID_PREFIX}:{prophet_basic_config.id}") is None
+    assert model_scheduler.scheduler.get_job(f"{FORECAST_JOB_ID_PREFIX}:{prophet_basic_config.id}") is None
+
     # Stop the scheduler and check that the jobs are removed
     model_scheduler.stop()
     assert not model_scheduler.scheduler.running
     assert len(model_scheduler.scheduler.get_jobs()) == 0
 
 
-def test_ml_model_scheduler_execute_training_job(
+def test_training_execution(
     mock_ml_data_service: OpenRemoteMLDataService,
     config_service: MLModelConfigService,
     prophet_basic_config: ProphetModelConfig,
@@ -123,7 +133,7 @@ def test_ml_model_scheduler_execute_training_job(
     assert model_storage.load(prophet_basic_config.id, ".json") is not None
 
 
-def test_ml_model_scheduler_execute_training_job_with_missing_datapoints(
+def test_training_execution_with_missing_datapoints(
     mock_ml_data_service: OpenRemoteMLDataService,
     config_service: MLModelConfigService,
     prophet_basic_config: ProphetModelConfig,
@@ -154,7 +164,7 @@ def test_ml_model_scheduler_execute_training_job_with_missing_datapoints(
     assert model_storage.load(prophet_basic_config.id, ".json") is None
 
 
-def test_ml_model_scheduler_execute_forecast_basic(
+def test_forecast_execution(
     mock_ml_data_service: OpenRemoteMLDataService,
     trained_basic_model: ProphetModelConfig,
 ) -> None:
@@ -176,7 +186,7 @@ def test_ml_model_scheduler_execute_forecast_basic(
         assert route.called
 
 
-def test_ml_model_scheduler_execute_forecast_with_regressor(
+def test_forecast_execution_with_regressor(
     mock_ml_data_service: OpenRemoteMLDataService,
     trained_regressor_model: ProphetModelConfig,
     trained_basic_model: ProphetModelConfig,
@@ -223,7 +233,7 @@ def test_ml_model_scheduler_execute_forecast_with_regressor(
         assert route.called
 
 
-def test_ml_model_scheduler_execute_forecast_job_with_no_model(
+def test_forecast_execution_with_no_model(
     mock_ml_data_service: OpenRemoteMLDataService,
     config_service: MLModelConfigService,
     prophet_basic_config: ProphetModelConfig,
