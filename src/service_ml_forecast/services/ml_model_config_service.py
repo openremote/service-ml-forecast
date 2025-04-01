@@ -16,6 +16,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 import logging
+from pathlib import Path
 
 from pydantic import TypeAdapter, ValidationError
 
@@ -27,26 +28,21 @@ logger = logging.getLogger(__name__)
 
 
 class MLModelConfigService:
-    """
-    Manages the persistence of ML model configurations.
-
-    Uses the file system to store and retrieve ML model configurations.
-    """
+    """Manages the persistence of ML model configurations."""
 
     CONFIG_FILE_PREFIX = "config"
 
     def save(self, config: MLModelConfig) -> bool:
-        """Save ML model configuration.
+        """Saves the ML model configuration.
 
         Args:
-            config: The configuration to save.
+            config: The ML model configuration to save
 
         Returns:
-            True if the configuration was saved successfully, False otherwise.
+            bool: True if the configuration was saved successfully, False otherwise
         """
-
-        config_file_path = f"{ENV.CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config.id}.json"
-        file_saved = FsUtil.save_file(config.model_dump_json(), config_file_path)
+        path = Path(f"{ENV.CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config.id}.json")
+        file_saved = FsUtil.save_file(config.model_dump_json(), path)
 
         if not file_saved:
             logger.error(f"Failed to save config {config.id}")
@@ -54,68 +50,69 @@ class MLModelConfigService:
         return file_saved
 
     def get_all(self) -> list[MLModelConfig] | None:
-        """Get all ML model configurations.
+        """Get all available ML model configurations.
 
         Returns:
-            A list of all ML model configurations, or None
+            list[MLModelConfig] | None: The list of ML model configurations, or None if no configurations are found
         """
-        configs = []
-        config_files = FsUtil.get_all_file_names(ENV.CONFIGS_DIR, ".json")
 
-        if config_files is None:
+        configs = []
+        config_files = FsUtil.get_all_file_names(ENV.CONFIGS_DIR, "json")
+
+        if config_files is None or len(config_files) == 0:
             logger.error(f"No config files found in {ENV.CONFIGS_DIR}")
             return None
 
         for file in config_files:
-            config_file_path = f"{ENV.CONFIGS_DIR}/{file}"
+            path = Path(f"{ENV.CONFIGS_DIR}/{file}")
 
-            file_content = FsUtil.read_file(config_file_path)
+            file_content = FsUtil.read_file(path)
 
             if file_content is None:
-                logger.error(f"Failed to read config file {config_file_path}")
-                continue
+                logger.error(f"Failed to read config file {path}")
+                continue  # Skip the file if it cannot be read
 
             try:
                 configs.append(self.parse(file_content))
             except ValidationError as e:
-                logger.error(f"Failed to parse config file {config_file_path}: {e}")
-                continue
+                logger.exception(f"Failed to parse config file {path}: {e}")
+                continue  # Skip the file if it cannot be parsed
 
         return configs
 
     def get(self, config_id: str) -> MLModelConfig | None:
-        """Get ML model configuration.
+        """Get the ML model configuration based on the provided ID.
 
         Args:
-            config_id: The ID of the configuration to get.
+            config_id: The ID of the ML model configuration
 
         Returns:
-            The ML model configuration, or None
+            MLModelConfig | None: The ML model configuration, or None if the configuration was not found
         """
-        config_file_path = f"{ENV.CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config_id}.json"
-        file_content = FsUtil.read_file(config_file_path)
+        path = Path(f"{ENV.CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config_id}.json")
+        file_content = FsUtil.read_file(path)
 
         if file_content is None:
-            logger.error(f"Failed to read config file {config_file_path}")
+            logger.error(f"Failed to read config file {path}")
             return None
 
         try:
             return self.parse(file_content)
         except ValidationError as e:
-            logger.error(f"Failed to parse config file {config_file_path}: {e}")
+            logger.exception(f"Failed to parse config file {path}: {e}")
             return None
 
     def update(self, config: MLModelConfig) -> bool:
-        """Update ML model configuration.
+        """Update the ML model configuration.
 
         Args:
-            config: The configuration to update.
+            config: The ML model configuration to update
 
         Returns:
-            True if the configuration was updated successfully, False otherwise.
+            bool: True if the configuration was updated successfully, False otherwise
         """
-        config_file_path = f"{ENV.CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config.id}.json"
-        file_saved = FsUtil.save_file(config.model_dump_json(), config_file_path)
+        path = Path(f"{ENV.CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config.id}.json")
+        file_saved = FsUtil.save_file(config.model_dump_json(), path)
 
         if not file_saved:
             logger.error(f"Failed to update config {config.id}")
@@ -123,16 +120,10 @@ class MLModelConfigService:
         return file_saved
 
     def delete(self, config_id: str) -> bool:
-        """Delete ML model configuration.
+        """Delete the ML model configuration based on the provided ID."""
 
-        Args:
-            config_id: The ID of the configuration to delete.
-
-        Returns:
-            True if the configuration was deleted successfully, False otherwise.
-        """
-        config_file_path = f"{ENV.CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config_id}.json"
-        file_deleted = FsUtil.delete_file(config_file_path)
+        path = Path(f"{ENV.CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config_id}.json")
+        file_deleted = FsUtil.delete_file(path)
 
         if not file_deleted:
             logger.error(f"Failed to delete config {config_id}")
@@ -140,6 +131,7 @@ class MLModelConfigService:
         return file_deleted
 
     def parse(self, json: str) -> MLModelConfig:
-        """Parse a JSON string into the concrete type."""
+        """Parse the provided ML model configuration JSON string into the concrete type."""
+
         model_adapter: TypeAdapter[MLModelConfig] = TypeAdapter(MLModelConfig)
         return model_adapter.validate_json(json)

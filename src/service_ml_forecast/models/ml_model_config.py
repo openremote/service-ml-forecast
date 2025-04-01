@@ -26,10 +26,10 @@ from service_ml_forecast.models.ml_model_type import MLModelTypeEnum
 class AssetAttributeFeature(BaseModel):
     asset_id: str = Field(description="The id of the asset.")
     attribute_name: str = Field(
-        description="The name of the attribute of the asset. This attribute requires historical data."
+        description="The name of the attribute of the asset. This attribute requires historical data.",
     )
     cutoff_timestamp: int = Field(
-        description="The timestamp in milliseconds since epoch, all data after this timestamp will be used."
+        description="The timestamp in milliseconds since epoch, all data after this timestamp will be used.",
     )
 
 
@@ -44,7 +44,7 @@ class BaseMLModelConfig(BaseModel):
     name: str = Field(description="A friendly name for the model configuration.")
     type: MLModelTypeEnum = Field(description="Which machine learning model to use.")
     target: AssetAttributeFeature = Field(
-        description="The asset attribute datapoint to predict. This datapoint must have historical data available."
+        description="The asset attribute datapoint to predict. This datapoint must have historical data available.",
     )
     regressors: list[AssetAttributeFeature] | None = Field(
         default=None,
@@ -56,7 +56,7 @@ class BaseMLModelConfig(BaseModel):
     forecast_periods: int = Field(description="The number of periods to forecast.")
     forecast_frequency: str = Field(
         description="The frequency of each forecasted datapoint. Expects a pandas offset string. E.g. '30min' or '1h'. "
-        "Generated forecast datapoints are rounded to the nearest frequency. Example: 15:30 -> 16:00 -> 16:30 etc."
+        "Generated forecast datapoints are rounded to the nearest frequency. Example: 15:30 -> 16:00 -> 16:30 etc.",
     )
 
 

@@ -49,6 +49,7 @@ line-length = 120
 target-version = "py312"
 fix = true
 unsafe-fixes = false
+indent-width = 4
 
 [tool.ruff.lint]
 select = [
@@ -71,6 +72,10 @@ fixable = ["ALL"]
 [tool.ruff.format]
 line-ending = "auto"
 quote-style = "double"
+docstring-code-format = true
+docstring-code-line-length = "dynamic"
+indent-style = "space"
+
 
 [tool.mypy]
 python_version = "3.12"

@@ -38,6 +38,7 @@ class Asset(BaseModel):
 
     def get_attribute_value(self, attribute_name: str) -> Any | None:
         """Helper method to get an attribute value."""
+
         if attribute_name in self.attributes:
             return self.attributes[attribute_name].value
         return None
@@ -58,7 +59,6 @@ class AssetDatapoint(BaseModel):
     Args:
         x: The timestamp of the data point.
         y: The value of the data point.
-
     """
 
     x: int
@@ -66,7 +66,7 @@ class AssetDatapoint(BaseModel):
 
 
 class AssetDatapointQuery(BaseModel):
-    """Request body for retrieving either historical or predicted data points of an asset attribute."""
+    """Request body for querying asset datapoints."""
 
     fromTimestamp: int
     toTimestamp: int

@@ -86,7 +86,7 @@ class ProphetModelProvider(MLModelProvider[Prophet]):
             logger.info(f"Saved trained model -- {self.config.id}")
             return True
         except Exception as e:
-            logger.error(f"Failed to save trained model -- {self.config.id}: {e}")
+            logger.exception(f"Failed to save trained model -- {self.config.id}: {e}")
             return False
 
     def generate_forecast(self, forecast_feature_set: ForecastFeatureSet | None = None) -> ForecastResult | None:
@@ -96,7 +96,9 @@ class ProphetModelProvider(MLModelProvider[Prophet]):
             return None
 
         future = model.make_future_dataframe(
-            periods=self.config.forecast_periods, freq=self.config.forecast_frequency, include_history=False
+            periods=self.config.forecast_periods,
+            freq=self.config.forecast_frequency,
+            include_history=False,
         )
 
         # round the future timestamps to the forecast frequency
@@ -107,7 +109,8 @@ class ProphetModelProvider(MLModelProvider[Prophet]):
             logger.info(f"Requested forecast is using regressor(s) -- {self.config.id}")
             for regressor in forecast_feature_set.regressors:
                 regressor_dataframe = _convert_datapoints_to_dataframe(
-                    regressor.datapoints, rename_y=regressor.attribute_name
+                    regressor.datapoints,
+                    rename_y=regressor.attribute_name,
                 )
 
                 # Interpolate the regressor values to the future data point timestamps
@@ -169,7 +172,8 @@ def _prepare_training_dataframe(training_dataset: TrainingFeatureSet) -> pd.Data
     if regressors is not None:
         for regressor in regressors:
             regressor_dataframe = _convert_datapoints_to_dataframe(
-                regressor.datapoints, rename_y=regressor.attribute_name
+                regressor.datapoints,
+                rename_y=regressor.attribute_name,
             )
 
             # Interpolate the regressor values to the target data point timestamps

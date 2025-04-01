@@ -28,6 +28,7 @@ from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteC
 from service_ml_forecast.config import ENV
 from service_ml_forecast.logging_config import LOGGING_CONFIG
 from service_ml_forecast.services.ml_model_scheduler import MLModelScheduler
+from service_ml_forecast.services.openremote_ml_data_service import OpenRemoteMLDataService
 
 # Load the logging configuration
 logging.config.dictConfig(LOGGING_CONFIG)
@@ -55,7 +56,8 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     )
 
     # Initialize the Model scheduler
-    model_scheduler = MLModelScheduler(openremote_client)
+    ml_data_service = OpenRemoteMLDataService(openremote_client)
+    model_scheduler = MLModelScheduler(ml_data_service)
     model_scheduler.start()
 
     yield  # yield to the FastAPI app

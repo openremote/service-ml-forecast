@@ -19,21 +19,26 @@ def test_retrieve_assets_invalid_realm(openremote_client: OpenRemoteClient) -> N
 
 def test_retrieve_asset_datapoint_period(openremote_client: OpenRemoteClient) -> None:
     datapoint_period: AssetDatapointPeriod | None = openremote_client.retrieve_asset_datapoint_period(
-        TEST_ASSET_ID, TEST_ATTRIBUTE_NAME
+        TEST_ASSET_ID,
+        TEST_ATTRIBUTE_NAME,
     )
     assert datapoint_period is not None
 
 
 def test_retrieve_asset_datapoint_period_invalid_asset_id(openremote_client: OpenRemoteClient) -> None:
     datapoint_period: AssetDatapointPeriod | None = openremote_client.retrieve_asset_datapoint_period(
-        "invalid_asset_id", TEST_ATTRIBUTE_NAME
+        "invalid_asset_id",
+        TEST_ATTRIBUTE_NAME,
     )
     assert datapoint_period is None
 
 
 def test_retrieve_historical_datapoints(openremote_client: OpenRemoteClient) -> None:
     datapoints: list[AssetDatapoint] | None = openremote_client.retrieve_historical_datapoints(
-        TEST_ASSET_ID, TEST_ATTRIBUTE_NAME, 1716153600000, TimeUtil.sec_to_ms(int(time.time()))
+        TEST_ASSET_ID,
+        TEST_ATTRIBUTE_NAME,
+        1716153600000,
+        TimeUtil.sec_to_ms(int(time.time())),
     )
     assert datapoints is not None
     assert len(datapoints) > 0
@@ -41,7 +46,10 @@ def test_retrieve_historical_datapoints(openremote_client: OpenRemoteClient) -> 
 
 def test_retrieve_historical_datapoints_invalid_asset_id(openremote_client: OpenRemoteClient) -> None:
     datapoints: list[AssetDatapoint] | None = openremote_client.retrieve_historical_datapoints(
-        "invalid_asset_id", TEST_ATTRIBUTE_NAME, 1716153600000, TimeUtil.sec_to_ms(int(time.time()))
+        "invalid_asset_id",
+        TEST_ATTRIBUTE_NAME,
+        1716153600000,
+        TimeUtil.sec_to_ms(int(time.time())),
     )
     assert datapoints is None
 
@@ -58,7 +66,10 @@ def test_write_retrieve_predicted_datapoints(openremote_client: OpenRemoteClient
     assert openremote_client.write_predicted_datapoints(TEST_ASSET_ID, TEST_ATTRIBUTE_NAME, datapoints)
 
     predicted_datapoints: list[AssetDatapoint] | None = openremote_client.retrieve_predicted_datapoints(
-        TEST_ASSET_ID, TEST_ATTRIBUTE_NAME, timestamp1, timestamp2
+        TEST_ASSET_ID,
+        TEST_ATTRIBUTE_NAME,
+        timestamp1,
+        timestamp2,
     )
     assert predicted_datapoints is not None
     assert len(predicted_datapoints) == len(datapoints)

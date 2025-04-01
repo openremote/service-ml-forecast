@@ -40,7 +40,7 @@ class MLModelProviderFactory:
         """
         if config.type == MLModelTypeEnum.PROPHET:
             try:
-                return cast(MLModelProvider[Any], ProphetModelProvider(config=config))
+                return cast("MLModelProvider[Any]", ProphetModelProvider(config=config))
             except Exception as e:
                 raise ValueError(f"Failed to convert config to ProphetMLConfig: {e}") from e
 

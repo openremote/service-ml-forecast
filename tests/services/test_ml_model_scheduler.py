@@ -4,7 +4,6 @@ from http import HTTPStatus
 import respx
 
 from service_ml_forecast.clients.openremote.models import AssetDatapoint
-from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 from service_ml_forecast.models.ml_model_config import ProphetModelConfig
 from service_ml_forecast.services.ml_model_config_service import MLModelConfigService
 from service_ml_forecast.services.ml_model_scheduler import (
@@ -16,15 +15,13 @@ from service_ml_forecast.services.ml_model_scheduler import (
     _execute_ml_training,
 )
 from service_ml_forecast.services.ml_model_storage_service import MLModelStorageService
+from service_ml_forecast.services.openremote_ml_data_service import OpenRemoteMLDataService
 from service_ml_forecast.util.time_util import TimeUtil
-from tests.conftest import MOCK_OPENREMOTE_URL, cleanup_test_configs
-
-# Ensure clean configs directory
-cleanup_test_configs()
+from tests.conftest import MOCK_OPENREMOTE_URL
 
 
-def test_ml_model_scheduler_init_start_stop(mock_openremote_client: OpenRemoteClient) -> None:
-    model_scheduler = MLModelScheduler(mock_openremote_client)
+def test_ml_model_scheduler_init_start_stop(mock_ml_data_service: OpenRemoteMLDataService) -> None:
+    model_scheduler = MLModelScheduler(mock_ml_data_service)
     model_scheduler.start()
 
     assert model_scheduler.scheduler.running
@@ -44,12 +41,12 @@ def test_ml_model_scheduler_init_start_stop(mock_openremote_client: OpenRemoteCl
 
 
 def test_ml_model_scheduler_config_present(
-    mock_openremote_client: OpenRemoteClient,
+    mock_ml_data_service: OpenRemoteMLDataService,
     config_service: MLModelConfigService,
     prophet_basic_config: ProphetModelConfig,
 ) -> None:
     assert config_service.save(prophet_basic_config)
-    model_scheduler = MLModelScheduler(mock_openremote_client)
+    model_scheduler = MLModelScheduler(mock_ml_data_service)
     model_scheduler.start()
 
     assert model_scheduler.scheduler.running
@@ -78,7 +75,7 @@ def test_ml_model_scheduler_config_present(
 
 
 def test_ml_model_scheduler_execute_training_job(
-    mock_openremote_client: OpenRemoteClient,
+    mock_ml_data_service: OpenRemoteMLDataService,
     config_service: MLModelConfigService,
     prophet_basic_config: ProphetModelConfig,
     model_storage: MLModelStorageService,
@@ -89,20 +86,20 @@ def test_ml_model_scheduler_execute_training_job(
     # add mock for the forecast datapoints
     with respx.mock(base_url=MOCK_OPENREMOTE_URL) as respx_mock:
         respx_mock.post(
-            f"/api/master/asset/datapoint/{prophet_basic_config.target.asset_id}/{prophet_basic_config.target.attribute_name}"
+            f"/api/master/asset/datapoint/{prophet_basic_config.target.asset_id}/{prophet_basic_config.target.attribute_name}",
         ).mock(
             return_value=respx.MockResponse(
                 HTTPStatus.OK,
                 json=windspeed_mock_datapoints,
-            )
+            ),
         )
-        _execute_ml_training(prophet_basic_config, mock_openremote_client)
+        _execute_ml_training(prophet_basic_config, mock_ml_data_service)
 
     assert model_storage.load(prophet_basic_config.id, ".json") is not None
 
 
 def test_ml_model_scheduler_execute_forecast_job(
-    mock_openremote_client: OpenRemoteClient,
+    mock_ml_data_service: OpenRemoteMLDataService,
     config_service: MLModelConfigService,
     prophet_basic_config: ProphetModelConfig,
 ) -> None:
@@ -111,8 +108,8 @@ def test_ml_model_scheduler_execute_forecast_job(
     # add mock for writing forecast datapoints
     with respx.mock(base_url=MOCK_OPENREMOTE_URL) as respx_mock:
         respx_mock.put(
-            f"/api/master/asset/predicted/{prophet_basic_config.target.asset_id}/{prophet_basic_config.target.attribute_name}"
+            f"/api/master/asset/predicted/{prophet_basic_config.target.asset_id}/{prophet_basic_config.target.attribute_name}",
         ).mock(
             return_value=respx.MockResponse(HTTPStatus.NO_CONTENT),
         )
-        _execute_ml_forecast(prophet_basic_config, mock_openremote_client)
+        _execute_ml_forecast(prophet_basic_config, mock_ml_data_service)

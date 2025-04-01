@@ -24,7 +24,7 @@ LOGGING_CONFIG = {
         "standard": {
             "format": "%(asctime)s %(levelname)s [%(name)s:%(lineno)d] - %(message)s",
             "datefmt": "%Y-%m-%d %H:%M:%S",
-        }
+        },
     },
     "handlers": {
         "default": {
@@ -32,7 +32,7 @@ LOGGING_CONFIG = {
             "formatter": "standard",
             "class": "logging.StreamHandler",
             "stream": "ext://sys.stdout",
-        }
+        },
     },
     "loggers": {
         "": {

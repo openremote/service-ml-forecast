@@ -16,6 +16,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 import logging
+from pathlib import Path
 
 from service_ml_forecast.config import ENV
 from service_ml_forecast.util.fs_util import FsUtil
@@ -24,10 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 class MLModelStorageService:
-    """Manages the persistence of ML models.
-
-    Uses the file system to store and retrieve ML models.
-    """
+    """Manages the persistence of ML models."""
 
     MODEL_FILE_PREFIX = "model"
 
@@ -35,41 +33,44 @@ class MLModelStorageService:
         """Save the serialized ML model.
 
         Args:
-            model_content: The serialized ML model. (e.g. JSON, Pickle, etc.)
-            model_id: The ID of the model.
-            model_file_extension: The file extension of the model.
+            model_content: The serialized ML model
+            model_id: The ID of the ML model
+            model_file_extension: The extension of the ML model file
 
         Returns:
-            True if the model was saved successfully, False otherwise.
+            bool: True if the model was saved successfully, False otherwise
         """
-        relative_path = f"{ENV.MODELS_DIR}/{self.MODEL_FILE_PREFIX}-{model_id}{model_file_extension}"
 
-        return FsUtil.save_file(model_content, relative_path)
+        path = Path(f"{ENV.MODELS_DIR}/{self.MODEL_FILE_PREFIX}-{model_id}{model_file_extension}")
+
+        return FsUtil.save_file(model_content, path)
 
     def load(self, model_id: str, model_file_extension: str) -> str | None:
         """Load the serialized ML model.
 
         Args:
-            model_id: The ID of the model.
-            model_file_extension: The file extension of the model.
+            model_id: The ID of the ML model
+            model_file_extension: The extension of the ML model file
 
         Returns:
-            The serialized ML model, or None
+            str | None: The serialized ML model, or None if the model was not found
         """
-        relative_path = f"{ENV.MODELS_DIR}/{self.MODEL_FILE_PREFIX}-{model_id}{model_file_extension}"
 
-        return FsUtil.read_file(relative_path)
+        path = Path(f"{ENV.MODELS_DIR}/{self.MODEL_FILE_PREFIX}-{model_id}{model_file_extension}")
+
+        return FsUtil.read_file(path)
 
     def delete(self, model_id: str, model_file_extension: str) -> bool:
         """Delete a serialized ML model.
 
         Args:
-            model_id: The ID of the model.
-            model_file_extension: The file extension of the model.
+            model_id: The ID of the ML model
+            model_file_extension: The extension of the ML model file
 
         Returns:
-            True if the model was deleted successfully, False otherwise.
+            bool: True if the model was deleted successfully, False otherwise
         """
-        relative_path = f"{ENV.MODELS_DIR}/{self.MODEL_FILE_PREFIX}-{model_id}{model_file_extension}"
 
-        return FsUtil.delete_file(relative_path)
+        path = Path(f"{ENV.MODELS_DIR}/{self.MODEL_FILE_PREFIX}-{model_id}{model_file_extension}")
+
+        return FsUtil.delete_file(path)

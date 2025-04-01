@@ -15,9 +15,10 @@ def test_model_provider_train(
     model = model_provider.train_model(
         TrainingFeatureSet(
             target=FeatureDatapoints(
-                attribute_name=prophet_basic_config.target.attribute_name, datapoints=windspeed_mock_datapoints
-            )
-        )
+                attribute_name=prophet_basic_config.target.attribute_name,
+                datapoints=windspeed_mock_datapoints,
+            ),
+        ),
     )
     assert model is not None
 
@@ -49,7 +50,8 @@ def test_model_provider_train_with_regressor(
 
     # Create the target feature datapoints
     target_feature_datapoints = FeatureDatapoints(
-        attribute_name=prophet_multi_variable_config.target.attribute_name, datapoints=tariff_mock_datapoints
+        attribute_name=prophet_multi_variable_config.target.attribute_name,
+        datapoints=tariff_mock_datapoints,
     )
 
     # Create the regressor feature datapoints
@@ -63,7 +65,7 @@ def test_model_provider_train_with_regressor(
 
     # Train the model with the target and regressor feature datapoints
     model = model_provider.train_model(
-        TrainingFeatureSet(target=target_feature_datapoints, regressors=regressor_feature_datapoints)
+        TrainingFeatureSet(target=target_feature_datapoints, regressors=regressor_feature_datapoints),
     )
     assert model is not None
 
@@ -75,7 +77,8 @@ def test_model_provider_train_with_regressor(
 
 
 def test_model_provider_predict_with_regressor_datapoints(
-    prophet_multi_variable_config: ProphetModelConfig, prophet_basic_config: ProphetModelConfig
+    prophet_multi_variable_config: ProphetModelConfig,
+    prophet_basic_config: ProphetModelConfig,
 ) -> None:
     # Generate a forecast for the regressor
     windspeed_model_provider = MLModelProviderFactory.create_provider(prophet_basic_config)
@@ -87,7 +90,8 @@ def test_model_provider_predict_with_regressor_datapoints(
     assert len(windspeed_forecast.datapoints) > 0
 
     windspeed_feature_datapoints = FeatureDatapoints(
-        attribute_name=prophet_basic_config.target.attribute_name, datapoints=windspeed_forecast.datapoints
+        attribute_name=prophet_basic_config.target.attribute_name,
+        datapoints=windspeed_forecast.datapoints,
     )
     forecast_featureset = ForecastFeatureSet(regressors=[windspeed_feature_datapoints])
 

@@ -29,16 +29,6 @@ class AppInfo(BaseModel):
     version: str
 
 
-def find_project_root(start_path: Path = Path(__file__)) -> Path:
-    """Find the project root by looking for marker files."""
-    current = start_path.parent
-    while current != current.parent:
-        if any((current / marker).exists() for marker in ["pyproject.toml", ".env"]):
-            return current
-        current = current.parent
-    raise RuntimeError("Could not find project root")
-
-
 def get_app_info() -> AppInfo | None:
     """Read app info (name, description, version) from pyproject.toml file."""
     try:

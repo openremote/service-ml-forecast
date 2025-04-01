@@ -22,11 +22,10 @@ from apscheduler.executors.pool import ProcessPoolExecutor, ThreadPoolExecutor
 from apscheduler.jobstores.memory import MemoryJobStore
 from apscheduler.schedulers.background import BackgroundScheduler
 
-from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 from service_ml_forecast.ml.ml_model_provider_factory import MLModelProviderFactory
-from service_ml_forecast.models.ml_data_wrappers import FeatureDatapoints, ForecastFeatureSet, TrainingFeatureSet
 from service_ml_forecast.models.ml_model_config import MLModelConfig
 from service_ml_forecast.services.ml_model_config_service import MLModelConfigService
+from service_ml_forecast.services.openremote_ml_data_service import OpenRemoteMLDataService
 from service_ml_forecast.util.singleton import Singleton
 from service_ml_forecast.util.time_util import TimeUtil
 
@@ -42,13 +41,11 @@ CONFIG_REFRESH_INTERVAL = 30  # 30 seconds
 
 
 class MLModelScheduler(Singleton):
-    """
-    Manages the scheduling of ML model training and forecasting jobs.
-    """
+    """Manages the scheduling of ML model training and forecasting jobs."""
 
-    def __init__(self, openremote_client: OpenRemoteClient) -> None:
+    def __init__(self, ml_data_service: OpenRemoteMLDataService) -> None:
         self.config_storage = MLModelConfigService()
-        self.openremote_client = openremote_client
+        self.data_service = ml_data_service
 
         executors = {
             "process_pool": ProcessPoolExecutor(max_workers=1),  # For CPU-intensive training tasks
@@ -68,7 +65,8 @@ class MLModelScheduler(Singleton):
     def start(self) -> None:
         """Start the scheduler for ML model training and forecasting.
 
-        If the scheduler is already running, it will not be started again.
+        Raises:
+            Exception: If the scheduler fails to start
         """
 
         if self.scheduler.running:
@@ -94,6 +92,7 @@ class MLModelScheduler(Singleton):
 
     def stop(self) -> None:
         """Stop the scheduler"""
+
         self.scheduler.shutdown()
 
     def _add_training_job(self, config: MLModelConfig) -> None:
@@ -107,7 +106,7 @@ class MLModelScheduler(Singleton):
         self.scheduler.add_job(
             _execute_ml_training,
             trigger="interval",
-            args=[config, self.openremote_client],
+            args=[config, self.data_service],
             seconds=seconds,
             id=job_id,
             name=job_id,
@@ -126,7 +125,7 @@ class MLModelScheduler(Singleton):
         self.scheduler.add_job(
             _execute_ml_forecast,
             trigger="interval",
-            args=[config, self.openremote_client],
+            args=[config, self.data_service],
             seconds=seconds,
             id=job_id,
             name=job_id,
@@ -136,6 +135,7 @@ class MLModelScheduler(Singleton):
 
     def _poll_configs(self) -> None:
         """Poll for configurations and schedule the jobs based on the new configs"""
+
         try:
             configs = self.config_storage.get_all()
             if not configs:
@@ -146,7 +146,7 @@ class MLModelScheduler(Singleton):
                 self._add_training_job(config)
                 self._add_forecast_job(config)
         except Exception as e:
-            logger.error(f"Failed to poll configurations and schedule jobs: {e}")
+            logger.exception(f"Failed to poll configurations and schedule jobs: {e}")
 
     def _has_no_config_changes(self, job_id: str, config: MLModelConfig) -> bool:
         existing_job = self.scheduler.get_job(job_id)
@@ -158,65 +158,22 @@ class MLModelScheduler(Singleton):
         return False
 
 
-def _execute_ml_training(config: MLModelConfig, openremote_client: OpenRemoteClient) -> None:
-    """Standalone function for ML model training (can be sent to a process)
+def _execute_ml_training(config: MLModelConfig, data_service: OpenRemoteMLDataService) -> None:
+    """Standalone function for ML model training, requires a valid config and data provider
 
     Args:
-        config: The configuration to use for training
-        openremote_client: The OpenRemote client to retrieve datapoints from
+        config: The model configuration
+        data_service: The data service
     """
+
     start_time = time.perf_counter()
     provider = MLModelProviderFactory.create_provider(config)
 
-    target_feature_datapoints: FeatureDatapoints
+    training_feature_set = data_service.get_training_feature_set(config)
 
-    # Retrieve target feature datapoints from OpenRemote
-    datapoints = openremote_client.retrieve_historical_datapoints(
-        config.target.asset_id,
-        config.target.attribute_name,
-        config.target.cutoff_timestamp,
-        TimeUtil.get_timestamp_ms(),
-    )
-
-    if datapoints is None:
-        logger.error(f"Training failed, could not retrieve target feature datapoints for {config.id}")
+    if training_feature_set is None:
+        logger.error(f"Training failed, could not retrieve training feature set for {config.id}")
         return
-
-    target_feature_datapoints = FeatureDatapoints(
-        attribute_name=config.target.attribute_name,
-        datapoints=datapoints,
-    )
-
-    regressors: list[FeatureDatapoints] = []
-
-    if config.regressors is not None:
-        for regressor in config.regressors:
-            # Retrieve regressor feature datapoints from OpenRemote
-            regressor_datapoints = openremote_client.retrieve_historical_datapoints(
-                regressor.asset_id,
-                regressor.attribute_name,
-                regressor.cutoff_timestamp,
-                TimeUtil.get_timestamp_ms(),
-            )
-
-            if regressor_datapoints is None:
-                logger.error(
-                    f"Training failed, could not retrieve regressor datapoints for {config.id}"
-                    f" - {regressor.asset_id} - {regressor.attribute_name}"
-                )
-                return
-
-            regressors.append(
-                FeatureDatapoints(
-                    attribute_name=regressor.attribute_name,
-                    datapoints=regressor_datapoints,
-                )
-            )
-
-    training_feature_set = TrainingFeatureSet(
-        target=target_feature_datapoints,
-        regressors=regressors if regressors else None,
-    )
 
     # Train the model
     model = provider.train_model(training_feature_set)
@@ -233,57 +190,32 @@ def _execute_ml_training(config: MLModelConfig, openremote_client: OpenRemoteCli
     logger.info(f"Training job for {config.id} completed - duration: {end_time - start_time}s")
 
 
-def _execute_ml_forecast(config: MLModelConfig, openremote_client: OpenRemoteClient) -> None:
-    """Standalone function for ML model forecasting (can be sent to a process)
+def _execute_ml_forecast(config: MLModelConfig, data_service: OpenRemoteMLDataService) -> None:
+    """Standalone function for ML model forecasting, requires a valid config and data provider
 
     Args:
-        config: The configuration to use for forecasting
-        openremote_client: The OpenRemote client to retrieve datapoints from
+        config: The model configuration
+        data_service: The data service
     """
+
     start_time = time.perf_counter()
     provider = MLModelProviderFactory.create_provider(config)
 
-    regressors: list[FeatureDatapoints] = []
+    forecast_feature_set = data_service.get_forecast_feature_set(config)
 
-    if config.regressors is not None:
-        for regressor in config.regressors:
-            # Retrieve regressor feature datapoints from OpenRemote
-            regressor_datapoints = openremote_client.retrieve_predicted_datapoints(
-                regressor.asset_id,
-                regressor.attribute_name,
-                regressor.cutoff_timestamp,
-                TimeUtil.pd_future_timestamp(config.forecast_periods, config.forecast_frequency),
-            )
-
-            if regressor_datapoints is None:
-                logger.error(
-                    f"Forecasting failed, could not retrieve regressor datapoints for {config.id}"
-                    f" - {regressor.asset_id} - {regressor.attribute_name}"
-                )
-                return
-
-            regressors.append(
-                FeatureDatapoints(
-                    attribute_name=regressor.attribute_name,
-                    datapoints=regressor_datapoints,
-                )
-            )
-
-    forecast_feature_set = ForecastFeatureSet(regressors=regressors)
-
-    # Generate the forecast (pass None if there are no regressors)
-    forecast = provider.generate_forecast(forecast_feature_set if len(forecast_feature_set.regressors) > 0 else None)
+    # Generate the forecast
+    forecast = provider.generate_forecast(forecast_feature_set)
 
     if forecast is None:
         logger.error(f"Forecasting failed, could not generate forecast for {config.id}")
         return
 
     # Write the forecasted datapoints to OpenRemote
-    datapoints_written = openremote_client.write_predicted_datapoints(
-        config.target.asset_id,
-        config.target.attribute_name,
+    datapoints_written = data_service.write_predicted_datapoints(
+        config,
         forecast.datapoints,
     )
+
     if not datapoints_written:
         logger.error(f"Forecasting failed, could not write forecast for {config.id}")
         return
@@ -291,5 +223,5 @@ def _execute_ml_forecast(config: MLModelConfig, openremote_client: OpenRemoteCli
     end_time = time.perf_counter()
     logger.info(
         f"Forecasting job for {config.id} completed - duration: {end_time - start_time}s"
-        f" - wrote {len(forecast.datapoints)} datapoints"
+        f" - wrote {len(forecast.datapoints)} datapoints",
     )

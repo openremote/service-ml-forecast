@@ -15,13 +15,24 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
+
 import os
+from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from service_ml_forecast import find_project_root
 
-ENVFILE = os.path.join(find_project_root(), ".env")
+def _find_project_root(start_path: Path = Path(__file__)) -> Path:
+    """Find the project root by looking for marker files."""
+    current = start_path.parent
+    while current != current.parent:
+        if any((current / marker).exists() for marker in ["pyproject.toml", ".env"]):
+            return current
+        current = current.parent
+    raise RuntimeError("Could not find project root")
+
+
+ENVFILE = Path(_find_project_root()) / ".env"
 
 
 class AppEnvironment(BaseSettings):
@@ -32,8 +43,9 @@ class AppEnvironment(BaseSettings):
 
     # Application Settings
     PUBLISH_DOCS: bool = True
-    MODELS_DIR: str = "/deployment/data/models"
-    CONFIGS_DIR: str = "/deployment/data/configs"
+    BASE_DIR: Path = _find_project_root()
+    MODELS_DIR: Path = BASE_DIR / "deployment/data/models"
+    CONFIGS_DIR: Path = BASE_DIR / "deployment/data/configs"
 
     # Logging
     LOG_LEVEL: str = "INFO"

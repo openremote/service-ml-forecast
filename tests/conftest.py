@@ -1,13 +1,12 @@
 import json
 import logging.config
-from collections.abc import Generator
+import tempfile
 from http import HTTPStatus
 from pathlib import Path
 
 import pytest
 import respx
 
-from service_ml_forecast import find_project_root
 from service_ml_forecast.clients.openremote.models import AssetDatapoint
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 from service_ml_forecast.config import ENV
@@ -15,9 +14,7 @@ from service_ml_forecast.logging_config import LOGGING_CONFIG
 from service_ml_forecast.models.ml_model_config import ProphetModelConfig
 from service_ml_forecast.services.ml_model_config_service import MLModelConfigService
 from service_ml_forecast.services.ml_model_storage_service import MLModelStorageService
-from service_ml_forecast.util.fs_util import FsUtil
-
-PROJECT_ROOT = find_project_root()
+from service_ml_forecast.services.openremote_ml_data_service import OpenRemoteMLDataService
 
 logging.config.dictConfig(LOGGING_CONFIG)
 
@@ -34,30 +31,12 @@ MOCK_SERVICE_USER_SECRET = "service_user_secret"
 MOCK_ACCESS_TOKEN = "mock_access_token"
 MOCK_TOKEN_EXPIRY_SECONDS = 60
 
+# Create a temporary directory for tests
+TEST_TMP_DIR: Path = Path(tempfile.mkdtemp(prefix="service_ml_forecast_test_"))
 
-TEST_TMP_DIR = "/tests/.tmp"
-
-# Overwrite model and config storage paths for testing purposes
-ENV.MODELS_DIR = f"{TEST_TMP_DIR}/models"
-ENV.CONFIGS_DIR = f"{TEST_TMP_DIR}/configs"
-
-
-def cleanup_test_configs() -> None:
-    """Cleanup test configs after all tests have run."""
-    FsUtil.delete_directory(ENV.CONFIGS_DIR)
-
-
-def cleanup_test_models() -> None:
-    """Cleanup test models after all tests have run."""
-    FsUtil.delete_directory(ENV.MODELS_DIR)
-
-
-# Automatically clean up test files after all tests have run
-@pytest.fixture(scope="session", autouse=True)
-def cleanup_test_tmp_dir() -> Generator[None, None, None]:
-    """Cleanup test files after all tests have run."""
-    yield
-    FsUtil.delete_directory(TEST_TMP_DIR)
+ENV.BASE_DIR = TEST_TMP_DIR
+ENV.MODELS_DIR = TEST_TMP_DIR / "models"
+ENV.CONFIGS_DIR = TEST_TMP_DIR / "configs"
 
 
 # Create an OpenRemote client for testing against a real instance
@@ -96,7 +75,7 @@ def mock_openremote_client() -> OpenRemoteClient | None:
                     "token_type": "Bearer",
                     "expires_in": MOCK_TOKEN_EXPIRY_SECONDS,
                 },
-            )
+            ),
         )
 
         client = OpenRemoteClient(
@@ -146,3 +125,13 @@ def tariff_mock_datapoints() -> list[AssetDatapoint]:
     with open(tariff_data_path) as f:
         datapoints: list[AssetDatapoint] = json.load(f)
         return datapoints
+
+
+@pytest.fixture
+def ml_data_service(openremote_client: OpenRemoteClient) -> OpenRemoteMLDataService:
+    return OpenRemoteMLDataService(openremote_client)
+
+
+@pytest.fixture
+def mock_ml_data_service(mock_openremote_client: OpenRemoteClient) -> OpenRemoteMLDataService:
+    return OpenRemoteMLDataService(mock_openremote_client)

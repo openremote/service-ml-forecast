@@ -56,6 +56,8 @@ class OpenRemoteClient:
         service_user: The service user for the OpenRemote API.
         service_user_secret: The service user secret for the OpenRemote API.
 
+    Raises:
+        Exception: If the authentication fails
     """
 
     logger = logging.getLogger(__name__)
@@ -121,6 +123,7 @@ class OpenRemoteClient:
         Returns:
             bool: True if healthy, False if not.
         """
+
         url = f"{self.openremote_url}/api/master/health"
 
         request = self.__build_request("GET", url)
@@ -142,6 +145,7 @@ class OpenRemoteClient:
         Returns:
             list[Asset] | None: List of assets or None
         """
+
         url = f"{self.openremote_url}/api/master/asset/query"
         asset_query = {"recursive": True, "realm": {"name": realm}}
 
@@ -167,6 +171,7 @@ class OpenRemoteClient:
         Returns:
             AssetDatapointPeriod | None: The datapoints timestamp period of the asset attribute
         """
+
         query = f"?assetId={asset_id}&attributeName={attribute_name}"
         url = f"{self.openremote_url}/api/master/asset/datapoint/periods{query}"
 
@@ -176,14 +181,17 @@ class OpenRemoteClient:
             try:
                 response = client.send(request)
                 response.raise_for_status()
-                datapoint_period = AssetDatapointPeriod(**response.json())
-                return datapoint_period
+                return AssetDatapointPeriod(**response.json())
             except (httpx.HTTPStatusError, httpx.ConnectError) as e:
                 self.logger.error(f"Error retrieving asset datapoint period: {e}")
                 return None
 
     def retrieve_historical_datapoints(
-        self, asset_id: str, attribute_name: str, from_timestamp: int, to_timestamp: int
+        self,
+        asset_id: str,
+        attribute_name: str,
+        from_timestamp: int,
+        to_timestamp: int,
     ) -> list[AssetDatapoint] | None:
         """Retrieve the historical data points of a given asset attribute.
 
@@ -196,6 +204,7 @@ class OpenRemoteClient:
         Returns:
             list[AssetDatapoint] | None: List of historical data points or None
         """
+
         params = f"{asset_id}/{attribute_name}"
         url = f"{self.openremote_url}/api/master/asset/datapoint/{params}"
 
@@ -227,6 +236,7 @@ class OpenRemoteClient:
         Returns:
             bool: True if successful
         """
+
         params = f"{asset_id}/{attribute_name}"
         url = f"{self.openremote_url}/api/master/asset/predicted/{params}"
 
@@ -244,7 +254,11 @@ class OpenRemoteClient:
                 return False
 
     def retrieve_predicted_datapoints(
-        self, asset_id: str, attribute_name: str, from_timestamp: int, to_timestamp: int
+        self,
+        asset_id: str,
+        attribute_name: str,
+        from_timestamp: int,
+        to_timestamp: int,
     ) -> list[AssetDatapoint] | None:
         """Retrieve the predicted data points of a given asset attribute.
 
@@ -257,6 +271,7 @@ class OpenRemoteClient:
         Returns:
             list[AssetDatapoint] | None: List of predicted data points or None
         """
+
         params = f"{asset_id}/{attribute_name}"
         url = f"{self.openremote_url}/api/master/asset/predicted/{params}"
 

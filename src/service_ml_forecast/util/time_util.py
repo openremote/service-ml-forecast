@@ -30,6 +30,7 @@ class TimeUtil:
     @staticmethod
     def get_timestamp_ms() -> int:
         """Get the current timestamp in milliseconds."""
+
         timestamp = int(time.time())
         millis = TimeUtil.sec_to_ms(timestamp)
         return millis
@@ -63,6 +64,7 @@ class TimeUtil:
         Returns:
             The future timestamp in milliseconds.
         """
+
         future_time = pd.Timestamp.now() + periods * pd.tseries.frequencies.to_offset(frequency)
         timestamp = int(future_time.timestamp())
         millis = TimeUtil.sec_to_ms(timestamp)
@@ -79,4 +81,5 @@ class TimeUtil:
         Returns:
             The epoch timestamp in milliseconds. (last 3 digits will be 000)
         """
+
         return int(timestamp * 1000)
