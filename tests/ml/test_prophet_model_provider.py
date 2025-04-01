@@ -10,12 +10,6 @@ def test_model_provider_train_and_predict(
 ) -> None:
     """Test the basic functionality of a Prophet model provider with a single variable.
 
-    This test verifies the basic functionality of a Prophet model:
-    - Model creation through the factory
-    - Training with windspeed data
-    - Model persistence (save and load)
-    - Forecast generation
-
     Verifies that:
     - The model trains successfully with the provided data
     - The trained model can be saved and loaded
@@ -54,19 +48,9 @@ def test_model_provider_train_and_predict_with_regressor(
 ) -> None:
     """Test Prophet model with external regressors for multi-variable forecasting.
 
-    This test validates the advanced functionality of using one Prophet model's
-    forecast (windspeed) as a regressor input for another Prophet model (tariff).
-
-    The test follows these steps:
-    1. Create and train a basic windspeed forecasting model
-    2. Generate future windspeed predictions
-    3. Create a tariff model that uses windspeed as an external regressor
-    4. Train the tariff model with historical tariff and windspeed data
-    5. Generate tariff forecasts using the predicted windspeed values
-
     Verifies that:
-    - Both models train successfully
-    - Models can be saved and loaded
+    - Both models train successfully (regressor and target)
+    - Models can be saved and then loaded
     - The windspeed forecast can be used as a regressor input for the tariff model
     - The tariff model generates valid forecasts when provided with regressor data
     """
