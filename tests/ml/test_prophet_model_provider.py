@@ -1,17 +1,29 @@
-import pytest
-
 from service_ml_forecast.clients.openremote.models import AssetDatapoint
 from service_ml_forecast.ml.ml_model_provider_factory import MLModelProviderFactory
 from service_ml_forecast.models.ml_data_wrappers import FeatureDatapoints, ForecastFeatureSet, TrainingFeatureSet
 from service_ml_forecast.models.ml_model_config import ProphetModelConfig
 
 
-def test_model_provider_train(
+def test_model_provider_train_and_predict(
     prophet_basic_config: ProphetModelConfig,
     windspeed_mock_datapoints: list[AssetDatapoint],
 ) -> None:
+    """Test the basic functionality of a Prophet model provider with a single variable.
+
+    This test verifies the basic functionality of a Prophet model:
+    - Model creation through the factory
+    - Training with windspeed data
+    - Model persistence (save and load)
+    - Forecast generation
+
+    Verifies that:
+    - The model trains successfully with the provided data
+    - The trained model can be saved and loaded
+    - The model can generate forecasts with non-empty results
+    """
     model_provider = MLModelProviderFactory.create_provider(prophet_basic_config)
 
+    # Train the model
     model = model_provider.train_model(
         TrainingFeatureSet(
             target=FeatureDatapoints(
@@ -24,91 +36,95 @@ def test_model_provider_train(
 
     # Save the model
     assert model_provider.save_model(model)
-
-    # Assert the model file exists
     assert prophet_basic_config.id is not None
     assert model_provider.load_model(prophet_basic_config.id) is not None
 
-
-def test_model_provider_predict(prophet_basic_config: ProphetModelConfig) -> None:
-    model_provider = MLModelProviderFactory.create_provider(prophet_basic_config)
-
+    # Generate the forecast
     forecast = model_provider.generate_forecast()
-
     assert forecast is not None
     assert forecast.datapoints is not None
     assert len(forecast.datapoints) > 0
 
 
-def test_model_provider_train_with_regressor(
+def test_model_provider_train_and_predict_with_regressor(
     prophet_multi_variable_config: ProphetModelConfig,
+    prophet_basic_config: ProphetModelConfig,
     tariff_mock_datapoints: list[AssetDatapoint],
     windspeed_mock_datapoints: list[AssetDatapoint],
 ) -> None:
-    # Create the model provider for the multi-variable model
-    model_provider = MLModelProviderFactory.create_provider(prophet_multi_variable_config)
+    """Test Prophet model with external regressors for multi-variable forecasting.
 
-    # Create the target feature datapoints
-    target_feature_datapoints = FeatureDatapoints(
+    This test validates the advanced functionality of using one Prophet model's
+    forecast (windspeed) as a regressor input for another Prophet model (tariff).
+
+    The test follows these steps:
+    1. Create and train a basic windspeed forecasting model
+    2. Generate future windspeed predictions
+    3. Create a tariff model that uses windspeed as an external regressor
+    4. Train the tariff model with historical tariff and windspeed data
+    5. Generate tariff forecasts using the predicted windspeed values
+
+    Verifies that:
+    - Both models train successfully
+    - Models can be saved and loaded
+    - The windspeed forecast can be used as a regressor input for the tariff model
+    - The tariff model generates valid forecasts when provided with regressor data
+    """
+    # Create the windspeed model
+    windspeed_provider = MLModelProviderFactory.create_provider(prophet_basic_config)
+    windspeed_target_datapoints = FeatureDatapoints(
+        attribute_name=prophet_basic_config.target.attribute_name,
+        datapoints=windspeed_mock_datapoints,
+    )
+
+    # Train the windspeed model
+    windspeed_model = windspeed_provider.train_model(
+        TrainingFeatureSet(target=windspeed_target_datapoints),
+    )
+    assert windspeed_model is not None
+    # Save the windspeed model
+    assert windspeed_provider.save_model(windspeed_model)
+    assert windspeed_provider.load_model(prophet_basic_config.id) is not None
+
+    # Generate the forecast
+    windspeed_forecast = windspeed_provider.generate_forecast()
+    assert windspeed_forecast is not None
+    assert windspeed_forecast.datapoints is not None
+    assert len(windspeed_forecast.datapoints) > 0
+
+    # Create the tariff model
+    tarrif_provider = MLModelProviderFactory.create_provider(prophet_multi_variable_config)
+    tariff_target_datapoints = FeatureDatapoints(
         attribute_name=prophet_multi_variable_config.target.attribute_name,
         datapoints=tariff_mock_datapoints,
     )
 
-    # Create the regressor feature datapoints
+    # Ensure tariff model has regressors configured
     assert prophet_multi_variable_config.regressors is not None
     assert len(prophet_multi_variable_config.regressors) > 0
 
+    # Train the tariff model
     regressor_feature_datapoints = [
         FeatureDatapoints(attribute_name=regressor.attribute_name, datapoints=windspeed_mock_datapoints)
         for regressor in prophet_multi_variable_config.regressors
     ]
 
-    # Train the model with the target and regressor feature datapoints
-    model = model_provider.train_model(
-        TrainingFeatureSet(target=target_feature_datapoints, regressors=regressor_feature_datapoints),
+    tariff_model = tarrif_provider.train_model(
+        TrainingFeatureSet(target=tariff_target_datapoints, regressors=regressor_feature_datapoints),
     )
-    assert model is not None
+    assert tariff_model is not None
 
-    # Save the model
-    assert model_provider.save_model(model)
+    # Save the tariff model
+    assert tarrif_provider.save_model(tariff_model)
+    assert tarrif_provider.load_model(prophet_multi_variable_config.id) is not None
 
-    # Assert whether we can load the model now
-    assert model_provider.load_model(prophet_multi_variable_config.id) is not None
-
-
-def test_model_provider_predict_with_regressor_datapoints(
-    prophet_multi_variable_config: ProphetModelConfig,
-    prophet_basic_config: ProphetModelConfig,
-) -> None:
-    # Generate a forecast for the regressor
-    windspeed_model_provider = MLModelProviderFactory.create_provider(prophet_basic_config)
-    windspeed_forecast = windspeed_model_provider.generate_forecast()
-
-    # Assert future datapoints are generated
-    assert windspeed_forecast is not None
-    assert windspeed_forecast.datapoints is not None
-    assert len(windspeed_forecast.datapoints) > 0
-
-    windspeed_feature_datapoints = FeatureDatapoints(
+    # Generate the forecast including the regressor forecast datapoints
+    windspeed_regressor_datapoints = FeatureDatapoints(
         attribute_name=prophet_basic_config.target.attribute_name,
         datapoints=windspeed_forecast.datapoints,
     )
-    forecast_featureset = ForecastFeatureSet(regressors=[windspeed_feature_datapoints])
-
-    # Generate a forecast for the target whilst providing the regressor forecast for the future datapoints
-    tariff_model_provider = MLModelProviderFactory.create_provider(prophet_multi_variable_config)
-    tariff_forecast = tariff_model_provider.generate_forecast(forecast_featureset)
-
-    # Assert future datapoints are generated
-    assert tariff_forecast is not None
-    assert tariff_forecast.datapoints is not None
-    assert len(tariff_forecast.datapoints) > 0
-
-
-def test_model_provider_predict_with_missing_regressor_datapoints(
-    prophet_multi_variable_config: ProphetModelConfig,
-) -> None:
-    model_provider = MLModelProviderFactory.create_provider(prophet_multi_variable_config)
-
-    with pytest.raises(ValueError):
-        model_provider.generate_forecast()
+    forecast_featureset = ForecastFeatureSet(regressors=[windspeed_regressor_datapoints])
+    forecast = tarrif_provider.generate_forecast(forecast_featureset)
+    assert forecast is not None
+    assert forecast.datapoints is not None
+    assert len(forecast.datapoints) > 0

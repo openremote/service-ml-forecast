@@ -15,6 +15,13 @@ from tests.conftest import (
 
 
 def test_retrieve_assets(mock_openremote_client: OpenRemoteClient) -> None:
+    """Test retrieval of assets from OpenRemote using a mocked client.
+
+    Verifies that:
+    - The client can successfully retrieve assets from a specific realm
+    - The returned assets have the expected ID
+    - The response is properly parsed into Asset objects
+    """
     mock_power_value = 100
 
     # Mock assets query endpoint
@@ -46,6 +53,12 @@ def test_retrieve_assets(mock_openremote_client: OpenRemoteClient) -> None:
 
 
 def test_retrieve_assets_invalid_realm(mock_openremote_client: OpenRemoteClient) -> None:
+    """Test asset retrieval behavior with an invalid realm.
+
+    Verifies that:
+    - The client properly handles a NOT_FOUND response
+    - The method returns None when the realm doesn't exist
+    """
     # Mock assets query endpoint
     with respx.mock(base_url=MOCK_OPENREMOTE_URL) as respx_mock:
         respx_mock.post("/api/master/asset/query").mock(return_value=respx.MockResponse(HTTPStatus.NOT_FOUND))
@@ -54,6 +67,13 @@ def test_retrieve_assets_invalid_realm(mock_openremote_client: OpenRemoteClient)
 
 
 def test_retrieve_asset_datapoint_period(mock_openremote_client: OpenRemoteClient) -> None:
+    """Test retrieval of datapoint period information for an asset attribute.
+
+    Verifies that:
+    - The client can retrieve time period information for datapoints
+    - The response is properly parsed into an AssetDatapointPeriod object
+    - The returned object contains the correct asset ID and attribute name
+    """
     # Mock asset datapoint period endpoint
     with respx.mock(base_url=MOCK_OPENREMOTE_URL) as respx_mock:
         respx_mock.get(
@@ -79,6 +99,12 @@ def test_retrieve_asset_datapoint_period(mock_openremote_client: OpenRemoteClien
 
 
 def test_retrieve_asset_datapoint_period_invalid_asset_id(mock_openremote_client: OpenRemoteClient) -> None:
+    """Test datapoint period retrieval with an invalid asset ID.
+
+    Verifies that:
+    - The client properly handles a NOT_FOUND response for invalid asset IDs
+    - The method returns None when the asset doesn't exist
+    """
     # Mock asset datapoint period endpoint
     with respx.mock(base_url=MOCK_OPENREMOTE_URL) as respx_mock:
         respx_mock.get(
@@ -93,6 +119,13 @@ def test_retrieve_asset_datapoint_period_invalid_asset_id(mock_openremote_client
 
 
 def test_retrieve_historical_datapoints(mock_openremote_client: OpenRemoteClient) -> None:
+    """Test retrieval of historical datapoints for an asset attribute.
+
+    Verifies that:
+    - The client can retrieve historical time series data
+    - The response is properly parsed into AssetDatapoint objects
+    - The returned datapoints have the expected timestamps and values
+    """
     # Mock historical datapoints endpoint
     mock_values = [100, 200]
 
@@ -119,6 +152,12 @@ def test_retrieve_historical_datapoints(mock_openremote_client: OpenRemoteClient
 
 
 def test_retrieve_historical_datapoints_invalid_asset_id(mock_openremote_client: OpenRemoteClient) -> None:
+    """Test historical datapoint retrieval with an invalid asset ID.
+
+    Verifies that:
+    - The client properly handles a NOT_FOUND response for invalid asset IDs
+    - The method returns None when the asset doesn't exist
+    """
     # Mock historical datapoints endpoint
     with respx.mock(base_url=MOCK_OPENREMOTE_URL) as respx_mock:
         respx_mock.post(f"/api/master/asset/datapoint/invalid_asset_id/{TEST_ATTRIBUTE_NAME}").mock(
@@ -134,6 +173,13 @@ def test_retrieve_historical_datapoints_invalid_asset_id(mock_openremote_client:
 
 
 def test_write_retrieve_predicted_datapoints(mock_openremote_client: OpenRemoteClient) -> None:
+    """Test writing and retrieving predicted datapoints for an asset attribute.
+
+    Verifies that:
+    - The client can write predicted datapoints to OpenRemote
+    - The client can retrieve previously written predicted datapoints
+    - The retrieved datapoints match the originally written ones in both timestamps and values
+    """
     # Mock predicted datapoints endpoint
     mock_timestamp1 = 572127577200000  # 20100-01-01 00:00:00 UTC
     mock_timestamp2 = mock_timestamp1 + 1  # 20100-01-01 00:00:01 UTC

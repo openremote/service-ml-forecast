@@ -64,7 +64,7 @@ class OpenRemoteMLDataService:
 
         regressors: list[FeatureDatapoints] = []
 
-        # Retrieve regressor feature datapoints if configured
+        # Retrieve regressor historical feature datapoints if configured
         if config.regressors is not None:
             for regressor in config.regressors:
                 regressor_datapoints = self.client.retrieve_historical_datapoints(
@@ -113,14 +113,14 @@ class OpenRemoteMLDataService:
 
         regressors: list[FeatureDatapoints] = []
 
-        # Retrieve regressor feature datapoints if configured
+        # Retrieve regressor predicted feature datapoints if configured
         if config.regressors is not None:
             for regressor in config.regressors:
-                regressor_datapoints = self.client.retrieve_historical_datapoints(
+                regressor_datapoints = self.client.retrieve_predicted_datapoints(
                     regressor.asset_id,
                     regressor.attribute_name,
                     regressor.cutoff_timestamp,
-                    TimeUtil.get_timestamp_ms(),
+                    TimeUtil.pd_future_timestamp(config.forecast_periods, config.forecast_frequency),
                 )
 
                 if regressor_datapoints is None:

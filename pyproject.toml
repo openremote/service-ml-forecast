@@ -67,6 +67,7 @@ select = [
     "PL",    # pylint
     "RUF",   # ruff-specific rules
 ]
+ignore = ["PLR0913"]
 fixable = ["ALL"]
 
 [tool.ruff.format]

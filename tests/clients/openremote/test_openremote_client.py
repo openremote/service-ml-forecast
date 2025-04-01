@@ -7,17 +7,35 @@ from tests.conftest import TEST_ASSET_ID, TEST_ATTRIBUTE_NAME
 
 
 def test_retrieve_assets(openremote_client: OpenRemoteClient) -> None:
+    """Test retrieval of assets from a real OpenRemote instance.
+
+    Verifies that:
+    - The client can successfully connect to and retrieve assets from OpenRemote
+    - The response contains at least one valid asset
+    """
     assets: list[Asset] | None = openremote_client.retrieve_assets("master")
     assert assets is not None
     assert len(assets) > 0
 
 
 def test_retrieve_assets_invalid_realm(openremote_client: OpenRemoteClient) -> None:
+    """Test asset retrieval behavior with an invalid realm on a real instance.
+
+    Verifies that:
+    - The client properly handles errors when an invalid realm is specified
+    - The method returns None for non-existent realms
+    """
     assets: list[Asset] | None = openremote_client.retrieve_assets("invalid_realm_name")
     assert assets is None
 
 
 def test_retrieve_asset_datapoint_period(openremote_client: OpenRemoteClient) -> None:
+    """Test retrieval of datapoint period information from a real OpenRemote instance.
+
+    Verifies that:
+    - The client can retrieve time period metadata for asset datapoints
+    - The returned object contains valid period information
+    """
     datapoint_period: AssetDatapointPeriod | None = openremote_client.retrieve_asset_datapoint_period(
         TEST_ASSET_ID,
         TEST_ATTRIBUTE_NAME,
@@ -26,6 +44,12 @@ def test_retrieve_asset_datapoint_period(openremote_client: OpenRemoteClient) ->
 
 
 def test_retrieve_asset_datapoint_period_invalid_asset_id(openremote_client: OpenRemoteClient) -> None:
+    """Test datapoint period retrieval with an invalid asset ID on a real instance.
+
+    Verifies that:
+    - The client properly handles errors for non-existent assets
+    - The method returns None when the asset ID is invalid
+    """
     datapoint_period: AssetDatapointPeriod | None = openremote_client.retrieve_asset_datapoint_period(
         "invalid_asset_id",
         TEST_ATTRIBUTE_NAME,
@@ -34,6 +58,12 @@ def test_retrieve_asset_datapoint_period_invalid_asset_id(openremote_client: Ope
 
 
 def test_retrieve_historical_datapoints(openremote_client: OpenRemoteClient) -> None:
+    """Test retrieval of historical datapoints from a real OpenRemote instance.
+
+    Verifies that:
+    - The client can retrieve time series data from OpenRemote
+    - The response contains valid datapoints for the given time range
+    """
     datapoints: list[AssetDatapoint] | None = openremote_client.retrieve_historical_datapoints(
         TEST_ASSET_ID,
         TEST_ATTRIBUTE_NAME,
@@ -45,16 +75,34 @@ def test_retrieve_historical_datapoints(openremote_client: OpenRemoteClient) -> 
 
 
 def test_retrieve_historical_datapoints_invalid_asset_id(openremote_client: OpenRemoteClient) -> None:
+    """Test historical datapoint retrieval with an invalid asset ID on a real instance.
+
+    Verifies that:
+    - The client properly handles errors for non-existent assets
+    - The method returns None when the asset ID is invalid
+    """
     datapoints: list[AssetDatapoint] | None = openremote_client.retrieve_historical_datapoints(
         "invalid_asset_id",
         TEST_ATTRIBUTE_NAME,
         1716153600000,
         TimeUtil.sec_to_ms(int(time.time())),
     )
-    assert datapoints is None
+    assert datapoints is None, "Expected the datapoints to be None"
 
 
 def test_write_retrieve_predicted_datapoints(openremote_client: OpenRemoteClient) -> None:
+    """Test writing and retrieving predicted datapoints on a real OpenRemote instance.
+
+    This test performs an end-to-end validation of the prediction workflow:
+    1. Writing future predictions to OpenRemote
+    2. Retrieving those predictions back
+    3. Verifying the retrieved data matches what was written
+
+    Verifies that:
+    - The client can write predicted datapoints to OpenRemote
+    - The client can retrieve those predictions within a specified time range
+    - The retrieved predictions maintain the same timestamps and values
+    """
     timestamp1 = 572127577200000  # 20100-01-01 00:00:00
     timestamp2 = timestamp1 + 1  # 20100-01-01 00:00:01
 

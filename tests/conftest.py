@@ -2,9 +2,9 @@ import json
 import logging.config
 import shutil
 import tempfile
+from collections.abc import Generator
 from http import HTTPStatus
 from pathlib import Path
-from typing import Generator
 
 import pytest
 import respx
@@ -41,14 +41,13 @@ ENV.MODELS_DIR = TEST_TMP_DIR / "models"
 ENV.CONFIGS_DIR = TEST_TMP_DIR / "configs"
 
 
-# Clean up temporary directory after all tests have run
-@pytest.fixture(scope="session", autouse=True)
+# Clean up temporary directory after each test call
+@pytest.fixture(scope="function", autouse=True)
 def cleanup_test_tmp_dir() -> Generator[None, None, None]:
-    """Cleanup test files after all tests have run."""
     yield
     shutil.rmtree(TEST_TMP_DIR, ignore_errors=True)
 
-# Create an OpenRemote client for testing against a real instance
+
 @pytest.fixture
 def openremote_client() -> OpenRemoteClient | None:
     """Create an OpenRemote client for testing against a real instance."""
@@ -70,7 +69,6 @@ def openremote_client() -> OpenRemoteClient | None:
         pytest.skip(reason=f"Failed to create OpenRemote client: {e}")
 
 
-# Create a mock OpenRemote client with mocked authentication
 @pytest.fixture
 def mock_openremote_client() -> OpenRemoteClient | None:
     """Create a mock OpenRemote client with mocked authentication."""
