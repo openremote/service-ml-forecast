@@ -51,11 +51,16 @@ class ProphetModelProvider(MLModelProvider[Prophet]):
             logger.error("Failed to obtain valid dataframe for training the Prophet model")
             return None
 
-        # Configure the model
+        # Construct the model
         model = Prophet()
+
+        # Apply model configuration
         model.weekly_seasonality = self.config.weekly_seasonality
         model.yearly_seasonality = self.config.yearly_seasonality
         model.daily_seasonality = self.config.daily_seasonality
+        model.seasonality_mode = self.config.seasonality_mode
+        model.changepoint_prior_scale = self.config.changepoint_prior_scale
+        model.changepoint_range = self.config.changepoint_range
 
         # Add regressors to the model if provided
         if training_dataset.regressors is not None:
