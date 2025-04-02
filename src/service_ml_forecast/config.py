@@ -16,7 +16,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 
-import os
 from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -68,5 +67,6 @@ class AppEnvironment(BaseSettings):
     def is_development(self) -> bool:
         """Check if the environment is development."""
         return self.ENV == "development"
+
 
 ENV = AppEnvironment()
