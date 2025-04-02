@@ -69,7 +69,4 @@ class AppEnvironment(BaseSettings):
         """Check if the environment is development."""
         return self.ENV == "development"
 
-
-# Clear environment before initialization
-os.environ.clear()
 ENV = AppEnvironment()
