@@ -56,7 +56,7 @@ class MLModelScheduler(Singleton):
         self.scheduler = BackgroundScheduler(
             jobstores=jobstores,
             executors=executors,
-            daemon=True,
+            daemon=True,  # Ensure any threads/processes are properly exited when the main process exits
             coalesce=True,
             max_instances=1,
             job_defaults={"misfire_grace_time": JOB_GRACE_PERIOD},
