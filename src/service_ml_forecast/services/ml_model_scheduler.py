@@ -35,9 +35,9 @@ CONFIG_WATCHER_JOB_ID = "ml:config-watcher"
 TRAINING_JOB_ID_PREFIX = "ml:training"
 FORECAST_JOB_ID_PREFIX = "ml:forecast"
 
-JOB_GRACE_PERIOD = 60  # 1 minute (time to run the job after the scheduled time)
+JOB_GRACE_PERIOD = 60  # Allow jobs to be late a maximum of 1 minute, otherwise reschedule
 
-CONFIG_REFRESH_INTERVAL = 30  # 30 seconds
+CONFIG_POLLING_INTERVAL = 30  # Poll configs for changes every 30 seconds
 
 
 class MLModelScheduler(Singleton):
@@ -81,7 +81,7 @@ class MLModelScheduler(Singleton):
             self.scheduler.add_job(
                 self._poll_configs,
                 trigger="interval",
-                seconds=CONFIG_REFRESH_INTERVAL,
+                seconds=CONFIG_POLLING_INTERVAL,
                 id=CONFIG_WATCHER_JOB_ID,
                 name=CONFIG_WATCHER_JOB_ID,
                 executor="thread_pool",

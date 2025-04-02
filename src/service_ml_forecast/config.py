@@ -40,17 +40,19 @@ class AppEnvironment(BaseSettings):
     All settings can be overridden via environment variables.
     """
 
-    # Application Settings
-    PUBLISH_DOCS: bool = True
-    BASE_DIR: Path = _find_project_root()
-    MODELS_DIR: Path = BASE_DIR / "deployment/data/models"
-    CONFIGS_DIR: Path = BASE_DIR / "deployment/data/configs"
-
     # Logging
     LOG_LEVEL: str = "INFO"
 
     # Environment
     ENV: str = "development"
+
+    # File paths
+    BASE_DIR: Path = _find_project_root()
+    MODELS_DIR: Path = BASE_DIR / "deployment/data/models"
+    CONFIGS_DIR: Path = BASE_DIR / "deployment/data/configs"
+
+    # FastAPI Settings
+    PUBLISH_DOCS: bool = True  # whether to make the docs available
 
     # OpenRemote Settings
     OPENREMOTE_URL: str = "http://localhost:8080"
