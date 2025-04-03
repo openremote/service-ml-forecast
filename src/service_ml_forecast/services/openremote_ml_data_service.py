@@ -2,8 +2,8 @@ import logging
 
 from service_ml_forecast.clients.openremote.models import AssetDatapoint
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
-from service_ml_forecast.models.ml_data_wrappers import FeatureDatapoints, ForecastFeatureSet, TrainingFeatureSet
-from service_ml_forecast.models.ml_model_config import MLModelConfig
+from service_ml_forecast.models.feature_data_wrappers import FeatureDatapoints, ForecastFeatureSet, TrainingFeatureSet
+from service_ml_forecast.models.model_config import ModelConfig
 from service_ml_forecast.util.time_util import TimeUtil
 
 logger = logging.getLogger(__name__)
@@ -15,7 +15,7 @@ class OpenRemoteMLDataService:
     def __init__(self, client: OpenRemoteClient):
         self.client = client
 
-    def write_predicted_datapoints(self, config: MLModelConfig, asset_datapoints: list[AssetDatapoint]) -> bool:
+    def write_predicted_datapoints(self, config: ModelConfig, asset_datapoints: list[AssetDatapoint]) -> bool:
         """Write the predicted datapoints to OpenRemote.
 
         Args:
@@ -32,7 +32,7 @@ class OpenRemoteMLDataService:
             asset_datapoints,
         )
 
-    def get_training_feature_set(self, config: MLModelConfig) -> TrainingFeatureSet | None:
+    def get_training_feature_set(self, config: ModelConfig) -> TrainingFeatureSet | None:
         """Get the training feature set for a given model configuration.
 
         Args:
@@ -95,7 +95,7 @@ class OpenRemoteMLDataService:
 
         return training_feature_set
 
-    def get_forecast_feature_set(self, config: MLModelConfig) -> ForecastFeatureSet | None:
+    def get_forecast_feature_set(self, config: ModelConfig) -> ForecastFeatureSet | None:
         """Get the forecast feature set for a given model configuration.
 
         Args:

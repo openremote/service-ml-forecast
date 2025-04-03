@@ -22,16 +22,16 @@ from prophet import Prophet
 from prophet.serialize import model_from_json, model_to_json
 
 from service_ml_forecast.clients.openremote.models import AssetDatapoint
-from service_ml_forecast.ml.ml_model_provider import MLModelProvider
-from service_ml_forecast.models.ml_data_wrappers import ForecastFeatureSet, ForecastResult, TrainingFeatureSet
-from service_ml_forecast.models.ml_model_config import ProphetModelConfig
-from service_ml_forecast.services.ml_model_storage_service import MLModelStorageService
+from service_ml_forecast.ml.model_provider import ModelProvider
+from service_ml_forecast.models.feature_data_wrappers import ForecastFeatureSet, ForecastResult, TrainingFeatureSet
+from service_ml_forecast.models.model_config import ProphetModelConfig
+from service_ml_forecast.services.model_storage_service import ModelStorageService
 from service_ml_forecast.util.time_util import TimeUtil
 
 logger = logging.getLogger(__name__)
 
 
-class ProphetModelProvider(MLModelProvider[Prophet]):
+class ProphetModelProvider(ModelProvider[Prophet]):
     """Prophet model provider."""
 
     def __init__(
@@ -39,7 +39,7 @@ class ProphetModelProvider(MLModelProvider[Prophet]):
         config: ProphetModelConfig,
     ) -> None:
         self.config = config
-        self.model_storage_service = MLModelStorageService()
+        self.model_storage_service = ModelStorageService()
 
     def train_model(self, training_dataset: TrainingFeatureSet) -> Prophet | None:
         if training_dataset.target.datapoints is None or len(training_dataset.target.datapoints) == 0:
@@ -51,11 +51,16 @@ class ProphetModelProvider(MLModelProvider[Prophet]):
             logger.error("Failed to obtain valid dataframe for training the Prophet model")
             return None
 
-        # Configure the model
+        # Construct the model
         model = Prophet()
+
+        # Apply model configuration
         model.weekly_seasonality = self.config.weekly_seasonality
         model.yearly_seasonality = self.config.yearly_seasonality
         model.daily_seasonality = self.config.daily_seasonality
+        model.seasonality_mode = self.config.seasonality_mode
+        model.changepoint_prior_scale = self.config.changepoint_prior_scale
+        model.changepoint_range = self.config.changepoint_range
 
         # Add regressors to the model if provided
         if training_dataset.regressors is not None:

@@ -1,8 +1,8 @@
-from service_ml_forecast.models.ml_model_config import ProphetModelConfig
-from service_ml_forecast.services.ml_model_config_service import MLModelConfigService
+from service_ml_forecast.models.model_config import ProphetModelConfig
+from service_ml_forecast.services.model_config_service import ModelConfigService
 
 
-def test_save_config(config_service: MLModelConfigService, prophet_basic_config: ProphetModelConfig) -> None:
+def test_save_config(config_service: ModelConfigService, prophet_basic_config: ProphetModelConfig) -> None:
     """Test saving a new model configuration.
 
     Verifies that:
@@ -13,7 +13,7 @@ def test_save_config(config_service: MLModelConfigService, prophet_basic_config:
     assert config_service.get(prophet_basic_config.id) is not None
 
 
-def test_get_config(config_service: MLModelConfigService, prophet_basic_config: ProphetModelConfig) -> None:
+def test_get_config(config_service: ModelConfigService, prophet_basic_config: ProphetModelConfig) -> None:
     """Test retrieving a specific model configuration by ID.
 
     Verifies that:
@@ -26,7 +26,7 @@ def test_get_config(config_service: MLModelConfigService, prophet_basic_config: 
     assert config.id == prophet_basic_config.id
 
 
-def test_get_config_not_found(config_service: MLModelConfigService) -> None:
+def test_get_config_not_found(config_service: ModelConfigService) -> None:
     """Test behavior when retrieving a non-existent configuration.
 
     Verifies that:
@@ -37,7 +37,7 @@ def test_get_config_not_found(config_service: MLModelConfigService) -> None:
     assert config is None
 
 
-def test_get_all_configs(config_service: MLModelConfigService, prophet_basic_config: ProphetModelConfig) -> None:
+def test_get_all_configs(config_service: ModelConfigService, prophet_basic_config: ProphetModelConfig) -> None:
     """Test retrieving all model configurations.
 
     Verifies that:
@@ -50,7 +50,7 @@ def test_get_all_configs(config_service: MLModelConfigService, prophet_basic_con
     assert len(configs) > 0
 
 
-def test_update_config(config_service: MLModelConfigService, prophet_basic_config: ProphetModelConfig) -> None:
+def test_update_config(config_service: ModelConfigService, prophet_basic_config: ProphetModelConfig) -> None:
     """Test updating an existing model configuration.
 
     Verifies that:
@@ -64,7 +64,7 @@ def test_update_config(config_service: MLModelConfigService, prophet_basic_confi
     assert config.name == "Updated Config"
 
 
-def test_delete_config(config_service: MLModelConfigService, prophet_basic_config: ProphetModelConfig) -> None:
+def test_delete_config(config_service: ModelConfigService, prophet_basic_config: ProphetModelConfig) -> None:
     """Test deleting a model configuration.
 
     Verifies that:

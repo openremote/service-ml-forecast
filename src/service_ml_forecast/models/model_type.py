@@ -18,5 +18,5 @@
 from enum import Enum
 
 
-class MLModelTypeEnum(str, Enum):
+class ModelTypeEnum(str, Enum):
     PROPHET = "prophet"

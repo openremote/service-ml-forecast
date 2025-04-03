@@ -27,7 +27,7 @@ from service_ml_forecast import __app_info__
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 from service_ml_forecast.config import ENV
 from service_ml_forecast.logging_config import LOGGING_CONFIG
-from service_ml_forecast.services.ml_model_scheduler import MLModelScheduler
+from service_ml_forecast.services.model_scheduler import ModelScheduler
 from service_ml_forecast.services.openremote_ml_data_service import OpenRemoteMLDataService
 
 # Load the logging configuration
@@ -43,28 +43,10 @@ if __app_info__ is None:
 # FastAPI Lifecycle, handles startup and shutdown tasks
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncGenerator[None]:
-    # Startup tasks
-    logger.info("Starting application")
-    logger.info("Application details: %s", __app_info__)
-
-    # Initialize the OpenRemote client
-    openremote_client = OpenRemoteClient(
-        openremote_url=ENV.OPENREMOTE_URL,
-        keycloak_url=ENV.OPENREMOTE_KEYCLOAK_URL,
-        service_user=ENV.OPENREMOTE_SERVICE_USER,
-        service_user_secret=ENV.OPENREMOTE_SERVICE_USER_SECRET,
-    )
-
-    # Initialize the Model scheduler
-    ml_data_service = OpenRemoteMLDataService(openremote_client)
-    model_scheduler = MLModelScheduler(ml_data_service)
-    model_scheduler.start()
+    logger.info("FastAPI instance starting")
 
     yield  # yield to the FastAPI app
-
-    # Shutdown tasks
-    model_scheduler.stop()
-    logger.info("Shutting down application")
+    logger.info("FastAPI instance shutting down")
 
 
 app = FastAPI(
@@ -92,6 +74,24 @@ app.add_middleware(
 )
 
 
+def initialize_background_services() -> None:
+    """Initialize background services, these run in the background and are not part of the FastAPI lifecycle"""
+
+    # Setup the ML Model Scheduler
+    openremote_client = OpenRemoteClient(
+        openremote_url=ENV.OPENREMOTE_URL,
+        keycloak_url=ENV.OPENREMOTE_KEYCLOAK_URL,
+        service_user=ENV.OPENREMOTE_SERVICE_USER,
+        service_user_secret=ENV.OPENREMOTE_SERVICE_USER_SECRET,
+    )
+    ml_data_service = OpenRemoteMLDataService(openremote_client)
+    model_scheduler = ModelScheduler(ml_data_service)
+    model_scheduler.start()
+
+
 if __name__ == "__main__":
+    logger.info("Application details: %s", __app_info__)
+
+    initialize_background_services()
     reload = ENV.is_development()
     uvicorn.run("service_ml_forecast.main:app", host="0.0.0.0", port=8000, reload=reload)

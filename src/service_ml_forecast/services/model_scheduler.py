@@ -22,29 +22,29 @@ from apscheduler.executors.pool import ProcessPoolExecutor, ThreadPoolExecutor
 from apscheduler.jobstores.memory import MemoryJobStore
 from apscheduler.schedulers.background import BackgroundScheduler
 
-from service_ml_forecast.ml.ml_model_provider_factory import MLModelProviderFactory
-from service_ml_forecast.models.ml_model_config import MLModelConfig
-from service_ml_forecast.services.ml_model_config_service import MLModelConfigService
+from service_ml_forecast.ml.model_provider_factory import ModelProviderFactory
+from service_ml_forecast.models.model_config import ModelConfig
+from service_ml_forecast.services.model_config_service import ModelConfigService
 from service_ml_forecast.services.openremote_ml_data_service import OpenRemoteMLDataService
 from service_ml_forecast.util.singleton import Singleton
 from service_ml_forecast.util.time_util import TimeUtil
 
 logger = logging.getLogger(__name__)
 
-CONFIG_WATCHER_JOB_ID = "ml:config-watcher"
-TRAINING_JOB_ID_PREFIX = "ml:training"
-FORECAST_JOB_ID_PREFIX = "ml:forecast"
+CONFIG_WATCHER_JOB_ID = "model:config-watcher"
+TRAINING_JOB_ID_PREFIX = "model:training"
+FORECAST_JOB_ID_PREFIX = "model:forecast"
 
-JOB_GRACE_PERIOD = 60  # 1 minute (time to run the job after the scheduled time)
+JOB_GRACE_PERIOD = 60  # Allow jobs to be late a maximum of 1 minute, otherwise reschedule
 
-CONFIG_REFRESH_INTERVAL = 30  # 30 seconds
+CONFIG_POLLING_INTERVAL = 30  # Poll configs for changes every 30 seconds
 
 
-class MLModelScheduler(Singleton):
+class ModelScheduler(Singleton):
     """Manages the scheduling of ML model training and forecasting jobs."""
 
     def __init__(self, data_service: OpenRemoteMLDataService) -> None:
-        self.config_storage = MLModelConfigService()
+        self.config_storage = ModelConfigService()
         self.data_service = data_service
 
         executors = {
@@ -56,7 +56,7 @@ class MLModelScheduler(Singleton):
         self.scheduler = BackgroundScheduler(
             jobstores=jobstores,
             executors=executors,
-            daemon=True,
+            daemon=True,  # Ensure any threads/processes are properly exited when the main process exits
             coalesce=True,
             max_instances=1,
             job_defaults={"misfire_grace_time": JOB_GRACE_PERIOD},
@@ -81,7 +81,7 @@ class MLModelScheduler(Singleton):
             self.scheduler.add_job(
                 self._poll_configs,
                 trigger="interval",
-                seconds=CONFIG_REFRESH_INTERVAL,
+                seconds=CONFIG_POLLING_INTERVAL,
                 id=CONFIG_WATCHER_JOB_ID,
                 name=CONFIG_WATCHER_JOB_ID,
                 executor="thread_pool",
@@ -96,7 +96,7 @@ class MLModelScheduler(Singleton):
 
         self.scheduler.shutdown()
 
-    def _add_training_job(self, config: MLModelConfig) -> None:
+    def _add_training_job(self, config: ModelConfig) -> None:
         job_id = f"{TRAINING_JOB_ID_PREFIX}:{config.id}"
         seconds = TimeUtil.parse_iso_duration(config.training_interval)
 
@@ -105,7 +105,7 @@ class MLModelScheduler(Singleton):
             return
 
         self.scheduler.add_job(
-            _execute_ml_training,
+            _execute_model_training,
             trigger="interval",
             args=[config, self.data_service],
             seconds=seconds,
@@ -115,7 +115,7 @@ class MLModelScheduler(Singleton):
             replace_existing=True,
         )
 
-    def _add_forecast_job(self, config: MLModelConfig) -> None:
+    def _add_forecast_job(self, config: ModelConfig) -> None:
         job_id = f"{FORECAST_JOB_ID_PREFIX}:{config.id}"
         seconds = TimeUtil.parse_iso_duration(config.forecast_interval)
 
@@ -124,7 +124,7 @@ class MLModelScheduler(Singleton):
             return
 
         self.scheduler.add_job(
-            _execute_ml_forecast,
+            _execute_model_forecast,
             trigger="interval",
             args=[config, self.data_service],
             seconds=seconds,
@@ -153,7 +153,7 @@ class MLModelScheduler(Singleton):
         except Exception as e:
             logger.exception(f"Failed to poll configurations and schedule jobs: {e}")
 
-    def _cleanup_stale_jobs(self, configs: list[MLModelConfig]) -> None:
+    def _cleanup_stale_jobs(self, configs: list[ModelConfig]) -> None:
         """Remove jobs for configs that are no longer present in the config storage"""
 
         # training and forecast jobs for the given configs
@@ -167,17 +167,17 @@ class MLModelScheduler(Singleton):
             if job.id not in valid_jobs:  # Remove jobs if they are not in the valid jobs list
                 self.scheduler.remove_job(job.id)
 
-    def is_job_config_unchanged(self, job_id: str, config: MLModelConfig) -> bool:
+    def is_job_config_unchanged(self, job_id: str, config: ModelConfig) -> bool:
         existing_job = self.scheduler.get_job(job_id)
 
         if existing_job is not None and existing_job.args is not None:
-            job_config: MLModelConfig = existing_job.args[0]
+            job_config: ModelConfig = existing_job.args[0]
             return job_config == config
 
         return False
 
 
-def _execute_ml_training(config: MLModelConfig, data_service: OpenRemoteMLDataService) -> None:
+def _execute_model_training(config: ModelConfig, data_service: OpenRemoteMLDataService) -> None:
     """Standalone function for ML model training, requires a valid config and data provider
 
     Args:
@@ -186,7 +186,7 @@ def _execute_ml_training(config: MLModelConfig, data_service: OpenRemoteMLDataSe
     """
 
     start_time = time.perf_counter()
-    provider = MLModelProviderFactory.create_provider(config)
+    provider = ModelProviderFactory.create_provider(config)
 
     training_feature_set = data_service.get_training_feature_set(config)
 
@@ -209,7 +209,7 @@ def _execute_ml_training(config: MLModelConfig, data_service: OpenRemoteMLDataSe
     logger.info(f"Training job for {config.id} completed - duration: {end_time - start_time}s")
 
 
-def _execute_ml_forecast(config: MLModelConfig, data_service: OpenRemoteMLDataService) -> None:
+def _execute_model_forecast(config: ModelConfig, data_service: OpenRemoteMLDataService) -> None:
     """Standalone function for ML model forecasting, requires a valid config and data provider
 
     Args:
@@ -218,7 +218,7 @@ def _execute_ml_forecast(config: MLModelConfig, data_service: OpenRemoteMLDataSe
     """
 
     start_time = time.perf_counter()
-    provider = MLModelProviderFactory.create_provider(config)
+    provider = ModelProviderFactory.create_provider(config)
 
     forecast_feature_set = data_service.get_forecast_feature_set(config)
 

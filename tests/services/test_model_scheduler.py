@@ -5,18 +5,18 @@ import pytest
 import respx
 
 from service_ml_forecast.clients.openremote.models import AssetDatapoint
-from service_ml_forecast.ml.ml_model_provider_factory import MLModelProviderFactory
-from service_ml_forecast.models.ml_model_config import ProphetModelConfig
-from service_ml_forecast.services.ml_model_config_service import MLModelConfigService
-from service_ml_forecast.services.ml_model_scheduler import (
+from service_ml_forecast.ml.model_provider_factory import ModelProviderFactory
+from service_ml_forecast.models.model_config import ProphetModelConfig
+from service_ml_forecast.services.model_config_service import ModelConfigService
+from service_ml_forecast.services.model_scheduler import (
     CONFIG_WATCHER_JOB_ID,
     FORECAST_JOB_ID_PREFIX,
     TRAINING_JOB_ID_PREFIX,
-    MLModelScheduler,
-    _execute_ml_forecast,
-    _execute_ml_training,
+    ModelScheduler,
+    _execute_model_forecast,
+    _execute_model_training,
 )
-from service_ml_forecast.services.ml_model_storage_service import MLModelStorageService
+from service_ml_forecast.services.model_storage_service import ModelStorageService
 from service_ml_forecast.services.openremote_ml_data_service import OpenRemoteMLDataService
 from service_ml_forecast.util.time_util import TimeUtil
 from tests.conftest import MOCK_OPENREMOTE_URL
@@ -31,7 +31,7 @@ def test_scheduler_lifecycle(mock_ml_data_service: OpenRemoteMLDataService) -> N
     - All jobs are removed when the scheduler stops
     """
 
-    model_scheduler = MLModelScheduler(mock_ml_data_service)
+    model_scheduler = ModelScheduler(mock_ml_data_service)
     model_scheduler.start()
 
     assert model_scheduler.scheduler.running
@@ -52,7 +52,7 @@ def test_scheduler_lifecycle(mock_ml_data_service: OpenRemoteMLDataService) -> N
 
 def test_scheduler_job_management(
     mock_ml_data_service: OpenRemoteMLDataService,
-    config_service: MLModelConfigService,
+    config_service: ModelConfigService,
     prophet_basic_config: ProphetModelConfig,
 ) -> None:
     """Test the scheduler behavior when a model configuration is present.
@@ -65,7 +65,7 @@ def test_scheduler_job_management(
     """
 
     assert config_service.save(prophet_basic_config)
-    model_scheduler = MLModelScheduler(mock_ml_data_service)
+    model_scheduler = ModelScheduler(mock_ml_data_service)
     model_scheduler.start()
 
     assert model_scheduler.scheduler.running
@@ -83,7 +83,7 @@ def test_scheduler_job_management(
     # Training job has the correct parameters
     training_job = model_scheduler.scheduler.get_job(f"{TRAINING_JOB_ID_PREFIX}:{prophet_basic_config.id}")
     assert training_job is not None
-    assert training_job.func == _execute_ml_training
+    assert training_job.func == _execute_model_training
     expected_interval = datetime.timedelta(seconds=TimeUtil.parse_iso_duration(prophet_basic_config.training_interval))
     assert training_job.trigger.interval == expected_interval
 
@@ -104,9 +104,9 @@ def test_scheduler_job_management(
 
 def test_training_execution(
     mock_ml_data_service: OpenRemoteMLDataService,
-    config_service: MLModelConfigService,
+    config_service: ModelConfigService,
     prophet_basic_config: ProphetModelConfig,
-    model_storage: MLModelStorageService,
+    model_storage: ModelStorageService,
     windspeed_mock_datapoints: list[AssetDatapoint],
 ) -> None:
     """Test the execution of a training job with valid data.
@@ -128,16 +128,16 @@ def test_training_execution(
                 json=windspeed_mock_datapoints,
             ),
         )
-        _execute_ml_training(prophet_basic_config, mock_ml_data_service)
+        _execute_model_training(prophet_basic_config, mock_ml_data_service)
 
     assert model_storage.load(prophet_basic_config.id, ".json") is not None
 
 
 def test_training_execution_with_missing_datapoints(
     mock_ml_data_service: OpenRemoteMLDataService,
-    config_service: MLModelConfigService,
+    config_service: ModelConfigService,
     prophet_basic_config: ProphetModelConfig,
-    model_storage: MLModelStorageService,
+    model_storage: ModelStorageService,
 ) -> None:
     """Test the training job behavior when no datapoints are available.
 
@@ -159,7 +159,7 @@ def test_training_execution_with_missing_datapoints(
                 json=[],
             ),
         )
-        _execute_ml_training(prophet_basic_config, mock_ml_data_service)
+        _execute_model_training(prophet_basic_config, mock_ml_data_service)
 
     assert model_storage.load(prophet_basic_config.id, ".json") is None
 
@@ -182,7 +182,7 @@ def test_forecast_execution(
             return_value=respx.MockResponse(HTTPStatus.NO_CONTENT),
         )
 
-        _execute_ml_forecast(trained_basic_model, mock_ml_data_service)
+        _execute_model_forecast(trained_basic_model, mock_ml_data_service)
         assert route.called
 
 
@@ -199,7 +199,7 @@ def test_forecast_execution_with_regressor(
     """
 
     # get regressor model from basic trained model
-    regressor_model = MLModelProviderFactory.create_provider(trained_basic_model)
+    regressor_model = ModelProviderFactory.create_provider(trained_basic_model)
     assert regressor_model is not None
 
     # generate forecast the regressor model
@@ -229,13 +229,13 @@ def test_forecast_execution_with_regressor(
             return_value=respx.MockResponse(HTTPStatus.OK, json=regressor_forecast_datapoints),
         )
 
-        _execute_ml_forecast(trained_regressor_model, mock_ml_data_service)
+        _execute_model_forecast(trained_regressor_model, mock_ml_data_service)
         assert route.called
 
 
 def test_forecast_execution_with_no_model(
     mock_ml_data_service: OpenRemoteMLDataService,
-    config_service: MLModelConfigService,
+    config_service: ModelConfigService,
     prophet_basic_config: ProphetModelConfig,
 ) -> None:
     """Test forecast behavior when no trained model is available.
@@ -255,14 +255,14 @@ def test_forecast_execution_with_no_model(
             return_value=respx.MockResponse(HTTPStatus.NO_CONTENT),
         )
 
-        _execute_ml_forecast(prophet_basic_config, mock_ml_data_service)
+        _execute_model_forecast(prophet_basic_config, mock_ml_data_service)
         assert not route.called
 
 
 @pytest.fixture
 def trained_basic_model(
     mock_ml_data_service: OpenRemoteMLDataService,
-    config_service: MLModelConfigService,
+    config_service: ModelConfigService,
     prophet_basic_config: ProphetModelConfig,
     windspeed_mock_datapoints: list[AssetDatapoint],
 ) -> ProphetModelConfig:
@@ -280,7 +280,7 @@ def trained_basic_model(
                 json=windspeed_mock_datapoints,
             ),
         )
-        _execute_ml_training(prophet_basic_config, mock_ml_data_service)
+        _execute_model_training(prophet_basic_config, mock_ml_data_service)
 
     return prophet_basic_config
 
@@ -288,7 +288,7 @@ def trained_basic_model(
 @pytest.fixture
 def trained_regressor_model(
     mock_ml_data_service: OpenRemoteMLDataService,
-    config_service: MLModelConfigService,
+    config_service: ModelConfigService,
     prophet_multi_variable_config: ProphetModelConfig,
     windspeed_mock_datapoints: list[AssetDatapoint],
     tariff_mock_datapoints: list[AssetDatapoint],
@@ -320,6 +320,6 @@ def trained_regressor_model(
                 json=windspeed_mock_datapoints,
             ),
         )
-        _execute_ml_training(prophet_multi_variable_config, mock_ml_data_service)
+        _execute_model_training(prophet_multi_variable_config, mock_ml_data_service)
 
     return prophet_multi_variable_config

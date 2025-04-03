@@ -16,7 +16,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 
-import os
 from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -41,17 +40,19 @@ class AppEnvironment(BaseSettings):
     All settings can be overridden via environment variables.
     """
 
-    # Application Settings
-    PUBLISH_DOCS: bool = True
-    BASE_DIR: Path = _find_project_root()
-    MODELS_DIR: Path = BASE_DIR / "deployment/data/models"
-    CONFIGS_DIR: Path = BASE_DIR / "deployment/data/configs"
-
     # Logging
     LOG_LEVEL: str = "INFO"
 
     # Environment
-    ENV: str = "development"
+    ENVIRONMENT: str = "development"
+
+    # File paths
+    BASE_DIR: Path = _find_project_root()
+    MODELS_DIR: Path = BASE_DIR / "deployment/data/models"
+    CONFIGS_DIR: Path = BASE_DIR / "deployment/data/configs"
+
+    # FastAPI Settings
+    PUBLISH_DOCS: bool = True  # whether to make the docs available
 
     # OpenRemote Settings
     OPENREMOTE_URL: str = "http://localhost:8080"
@@ -63,13 +64,11 @@ class AppEnvironment(BaseSettings):
 
     def is_production(self) -> bool:
         """Check if the environment is production."""
-        return self.ENV == "production"
+        return self.ENVIRONMENT == "production"
 
     def is_development(self) -> bool:
         """Check if the environment is development."""
-        return self.ENV == "development"
+        return self.ENVIRONMENT == "development"
 
 
-# Clear environment before initialization
-os.environ.clear()
 ENV = AppEnvironment()

@@ -17,19 +17,19 @@
 
 from typing import Any, cast
 
-from service_ml_forecast.ml.ml_model_provider import MLModelProvider
+from service_ml_forecast.ml.model_provider import ModelProvider
 from service_ml_forecast.ml.prophet_model_provider import ProphetModelProvider
-from service_ml_forecast.models.ml_model_config import MLModelConfig
-from service_ml_forecast.models.ml_model_type import MLModelTypeEnum
+from service_ml_forecast.models.model_config import ModelConfig
+from service_ml_forecast.models.model_type import ModelTypeEnum
 
 
-class MLModelProviderFactory:
+class ModelProviderFactory:
     """Factory for creating ML model providers based on the provided model config."""
 
     @staticmethod
     def create_provider(
-        config: MLModelConfig,
-    ) -> MLModelProvider[Any]:
+        config: ModelConfig,
+    ) -> ModelProvider[Any]:
         """Create a model provider instance based on the model config type.
 
         Args:
@@ -38,9 +38,9 @@ class MLModelProviderFactory:
         Returns:
             The model provider instance.
         """
-        if config.type == MLModelTypeEnum.PROPHET:
+        if config.type == ModelTypeEnum.PROPHET:
             try:
-                return cast("MLModelProvider[Any]", ProphetModelProvider(config=config))
+                return cast("ModelProvider[Any]", ProphetModelProvider(config=config))
             except Exception as e:
                 raise ValueError(f"Failed to convert config to ProphetMLConfig: {e}") from e
 

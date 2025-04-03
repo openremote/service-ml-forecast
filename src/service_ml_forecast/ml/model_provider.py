@@ -17,14 +17,14 @@
 
 from typing import Protocol, TypeVar
 
-from service_ml_forecast.models.ml_data_wrappers import ForecastFeatureSet, ForecastResult, TrainingFeatureSet
+from service_ml_forecast.models.feature_data_wrappers import ForecastFeatureSet, ForecastResult, TrainingFeatureSet
 
 # Define a generic type variable for the model
 # Enables type checking for different model type implementations
 ModelType = TypeVar("ModelType")
 
 
-class MLModelProvider(Protocol[ModelType]):
+class ModelProvider(Protocol[ModelType]):
     """Base protocol for all ML models.
 
     This protocol defines the methods that all ML model providers must implement.
