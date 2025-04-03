@@ -9,8 +9,12 @@ from service_ml_forecast.util.time_util import TimeUtil
 logger = logging.getLogger(__name__)
 
 
-class OpenRemoteMLDataService:
-    """Service for ML formatted data from OpenRemote."""
+class OpenRemoteDataService:
+    """Service for interacting with the OpenRemote Manager API.
+
+
+    Provides a wrapper around the OpenRemoteClient to provide a more convenient interface for the ML Forecast service.
+    """
 
     def __init__(self, client: OpenRemoteClient):
         self.client = client

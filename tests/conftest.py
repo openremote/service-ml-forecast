@@ -16,7 +16,7 @@ from service_ml_forecast.logging_config import LOGGING_CONFIG
 from service_ml_forecast.models.model_config import ProphetModelConfig
 from service_ml_forecast.services.model_config_service import ModelConfigService
 from service_ml_forecast.services.model_storage_service import ModelStorageService
-from service_ml_forecast.services.openremote_ml_data_service import OpenRemoteMLDataService
+from service_ml_forecast.services.openremote_data_service import OpenRemoteDataService
 
 logging.config.dictConfig(LOGGING_CONFIG)
 
@@ -135,10 +135,10 @@ def tariff_mock_datapoints() -> list[AssetDatapoint]:
 
 
 @pytest.fixture
-def ml_data_service(openremote_client: OpenRemoteClient) -> OpenRemoteMLDataService:
-    return OpenRemoteMLDataService(openremote_client)
+def or_data_service(openremote_client: OpenRemoteClient) -> OpenRemoteDataService:
+    return OpenRemoteDataService(openremote_client)
 
 
 @pytest.fixture
-def mock_ml_data_service(mock_openremote_client: OpenRemoteClient) -> OpenRemoteMLDataService:
-    return OpenRemoteMLDataService(mock_openremote_client)
+def mock_or_data_service(mock_openremote_client: OpenRemoteClient) -> OpenRemoteDataService:
+    return OpenRemoteDataService(mock_openremote_client)

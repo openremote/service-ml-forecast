@@ -25,7 +25,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from service_ml_forecast.ml.model_provider_factory import ModelProviderFactory
 from service_ml_forecast.models.model_config import ModelConfig
 from service_ml_forecast.services.model_config_service import ModelConfigService
-from service_ml_forecast.services.openremote_ml_data_service import OpenRemoteMLDataService
+from service_ml_forecast.services.openremote_data_service import OpenRemoteDataService
 from service_ml_forecast.util.singleton import Singleton
 from service_ml_forecast.util.time_util import TimeUtil
 
@@ -43,7 +43,7 @@ CONFIG_POLLING_INTERVAL = 30  # Poll configs for changes every 30 seconds
 class ModelScheduler(Singleton):
     """Manages the scheduling of ML model training and forecasting jobs."""
 
-    def __init__(self, data_service: OpenRemoteMLDataService) -> None:
+    def __init__(self, data_service: OpenRemoteDataService) -> None:
         self.config_storage = ModelConfigService()
         self.data_service = data_service
 
@@ -177,7 +177,7 @@ class ModelScheduler(Singleton):
         return False
 
 
-def _execute_model_training(config: ModelConfig, data_service: OpenRemoteMLDataService) -> None:
+def _execute_model_training(config: ModelConfig, data_service: OpenRemoteDataService) -> None:
     """Standalone function for ML model training, requires a valid config and data provider
 
     Args:
@@ -209,7 +209,7 @@ def _execute_model_training(config: ModelConfig, data_service: OpenRemoteMLDataS
     logger.info(f"Training job for {config.id} completed - duration: {end_time - start_time}s")
 
 
-def _execute_model_forecast(config: ModelConfig, data_service: OpenRemoteMLDataService) -> None:
+def _execute_model_forecast(config: ModelConfig, data_service: OpenRemoteDataService) -> None:
     """Standalone function for ML model forecasting, requires a valid config and data provider
 
     Args:
