@@ -17,7 +17,7 @@
 
 from enum import Enum
 from typing import Annotated, Literal
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
 
@@ -25,20 +25,22 @@ from service_ml_forecast.models.model_type import ModelTypeEnum
 
 
 class AssetAttributeFeature(BaseModel):
-    asset_id: str = Field(description="Asset ID.")
+    asset_id: str = Field(description="Asset ID", min_length=22, max_length=22)
     attribute_name: str = Field(
         description="Name of the attribute of the asset. This attribute requires historical data.",
+        min_length=3,
     )
     cutoff_timestamp: int = Field(
         description="Timestamp in milliseconds since epoch, all data after this timestamp will be used.",
+        gt=0,
     )
 
 
 class BaseModelConfig(BaseModel):
     """Base configuration for all ML models."""
 
-    id: str = Field(
-        default_factory=lambda: str(uuid4()),
+    id: UUID = Field(
+        default_factory=uuid4,
         description="ID of the model configuration. If not provided, a random uuid will be generated.",
     )
     realm: str = Field(description="Realm of where the assets and their datapoints are available.")
@@ -90,6 +92,8 @@ class ProphetModelConfig(BaseModelConfig):
         default=0.8,
         description="Proportion of historical data used for detecting changepoints. "
         "A higher value (e.g., 0.9-1.0) makes the model more responsive to recent trends.",
+        ge=0.0,
+        le=1.0,
     )
 
     changepoint_prior_scale: float = Field(
@@ -97,6 +101,8 @@ class ProphetModelConfig(BaseModelConfig):
         description="Controls trend flexibility at changepoints. "
         "Lower values (e.g., 0.01) result in smoother trends, "
         "while higher values (e.g., 0.5) allow more abrupt changes.",
+        ge=0.0,
+        le=1.0,
     )
 
 

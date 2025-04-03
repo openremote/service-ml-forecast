@@ -4,7 +4,7 @@
     "name": "Wind Speed Forecast",
     "type": "prophet",
     "target": {
-      "asset_id": "wind-turbine-asset-id",
+      "asset_id": "49ORIhkDVAlT97dYGUD9p5",
       "attribute_name": "windSpeed",
       "cutoff_timestamp": 1716153600000
     },

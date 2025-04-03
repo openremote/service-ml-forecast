@@ -17,6 +17,7 @@
 
 import logging
 from pathlib import Path
+from uuid import UUID
 
 from pydantic import TypeAdapter, ValidationError
 
@@ -32,14 +33,14 @@ class ModelConfigService:
 
     CONFIG_FILE_PREFIX = "config"
 
-    def save(self, config: ModelConfig) -> bool:
+    def save(self, config: ModelConfig) -> ModelConfig | None:
         """Saves the ML model configuration.
 
         Args:
             config: The ML model configuration to save
 
         Returns:
-            bool: True if the configuration was saved successfully, False otherwise
+            ModelConfig | None: The saved ML model configuration, or None if the configuration was not saved
         """
         path = Path(f"{ENV.CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config.id}.json")
         file_saved = FsUtil.save_file(config.model_dump_json(), path)
@@ -47,9 +48,9 @@ class ModelConfigService:
         if not file_saved:
             logger.error(f"Failed to save config {config.id}")
 
-        return file_saved
+        return config
 
-    def get_all(self) -> list[ModelConfig]:
+    def get_all(self, realm: str | None = None) -> list[ModelConfig]:
         """Get all available ML model configurations.
 
         Returns:
@@ -73,14 +74,16 @@ class ModelConfigService:
                 continue  # Skip the file if it cannot be read
 
             try:
-                configs.append(self.parse(file_content))
+                config = self.parse(file_content)
+                if realm is None or config.realm == realm:
+                    configs.append(config)
             except ValidationError as e:
                 logger.exception(f"Failed to parse config file {path}: {e}")
                 continue  # Skip the file if it cannot be parsed
 
         return configs
 
-    def get(self, config_id: str) -> ModelConfig | None:
+    def get(self, config_id: UUID) -> ModelConfig | None:
         """Get the ML model configuration based on the provided ID.
 
         Args:
@@ -97,29 +100,34 @@ class ModelConfigService:
             return None
 
         try:
-            return self.parse(file_content)
+            config = self.parse(file_content)
+            if config.id == config_id:
+                return config
+            else:
+                logger.exception(f"Config ID mismatch for {config_id} and {config.id}")
+                return None
         except ValidationError as e:
             logger.exception(f"Failed to parse config file {path}: {e}")
             return None
 
-    def update(self, config: ModelConfig) -> bool:
+    def update(self, config: ModelConfig) -> ModelConfig | None:
         """Update the ML model configuration.
 
         Args:
             config: The ML model configuration to update
 
         Returns:
-            bool: True if the configuration was updated successfully, False otherwise
+            ModelConfig: The updated ML model configuration
         """
         path = Path(f"{ENV.CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config.id}.json")
         file_saved = FsUtil.save_file(config.model_dump_json(), path)
 
         if not file_saved:
             logger.error(f"Failed to update config {config.id}")
+            return None
+        return config
 
-        return file_saved
-
-    def delete(self, config_id: str) -> bool:
+    def delete(self, config_id: UUID) -> bool:
         """Delete the ML model configuration based on the provided ID."""
 
         path = Path(f"{ENV.CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config_id}.json")

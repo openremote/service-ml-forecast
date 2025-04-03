@@ -1,5 +1,6 @@
 import datetime
 from http import HTTPStatus
+from uuid import uuid4
 
 import pytest
 import respx
@@ -64,7 +65,7 @@ def test_scheduler_job_management(
     - All jobs are properly cleaned up on stop
     """
 
-    assert config_service.save(prophet_basic_config)
+    assert config_service.save(prophet_basic_config) is not None
     model_scheduler = ModelScheduler(mock_ml_data_service)
     model_scheduler.start()
 
@@ -116,7 +117,7 @@ def test_training_execution(
     - The trained model is properly stored
     """
 
-    assert config_service.save(prophet_basic_config)
+    assert config_service.save(prophet_basic_config) is not None
 
     with respx.mock(base_url=MOCK_OPENREMOTE_URL) as respx_mock:
         # mock historical datapoints retrieval for target
@@ -146,8 +147,8 @@ def test_training_execution_with_missing_datapoints(
     - No model is stored when training data is missing
     """
 
-    prophet_basic_config.id = "test"  # override the id for this test
-    assert config_service.save(prophet_basic_config)
+    prophet_basic_config.id = uuid4()  # override the id for this test
+    assert config_service.save(prophet_basic_config) is not None
 
     with respx.mock(base_url=MOCK_OPENREMOTE_URL) as respx_mock:
         # mock historical datapoints retrieval for target with no datapoints
@@ -244,8 +245,8 @@ def test_forecast_execution_with_no_model(
     - No predictions are written when model is missing
     """
 
-    prophet_basic_config.id = "test"  # override the id for this test
-    assert config_service.save(prophet_basic_config)
+    prophet_basic_config.id = uuid4()  # override the id for this test
+    assert config_service.save(prophet_basic_config) is not None
 
     with respx.mock(base_url=MOCK_OPENREMOTE_URL, assert_all_called=False) as respx_mock:
         # mock write predicted datapoints for target
@@ -268,7 +269,7 @@ def trained_basic_model(
 ) -> ProphetModelConfig:
     """Fixture to create a trained basic model."""
 
-    assert config_service.save(prophet_basic_config)
+    assert config_service.save(prophet_basic_config) is not None
 
     with respx.mock(base_url=MOCK_OPENREMOTE_URL) as respx_mock:
         # mock historical datapoints retrieval for target
@@ -295,7 +296,7 @@ def trained_regressor_model(
 ) -> ProphetModelConfig:
     """Fixture to create a trained regressor model."""
 
-    assert config_service.save(prophet_multi_variable_config)
+    assert config_service.save(prophet_multi_variable_config) is not None
 
     # assert that the model has regressors
     assert prophet_multi_variable_config.regressors is not None

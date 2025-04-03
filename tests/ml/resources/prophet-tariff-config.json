@@ -4,7 +4,7 @@
     "name": "Tariff Forecast",
     "type": "prophet",
     "target": {
-      "asset_id": "tariff-provider-asset-id",
+      "asset_id": "41ORIhkDVAlT97dYGUD9n5",
       "attribute_name": "tariff",
       "cutoff_timestamp": 1716153600000
     },
@@ -14,7 +14,7 @@
     "forecast_frequency": "1h",
     "regressors": [
       {
-        "asset_id": "wind-turbine-asset-id",
+        "asset_id": "49ORIhkDVAlT97dYGUD9p5",
         "attribute_name": "windSpeed",
         "cutoff_timestamp": 1716153600000
       }

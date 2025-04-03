@@ -17,6 +17,7 @@
 
 import logging
 from pathlib import Path
+from uuid import UUID
 
 from service_ml_forecast.config import ENV
 from service_ml_forecast.util.fs_util import FsUtil
@@ -29,7 +30,7 @@ class ModelStorageService:
 
     MODEL_FILE_PREFIX = "model"
 
-    def save(self, model_content: str, model_id: str, model_file_extension: str) -> bool:
+    def save(self, model_content: str, model_id: UUID, model_file_extension: str) -> bool:
         """Save the serialized ML model.
 
         Args:
@@ -45,7 +46,7 @@ class ModelStorageService:
 
         return FsUtil.save_file(model_content, path)
 
-    def load(self, model_id: str, model_file_extension: str) -> str | None:
+    def load(self, model_id: UUID, model_file_extension: str) -> str | None:
         """Load the serialized ML model.
 
         Args:
@@ -60,7 +61,7 @@ class ModelStorageService:
 
         return FsUtil.read_file(path)
 
-    def delete(self, model_id: str, model_file_extension: str) -> bool:
+    def delete(self, model_id: UUID, model_file_extension: str) -> bool:
         """Delete a serialized ML model.
 
         Args:
