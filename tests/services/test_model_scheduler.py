@@ -245,7 +245,7 @@ def test_forecast_execution_with_no_model(
     - No predictions are written when model is missing
     """
 
-    prophet_basic_config.id = uuid4() # override the id for this test
+    prophet_basic_config.id = uuid4()  # override the id for this test
     assert config_service.save(prophet_basic_config)
 
     with respx.mock(base_url=MOCK_OPENREMOTE_URL, assert_all_called=False) as respx_mock:
