@@ -24,7 +24,7 @@ from service_ml_forecast.util.fs_util import FsUtil
 logger = logging.getLogger(__name__)
 
 
-class MLModelStorageService:
+class ModelStorageService:
     """Manages the persistence of ML models."""
 
     MODEL_FILE_PREFIX = "model"

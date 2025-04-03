@@ -21,7 +21,7 @@ from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
-from service_ml_forecast.models.ml_model_type import MLModelTypeEnum
+from service_ml_forecast.models.model_type import ModelTypeEnum
 
 
 class AssetAttributeFeature(BaseModel):
@@ -34,7 +34,7 @@ class AssetAttributeFeature(BaseModel):
     )
 
 
-class BaseMLModelConfig(BaseModel):
+class BaseModelConfig(BaseModel):
     """Base configuration for all ML models."""
 
     id: str = Field(
@@ -43,7 +43,7 @@ class BaseMLModelConfig(BaseModel):
     )
     realm: str = Field(description="Realm of where the assets and their datapoints are available.")
     name: str = Field(description="Friendly name for the model configuration.")
-    type: MLModelTypeEnum = Field(description="Which machine learning model to use.")
+    type: ModelTypeEnum = Field(description="Which machine learning model to use.")
     target: AssetAttributeFeature = Field(
         description="Asset attribute datapoint to predict. This datapoint must have historical data available.",
     )
@@ -66,10 +66,10 @@ class ProphetSeasonalityModeEnum(str, Enum):
     MULTIPLICATIVE = "multiplicative"
 
 
-class ProphetModelConfig(BaseMLModelConfig):
+class ProphetModelConfig(BaseModelConfig):
     """Prophet specific configuration."""
 
-    type: Literal[MLModelTypeEnum.PROPHET] = MLModelTypeEnum.PROPHET
+    type: Literal[ModelTypeEnum.PROPHET] = ModelTypeEnum.PROPHET
     yearly_seasonality: bool = Field(
         default=True,
         description="Include yearly seasonality in the model.",
@@ -100,7 +100,7 @@ class ProphetModelConfig(BaseMLModelConfig):
     )
 
 
-MLModelConfig = Annotated[
+ModelConfig = Annotated[
     ProphetModelConfig,
     Field(discriminator="type"),
 ]

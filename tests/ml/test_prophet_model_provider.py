@@ -1,7 +1,7 @@
 from service_ml_forecast.clients.openremote.models import AssetDatapoint
-from service_ml_forecast.ml.ml_model_provider_factory import MLModelProviderFactory
-from service_ml_forecast.models.ml_data_wrappers import FeatureDatapoints, ForecastFeatureSet, TrainingFeatureSet
-from service_ml_forecast.models.ml_model_config import ProphetModelConfig
+from service_ml_forecast.ml.model_provider_factory import ModelProviderFactory
+from service_ml_forecast.models.feature_data_wrappers import FeatureDatapoints, ForecastFeatureSet, TrainingFeatureSet
+from service_ml_forecast.models.model_config import ProphetModelConfig
 
 
 def test_train_and_predict(
@@ -15,7 +15,7 @@ def test_train_and_predict(
     - The trained model can be saved and loaded
     - The model can generate forecasts with non-empty results
     """
-    model_provider = MLModelProviderFactory.create_provider(prophet_basic_config)
+    model_provider = ModelProviderFactory.create_provider(prophet_basic_config)
 
     # Train the model
     model = model_provider.train_model(
@@ -55,7 +55,7 @@ def test_train_and_predict_with_regressor(
     - The tariff model generates valid forecasts when provided with regressor data
     """
     # Create the windspeed model
-    windspeed_provider = MLModelProviderFactory.create_provider(prophet_basic_config)
+    windspeed_provider = ModelProviderFactory.create_provider(prophet_basic_config)
     windspeed_target_datapoints = FeatureDatapoints(
         attribute_name=prophet_basic_config.target.attribute_name,
         datapoints=windspeed_mock_datapoints,
@@ -77,7 +77,7 @@ def test_train_and_predict_with_regressor(
     assert len(windspeed_forecast.datapoints) > 0
 
     # Create the tariff model
-    tarrif_provider = MLModelProviderFactory.create_provider(prophet_multi_variable_config)
+    tarrif_provider = ModelProviderFactory.create_provider(prophet_multi_variable_config)
     tariff_target_datapoints = FeatureDatapoints(
         attribute_name=prophet_multi_variable_config.target.attribute_name,
         datapoints=tariff_mock_datapoints,

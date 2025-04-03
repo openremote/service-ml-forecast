@@ -27,7 +27,7 @@ from service_ml_forecast import __app_info__
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 from service_ml_forecast.config import ENV
 from service_ml_forecast.logging_config import LOGGING_CONFIG
-from service_ml_forecast.services.ml_model_scheduler import MLModelScheduler
+from service_ml_forecast.services.model_scheduler import ModelScheduler
 from service_ml_forecast.services.openremote_ml_data_service import OpenRemoteMLDataService
 
 # Load the logging configuration
@@ -85,7 +85,7 @@ def initialize_background_services() -> None:
         service_user_secret=ENV.OPENREMOTE_SERVICE_USER_SECRET,
     )
     ml_data_service = OpenRemoteMLDataService(openremote_client)
-    model_scheduler = MLModelScheduler(ml_data_service)
+    model_scheduler = ModelScheduler(ml_data_service)
     model_scheduler.start()
 
 

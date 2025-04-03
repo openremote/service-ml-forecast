@@ -44,7 +44,7 @@ class AppEnvironment(BaseSettings):
     LOG_LEVEL: str = "INFO"
 
     # Environment
-    ENV: str = "development"
+    ENVIRONMENT: str = "development"
 
     # File paths
     BASE_DIR: Path = _find_project_root()
@@ -64,11 +64,11 @@ class AppEnvironment(BaseSettings):
 
     def is_production(self) -> bool:
         """Check if the environment is production."""
-        return self.ENV == "production"
+        return self.ENVIRONMENT == "production"
 
     def is_development(self) -> bool:
         """Check if the environment is development."""
-        return self.ENV == "development"
+        return self.ENVIRONMENT == "development"
 
 
 ENV = AppEnvironment()

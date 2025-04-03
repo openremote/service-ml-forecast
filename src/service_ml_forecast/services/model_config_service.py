@@ -21,18 +21,18 @@ from pathlib import Path
 from pydantic import TypeAdapter, ValidationError
 
 from service_ml_forecast.config import ENV
-from service_ml_forecast.models.ml_model_config import MLModelConfig
+from service_ml_forecast.models.model_config import ModelConfig
 from service_ml_forecast.util.fs_util import FsUtil
 
 logger = logging.getLogger(__name__)
 
 
-class MLModelConfigService:
+class ModelConfigService:
     """Manages the persistence of ML model configurations."""
 
     CONFIG_FILE_PREFIX = "config"
 
-    def save(self, config: MLModelConfig) -> bool:
+    def save(self, config: ModelConfig) -> bool:
         """Saves the ML model configuration.
 
         Args:
@@ -49,7 +49,7 @@ class MLModelConfigService:
 
         return file_saved
 
-    def get_all(self) -> list[MLModelConfig]:
+    def get_all(self) -> list[ModelConfig]:
         """Get all available ML model configurations.
 
         Returns:
@@ -80,7 +80,7 @@ class MLModelConfigService:
 
         return configs
 
-    def get(self, config_id: str) -> MLModelConfig | None:
+    def get(self, config_id: str) -> ModelConfig | None:
         """Get the ML model configuration based on the provided ID.
 
         Args:
@@ -102,7 +102,7 @@ class MLModelConfigService:
             logger.exception(f"Failed to parse config file {path}: {e}")
             return None
 
-    def update(self, config: MLModelConfig) -> bool:
+    def update(self, config: ModelConfig) -> bool:
         """Update the ML model configuration.
 
         Args:
@@ -130,8 +130,8 @@ class MLModelConfigService:
 
         return file_deleted
 
-    def parse(self, json: str) -> MLModelConfig:
+    def parse(self, json: str) -> ModelConfig:
         """Parse the provided ML model configuration JSON string into the concrete type."""
 
-        model_adapter: TypeAdapter[MLModelConfig] = TypeAdapter(MLModelConfig)
+        model_adapter: TypeAdapter[ModelConfig] = TypeAdapter(ModelConfig)
         return model_adapter.validate_json(json)

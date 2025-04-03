@@ -13,9 +13,9 @@ from service_ml_forecast.clients.openremote.models import AssetDatapoint
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 from service_ml_forecast.config import ENV
 from service_ml_forecast.logging_config import LOGGING_CONFIG
-from service_ml_forecast.models.ml_model_config import ProphetModelConfig
-from service_ml_forecast.services.ml_model_config_service import MLModelConfigService
-from service_ml_forecast.services.ml_model_storage_service import MLModelStorageService
+from service_ml_forecast.models.model_config import ProphetModelConfig
+from service_ml_forecast.services.model_config_service import ModelConfigService
+from service_ml_forecast.services.model_storage_service import ModelStorageService
 from service_ml_forecast.services.openremote_ml_data_service import OpenRemoteMLDataService
 
 logging.config.dictConfig(LOGGING_CONFIG)
@@ -95,13 +95,13 @@ def mock_openremote_client() -> OpenRemoteClient | None:
 
 
 @pytest.fixture
-def config_service() -> MLModelConfigService:
-    return MLModelConfigService()
+def config_service() -> ModelConfigService:
+    return ModelConfigService()
 
 
 @pytest.fixture
-def model_storage() -> MLModelStorageService:
-    return MLModelStorageService()
+def model_storage() -> ModelStorageService:
+    return ModelStorageService()
 
 
 @pytest.fixture
