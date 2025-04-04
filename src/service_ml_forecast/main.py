@@ -25,6 +25,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from service_ml_forecast import __app_info__
 from service_ml_forecast.api import model_config_route
+from service_ml_forecast.api.api_exception_handlers import bind_exception_handlers
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 from service_ml_forecast.config import ENV
 from service_ml_forecast.logging_config import LOGGING_CONFIG
@@ -71,6 +72,8 @@ app.add_middleware(
 )
 
 app.include_router(model_config_route.router)
+
+bind_exception_handlers(app)
 
 
 def initialize_background_services() -> None:

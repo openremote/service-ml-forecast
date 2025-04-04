@@ -1,6 +1,8 @@
+from http.client import CONFLICT, NOT_FOUND, OK
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
+from fastapi.responses import JSONResponse
 
 from service_ml_forecast.models.model_config import ModelConfig
 from service_ml_forecast.services.model_config_service import ModelConfigService
@@ -27,15 +29,12 @@ config_service = ModelConfigService()
     summary="Create a new model config",
     response_description="The created model config",
     responses={
-        200: {"model": ModelConfig},
+        OK: {"model": ModelConfig},
+        CONFLICT: {"error": str},
     },
 )
 async def create_model_config(model_config: ModelConfig) -> ModelConfig:
-    saved_config = config_service.save(model_config)
-    if saved_config is None:
-        raise HTTPException(status_code=500, detail="Internal server error, failed to save model config")
-
-    return saved_config
+    return config_service.save(model_config)
 
 
 @router.get(
@@ -43,14 +42,12 @@ async def create_model_config(model_config: ModelConfig) -> ModelConfig:
     summary="Get a model config",
     response_description="The model config",
     responses={
-        200: {"model": ModelConfig},
+        OK: {"model": ModelConfig},
+        NOT_FOUND: {"error": str},
     },
 )
 async def get_model_config(id: UUID) -> ModelConfig:
-    config = config_service.get(id)
-    if config is None:
-        raise HTTPException(status_code=404, detail="Model config not found")
-    return config
+    return config_service.get(id)
 
 
 @router.get(
@@ -58,7 +55,7 @@ async def get_model_config(id: UUID) -> ModelConfig:
     summary="Get all model configs with optional realm filter",
     response_description="The list of model configs",
     responses={
-        200: {"model": list[ModelConfig]},
+        OK: {"model": list[ModelConfig]},
     },
 )
 async def get_model_configs(realm: str | None = None) -> list[ModelConfig]:
@@ -70,15 +67,12 @@ async def get_model_configs(realm: str | None = None) -> list[ModelConfig]:
     summary="Update a model config",
     response_description="The updated model config",
     responses={
-        200: {"model": ModelConfig},
+        OK: {"model": ModelConfig},
+        NOT_FOUND: {"error": str},
     },
 )
-async def update_model_config(model_config: ModelConfig) -> ModelConfig | None:
-    updated_config = config_service.update(model_config)
-    if updated_config is None:
-        raise HTTPException(status_code=500, detail="Internal server error, failed to update model config")
-
-    return updated_config
+async def update_model_config(model_config: ModelConfig) -> ModelConfig:
+    return config_service.update(model_config)
 
 
 @router.delete(
@@ -86,11 +80,10 @@ async def update_model_config(model_config: ModelConfig) -> ModelConfig | None:
     summary="Delete a model config",
     response_description="True if the model config was deleted successfully",
     responses={
-        200: {"model": bool},
+        OK: {"message": str},
+        NOT_FOUND: {"error": str},
     },
 )
-async def delete_model_config(id: UUID) -> bool:
-    if not config_service.delete(id):
-        raise HTTPException(status_code=500, detail="Internal server error, failed to delete model config")
-
-    return True
+async def delete_model_config(id: UUID) -> JSONResponse:
+    config_service.delete(id)
+    return JSONResponse(status_code=OK, content={"message": "Model config deleted successfully"})

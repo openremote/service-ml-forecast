@@ -1,4 +1,4 @@
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import httpx
 
@@ -131,6 +131,16 @@ def test_update_model_config(fastapi_server: None) -> None:
         assert saved_config["name"] == "Updated Test Model"
 
 
+def test_update_model_config_not_found(fastapi_server: None) -> None:
+    """Test updating a non-existent model config."""
+    config = create_test_config()
+    config["id"] = str(uuid4())
+
+    with httpx.Client() as client:
+        response = client.put(f"{BASE_URL}/model/config/", json=config)
+        assert response.status_code == httpx.codes.NOT_FOUND
+
+
 def test_delete_model_config(fastapi_server: None) -> None:
     """Test deleting a model config."""
     with httpx.Client() as client:
@@ -141,8 +151,15 @@ def test_delete_model_config(fastapi_server: None) -> None:
         # Then delete it
         response = client.delete(f"{BASE_URL}/model/config/{TEST_CONFIG_ID}")
         assert response.status_code == httpx.codes.OK
-        assert response.json() is True
 
         # Verify it's deleted
         response = client.get(f"{BASE_URL}/model/config/{TEST_CONFIG_ID}")
+        assert response.status_code == httpx.codes.NOT_FOUND
+
+
+def test_delete_model_config_not_found(fastapi_server: None) -> None:
+    """Test deleting a non-existent model config."""
+    non_existent_id = UUID("87654321-4321-8765-4321-876543210987")
+    with httpx.Client() as client:
+        response = client.delete(f"{BASE_URL}/model/config/{non_existent_id}")
         assert response.status_code == httpx.codes.NOT_FOUND
