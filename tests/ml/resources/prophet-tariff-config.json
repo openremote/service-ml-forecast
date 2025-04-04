@@ -2,6 +2,7 @@
     "id": "d3c119a6-1018-4ebd-932b-a509eb7ab841",
     "realm": "master",
     "name": "Tariff Forecast",
+    "enabled": true,
     "type": "prophet",
     "target": {
       "asset_id": "41ORIhkDVAlT97dYGUD9n5",

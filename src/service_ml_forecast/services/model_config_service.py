@@ -47,7 +47,9 @@ class ModelConfigService:
 
         if not file_saved:
             logger.error(f"Failed to save config {config.id}")
+            return None
 
+        logger.info(f"Saved config {config.id}")
         return config
 
     def get_all(self, realm: str | None = None) -> list[ModelConfig]:
@@ -125,6 +127,8 @@ class ModelConfigService:
         if not file_saved:
             logger.error(f"Failed to update config {config.id}")
             return None
+
+        logger.info(f"Updated config {config.id}")
         return config
 
     def delete(self, config_id: UUID) -> bool:
@@ -135,6 +139,8 @@ class ModelConfigService:
 
         if not file_deleted:
             logger.error(f"Failed to delete config {config_id}")
+        else:
+            logger.info(f"Deleted config {config_id}")
 
         return file_deleted
 
