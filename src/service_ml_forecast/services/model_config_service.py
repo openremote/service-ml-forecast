@@ -41,6 +41,7 @@ class ModelConfigService:
         Returns:
             bool: True if the configuration was saved successfully, False otherwise
         """
+
         path = Path(f"{ENV.CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config.id}.json")
         file_saved = FsUtil.save_file(config.model_dump_json(), path)
 
@@ -62,7 +63,6 @@ class ModelConfigService:
         config_files = FsUtil.get_all_file_names(ENV.CONFIGS_DIR, "json")
 
         if config_files is None or len(config_files) == 0:
-            logger.error(f"No config files found in {ENV.CONFIGS_DIR}")
             return []
 
         for file in config_files:
@@ -91,6 +91,7 @@ class ModelConfigService:
         Returns:
             MLModelConfig | None: The ML model configuration, or None if the configuration was not found
         """
+
         path = Path(f"{ENV.CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config_id}.json")
         file_content = FsUtil.read_file(path)
 
@@ -113,6 +114,7 @@ class ModelConfigService:
         Returns:
             bool: True if the configuration was updated successfully, False otherwise
         """
+
         path = Path(f"{ENV.CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config.id}.json")
         file_saved = FsUtil.save_file(config.model_dump_json(), path)
 
