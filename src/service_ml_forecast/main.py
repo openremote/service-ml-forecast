@@ -59,7 +59,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-if not ENV.PUBLISH_DOCS:
+if not ENV.ML_PUBLISH_DOCS:
     app.docs_url = None
     app.redoc_url = None
     app.openapi_url = None
@@ -79,10 +79,10 @@ def initialize_background_services() -> None:
 
     # Setup the ML Model Scheduler
     openremote_client = OpenRemoteClient(
-        openremote_url=ENV.OPENREMOTE_URL,
-        keycloak_url=ENV.OPENREMOTE_KEYCLOAK_URL,
-        service_user=ENV.OPENREMOTE_SERVICE_USER,
-        service_user_secret=ENV.OPENREMOTE_SERVICE_USER_SECRET,
+        openremote_url=ENV.ML_OR_URL,
+        keycloak_url=ENV.ML_OR_KEYCLOAK_URL,
+        service_user=ENV.ML_OR_SERVICE_USER,
+        service_user_secret=ENV.ML_OR_SERVICE_USER_SECRET,
     )
     or_data_service = OpenRemoteDataService(openremote_client)
     model_scheduler = ModelScheduler(or_data_service)

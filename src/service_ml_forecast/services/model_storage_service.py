@@ -29,6 +29,9 @@ class ModelStorageService:
 
     MODEL_FILE_PREFIX = "model"
 
+    def __init__(self) -> None:
+        self.dir = ENV.ML_MODELS_DIR
+
     def save(self, model_content: str, model_id: str, model_file_extension: str) -> bool:
         """Save the serialized ML model.
 
@@ -41,7 +44,7 @@ class ModelStorageService:
             bool: True if the model was saved successfully, False otherwise
         """
 
-        path = Path(f"{ENV.MODELS_DIR}/{self.MODEL_FILE_PREFIX}-{model_id}{model_file_extension}")
+        path = Path(f"{self.dir}/{self.MODEL_FILE_PREFIX}-{model_id}{model_file_extension}")
 
         return FsUtil.save_file(model_content, path)
 
@@ -56,7 +59,7 @@ class ModelStorageService:
             str | None: The serialized ML model, or None if the model was not found
         """
 
-        path = Path(f"{ENV.MODELS_DIR}/{self.MODEL_FILE_PREFIX}-{model_id}{model_file_extension}")
+        path = Path(f"{self.dir}/{self.MODEL_FILE_PREFIX}-{model_id}{model_file_extension}")
 
         return FsUtil.read_file(path)
 
@@ -71,6 +74,6 @@ class ModelStorageService:
             bool: True if the model was deleted successfully, False otherwise
         """
 
-        path = Path(f"{ENV.MODELS_DIR}/{self.MODEL_FILE_PREFIX}-{model_id}{model_file_extension}")
+        path = Path(f"{self.dir}/{self.MODEL_FILE_PREFIX}-{model_id}{model_file_extension}")
 
         return FsUtil.delete_file(path)

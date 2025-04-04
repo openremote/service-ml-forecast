@@ -32,6 +32,9 @@ class ModelConfigService:
 
     CONFIG_FILE_PREFIX = "config"
 
+    def __init__(self) -> None:
+        self.dir = ENV.ML_CONFIGS_DIR
+
     def save(self, config: ModelConfig) -> bool:
         """Saves the ML model configuration.
 
@@ -42,7 +45,7 @@ class ModelConfigService:
             bool: True if the configuration was saved successfully, False otherwise
         """
 
-        path = Path(f"{ENV.CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config.id}.json")
+        path = Path(f"{self.dir}/{self.CONFIG_FILE_PREFIX}-{config.id}.json")
         file_saved = FsUtil.save_file(config.model_dump_json(), path)
 
         if not file_saved:
@@ -60,13 +63,13 @@ class ModelConfigService:
         """
 
         configs = []
-        config_files = FsUtil.get_all_file_names(ENV.CONFIGS_DIR, "json")
+        config_files = FsUtil.get_all_file_names(self.dir, "json")
 
         if config_files is None or len(config_files) == 0:
             return []
 
         for file in config_files:
-            path = Path(f"{ENV.CONFIGS_DIR}/{file}")
+            path = Path(f"{self.dir}/{file}")
 
             file_content = FsUtil.read_file(path)
 
@@ -92,7 +95,7 @@ class ModelConfigService:
             MLModelConfig | None: The ML model configuration, or None if the configuration was not found
         """
 
-        path = Path(f"{ENV.CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config_id}.json")
+        path = Path(f"{self.dir}/{self.CONFIG_FILE_PREFIX}-{config_id}.json")
         file_content = FsUtil.read_file(path)
 
         if file_content is None:
@@ -115,7 +118,7 @@ class ModelConfigService:
             bool: True if the configuration was updated successfully, False otherwise
         """
 
-        path = Path(f"{ENV.CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config.id}.json")
+        path = Path(f"{self.dir}/{self.CONFIG_FILE_PREFIX}-{config.id}.json")
         file_saved = FsUtil.save_file(config.model_dump_json(), path)
 
         if not file_saved:
@@ -128,7 +131,7 @@ class ModelConfigService:
     def delete(self, config_id: str) -> bool:
         """Delete the ML model configuration based on the provided ID."""
 
-        path = Path(f"{ENV.CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config_id}.json")
+        path = Path(f"{self.dir}/{self.CONFIG_FILE_PREFIX}-{config_id}.json")
         file_deleted = FsUtil.delete_file(path)
 
         if not file_deleted:

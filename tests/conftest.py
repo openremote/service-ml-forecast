@@ -36,9 +36,9 @@ MOCK_TOKEN_EXPIRY_SECONDS = 60
 # Create a temporary directory for tests
 TEST_TMP_DIR: Path = Path(tempfile.mkdtemp(prefix="service_ml_forecast_test_"))
 
-ENV.BASE_DIR = TEST_TMP_DIR
-ENV.MODELS_DIR = TEST_TMP_DIR / "models"
-ENV.CONFIGS_DIR = TEST_TMP_DIR / "configs"
+ENV.ML_BASE_DIR = TEST_TMP_DIR
+ENV.ML_MODELS_DIR = TEST_TMP_DIR / "models"
+ENV.ML_CONFIGS_DIR = TEST_TMP_DIR / "configs"
 
 
 # Clean up temporary directory after each test call
@@ -55,10 +55,10 @@ def openremote_client() -> OpenRemoteClient | None:
 
     try:
         client = OpenRemoteClient(
-            openremote_url=ENV.OPENREMOTE_URL,
-            keycloak_url=ENV.OPENREMOTE_KEYCLOAK_URL,
-            service_user=ENV.OPENREMOTE_SERVICE_USER,
-            service_user_secret=ENV.OPENREMOTE_SERVICE_USER_SECRET,
+            openremote_url=ENV.ML_OR_URL,
+            keycloak_url=ENV.ML_OR_KEYCLOAK_URL,
+            service_user=ENV.ML_OR_SERVICE_USER,
+            service_user_secret=ENV.ML_OR_SERVICE_USER_SECRET,
         )
         if not client.health_check():
             pytest.skip(reason="Unable to reach the OpenRemote Manager API")
