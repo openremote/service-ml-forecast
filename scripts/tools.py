@@ -45,12 +45,12 @@ def format() -> None:
 
 def test() -> None:
     """Run tests."""
-    step(f"uv run pytest {TEST_DIR} -v --cache-clear", "tests")
+    step(f"uv run pytest {TEST_DIR} -vv --cache-clear", "tests")
 
 
 def test_coverage() -> None:
     """Run tests with coverage."""
-    step(f"uv run pytest {TEST_DIR} -v --cache-clear --cov {SRC_DIR}", "tests with coverage")
+    step(f"uv run pytest {TEST_DIR} -vv --cache-clear --cov {SRC_DIR}", "tests with coverage")
 
 
 def build() -> None:
