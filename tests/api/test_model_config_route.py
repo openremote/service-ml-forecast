@@ -2,7 +2,7 @@ from uuid import UUID
 
 import httpx
 
-from tests.conftest import FASTAPI_SERVER_HOST, FASTAPI_SERVER_PORT
+from tests.conftest import FASTAPI_TEST_HOST, FASTAPI_TEST_PORT
 
 # Test data
 TEST_CONFIG_ID = "d3c143a6-1018-4ebd-932b-a509eb7ab841"
@@ -10,7 +10,7 @@ TEST_REALM = "master"
 TEST_ASSET_ID = "41ORIplRVAlT97dYGUD9n5"
 TEST_ATTRIBUTE_NAME = "test-attribute"
 TEST_CUTOFF_TIMESTAMP = 1716153600000
-BASE_URL = f"http://{FASTAPI_SERVER_HOST}:{FASTAPI_SERVER_PORT}"
+BASE_URL = f"http://{FASTAPI_TEST_HOST}:{FASTAPI_TEST_PORT}"
 
 
 def create_test_config() -> dict[str, object]:
@@ -34,6 +34,14 @@ def create_test_config() -> dict[str, object]:
     }
 
 
+def create_invalid_test_config() -> dict[str, object]:
+    """Helper function to create an invalid test model config. Missing required fields."""
+    return {
+        "id": TEST_CONFIG_ID,
+        "realm": TEST_REALM,
+    }
+
+
 def test_create_model_config(fastapi_server: None) -> None:
     """Test creating a new model config."""
 
@@ -49,6 +57,16 @@ def test_create_model_config(fastapi_server: None) -> None:
         assert saved_config["type"] == "prophet"
         assert saved_config["target"]["asset_id"] == TEST_ASSET_ID
         assert saved_config["target"]["attribute_name"] == TEST_ATTRIBUTE_NAME
+
+
+def test_create_invalid_model_config(fastapi_server: None) -> None:
+    """Test creating an invalid model config."""
+
+    config = create_invalid_test_config()
+
+    with httpx.Client() as client:
+        response = client.post(f"{BASE_URL}/model/config/", json=config)
+        assert response.status_code == httpx.codes.UNPROCESSABLE_ENTITY
 
 
 def test_get_model_config(fastapi_server: None) -> None:

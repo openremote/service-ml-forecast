@@ -37,8 +37,8 @@ MOCK_ACCESS_TOKEN = "mock_access_token"
 MOCK_TOKEN_EXPIRY_SECONDS = 60
 
 # FASTAPI SERVER
-FASTAPI_SERVER_HOST = "127.0.0.1"
-FASTAPI_SERVER_PORT = 8007
+FASTAPI_TEST_HOST = "127.0.0.1"
+FASTAPI_TEST_PORT = 8007
 
 # Create a temporary directory for tests
 TEST_TMP_DIR: Path = Path(tempfile.mkdtemp(prefix="service_ml_forecast_test_"))
@@ -59,7 +59,7 @@ def cleanup_test_tmp_dir() -> Generator[None]:
 @pytest.fixture(scope="session")
 def fastapi_server() -> Generator[None]:
     """Run the fastapi server via uvicorn in a separate thread."""
-    config = uvicorn.Config(app=app, host=FASTAPI_SERVER_HOST, port=FASTAPI_SERVER_PORT, log_level="error")
+    config = uvicorn.Config(app=app, host=FASTAPI_TEST_HOST, port=FASTAPI_TEST_PORT, log_level="error")
     server = uvicorn.Server(config)
     thread = threading.Thread(target=server.run)
     thread.daemon = True

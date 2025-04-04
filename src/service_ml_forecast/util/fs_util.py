@@ -107,3 +107,12 @@ class FsUtil:
         except OSError as e:
             logger.exception(f"Failed to delete file {path}: {e!s}")
             return False
+
+    @staticmethod
+    def file_exists(path: Path) -> bool:
+        """Check if a file exists.
+
+        Args:
+            path: Path to the file
+        """
+        return path.exists()
