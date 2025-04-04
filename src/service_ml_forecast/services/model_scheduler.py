@@ -22,12 +22,12 @@ from apscheduler.executors.pool import ProcessPoolExecutor, ThreadPoolExecutor
 from apscheduler.jobstores.memory import MemoryJobStore
 from apscheduler.schedulers.background import BackgroundScheduler
 
+from service_ml_forecast.common.singleton import Singleton
+from service_ml_forecast.common.time_util import TimeUtil
 from service_ml_forecast.ml.model_provider_factory import ModelProviderFactory
 from service_ml_forecast.models.model_config import ModelConfig
 from service_ml_forecast.services.model_config_service import ModelConfigService
 from service_ml_forecast.services.openremote_data_service import OpenRemoteDataService
-from service_ml_forecast.util.singleton import Singleton
-from service_ml_forecast.util.time_util import TimeUtil
 
 logger = logging.getLogger(__name__)
 
@@ -66,37 +66,33 @@ class ModelScheduler(Singleton):
     def start(self) -> None:
         """Start the scheduler for ML model training and forecasting.
 
-        Raises:
-            Exception: If the scheduler fails to start
+        Does not start the scheduler if it is already running.
         """
 
         if self.scheduler.running:
             logger.warning("Scheduler for ML Model Training already running")
             return
-        try:
-            self.scheduler.start()
-            self._poll_configs()
 
-            # Schedule the configuration watcher
-            self.scheduler.add_job(
-                self._poll_configs,
-                trigger="interval",
-                seconds=CONFIG_POLLING_INTERVAL,
-                id=CONFIG_WATCHER_JOB_ID,
-                name=CONFIG_WATCHER_JOB_ID,
-                executor="thread_pool",
-            )
+        self.scheduler.start()
+        self._poll_configs()
 
-        except Exception as e:
-            logger.critical(f"Failed to start ML Model Scheduler: {e}")
-            raise e
+        self.scheduler.add_job(
+            self._poll_configs,
+            trigger="interval",
+            seconds=CONFIG_POLLING_INTERVAL,
+            id=CONFIG_WATCHER_JOB_ID,
+            name=CONFIG_WATCHER_JOB_ID,
+            executor="thread_pool",
+        )
 
     def stop(self) -> None:
-        """Stop the scheduler"""
+        """Stop the scheduler, does not interrupt any running jobs."""
 
         self.scheduler.shutdown()
 
     def _add_training_job(self, config: ModelConfig) -> None:
+        """Add a training job for the given model config."""
+
         job_id = f"{TRAINING_JOB_ID_PREFIX}:{config.id}"
         seconds = TimeUtil.parse_iso_duration(config.training_interval)
 
@@ -105,7 +101,7 @@ class ModelScheduler(Singleton):
             return
 
         self.scheduler.add_job(
-            _execute_model_training,
+            _model_training_job,
             trigger="interval",
             args=[config, self.data_service],
             seconds=seconds,
@@ -116,6 +112,8 @@ class ModelScheduler(Singleton):
         )
 
     def _add_forecast_job(self, config: ModelConfig) -> None:
+        """Add a forecast job for the given model config."""
+
         job_id = f"{FORECAST_JOB_ID_PREFIX}:{config.id}"
         seconds = TimeUtil.parse_iso_duration(config.forecast_interval)
 
@@ -124,7 +122,7 @@ class ModelScheduler(Singleton):
             return
 
         self.scheduler.add_job(
-            _execute_model_forecast,
+            _model_forecast_job,
             trigger="interval",
             args=[config, self.data_service],
             seconds=seconds,
@@ -137,19 +135,14 @@ class ModelScheduler(Singleton):
     def _poll_configs(self) -> None:
         """Poll for configurations and schedule the jobs based on the new configs"""
 
-        try:
-            configs = self.config_storage.get_all()
-            # Clean stale/removed jobs for the given configs
-            self._cleanup_stale_jobs(configs)
+        configs = self.config_storage.get_all()
+        self._cleanup_stale_jobs(configs)
 
-            # Queue training and forecast jobs for enabled configs
-            for config in configs:
-                if config.enabled:
-                    self._add_training_job(config)
-                    self._add_forecast_job(config)
-
-        except Exception as e:
-            logger.exception(f"Failed to poll configurations: {e}")
+        # Queue training and forecast jobs for enabled configs
+        for config in configs:
+            if config.enabled:
+                self._add_training_job(config)
+                self._add_forecast_job(config)
 
     def _cleanup_stale_jobs(self, configs: list[ModelConfig]) -> None:
         """Remove jobs for configs that are no longer present in the config storage"""
@@ -161,7 +154,6 @@ class ModelScheduler(Singleton):
         expected_jobs = training_jobs + forecast_jobs + [CONFIG_WATCHER_JOB_ID]
 
         for job in self.scheduler.get_jobs():
-            # Remove jobs that are not expected to be in the job store
             if job.id not in expected_jobs:
                 self.scheduler.remove_job(job.id)
 
@@ -177,40 +169,48 @@ class ModelScheduler(Singleton):
         return False
 
 
-def _execute_model_training(config: ModelConfig, data_service: OpenRemoteDataService) -> None:
-    """Standalone function for ML model training, requires a valid config and data provider
+def _model_training_job(config: ModelConfig, data_service: OpenRemoteDataService) -> None:
+    """Model training job. Constructs the model provider, retrieves the training feature set,
+    trains the model, and saves the model.
 
     Args:
         config: The model configuration
         data_service: The data service
     """
-
     start_time = time.perf_counter()
     provider = ModelProviderFactory.create_provider(config)
 
     training_feature_set = data_service.get_training_feature_set(config)
 
     if training_feature_set is None:
-        logger.error(f"Training failed, could not retrieve training feature set for {config.id}")
+        logger.error(
+            f"Cannot train model {config.id} - no training feature set found. "
+            f"Asset ID: {config.target.asset_id}, Attribute: {config.target.attribute_name}, "
+        )
         return
 
     # Train the model
     model = provider.train_model(training_feature_set)
 
     if model is None:
-        logger.error(f"Training failed, did not receive serialized model for {config.id}")
+        logger.error(
+            f"Model training failed for {config.id} - no model returned. "
+            f"Model Type: {config.type}, Training Interval: {config.training_interval}"
+        )
         return
 
-    if not provider.save_model(model):
-        logger.error(f"Training failed, could not save model for {config.id}")
-        return
+    # Save the model
+    provider.save_model(model)
 
     end_time = time.perf_counter()
-    logger.info(f"Training job for {config.id} completed - duration: {end_time - start_time}s")
+    logger.info(
+        f"Training job for {config.id} completed - duration: {end_time - start_time}s. Model Type: {config.type}"
+    )
 
 
-def _execute_model_forecast(config: ModelConfig, data_service: OpenRemoteDataService) -> None:
-    """Standalone function for ML model forecasting, requires a valid config and data provider
+def _model_forecast_job(config: ModelConfig, data_service: OpenRemoteDataService) -> None:
+    """Model forecast job. Constructs the model provider, retrieves the forecast feature set,
+    generates the forecast, and writes the forecasted datapoints to OpenRemote.
 
     Args:
         config: The model configuration
@@ -220,27 +220,35 @@ def _execute_model_forecast(config: ModelConfig, data_service: OpenRemoteDataSer
     start_time = time.perf_counter()
     provider = ModelProviderFactory.create_provider(config)
 
+    # Retrieve the forecast feature set
     forecast_feature_set = data_service.get_forecast_feature_set(config)
+
+    if config.regressors is not None and forecast_feature_set is None:
+        logger.error(
+            f"Cannot forecast model {config.id} - config has regressors but no forecast feature set. "
+            f"Asset ID: {config.target.asset_id}, Attribute: {config.target.attribute_name}, "
+            f"Regressors: {', '.join(r.attribute_name for r in config.regressors)}"
+        )
+        return
 
     # Generate the forecast
     forecast = provider.generate_forecast(forecast_feature_set)
 
-    if forecast is None:
-        logger.error(f"Forecasting failed, could not generate forecast for {config.id}")
-        return
-
-    # Write the forecasted datapoints to OpenRemote
-    datapoints_written = data_service.write_predicted_datapoints(
+    # Write the forecasted datapoints
+    if not data_service.write_predicted_datapoints(
         config,
         forecast.datapoints,
-    )
-
-    if not datapoints_written:
-        logger.error(f"Forecasting failed, could not write forecast for {config.id}")
+    ):
+        logger.error(
+            f"Failed to write forecasted datapoints for {config.id}. "
+            f"Asset ID: {config.target.asset_id}, Attribute: {config.target.attribute_name}, "
+            f"Forecast Size: {len(forecast.datapoints)}, "
+        )
         return
 
     end_time = time.perf_counter()
     logger.info(
-        f"Forecasting job for {config.id} completed - duration: {end_time - start_time}s"
-        f" - wrote {len(forecast.datapoints)} datapoints",
+        f"Forecasting job for {config.id} completed - duration: {end_time - start_time}s "
+        f"- wrote {len(forecast.datapoints)} datapoints. "
+        f"Model Type: {config.type}."
     )

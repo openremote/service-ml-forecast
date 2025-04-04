@@ -19,8 +19,9 @@ import logging
 from pathlib import Path
 from uuid import UUID
 
+from service_ml_forecast.common.exceptions import ResourceNotFoundError
+from service_ml_forecast.common.fs_util import FsUtil
 from service_ml_forecast.config import ENV
-from service_ml_forecast.util.fs_util import FsUtil
 
 logger = logging.getLogger(__name__)
 
@@ -30,51 +31,56 @@ class ModelStorageService:
 
     MODEL_FILE_PREFIX = "model"
 
-    def save(self, model_content: str, model_id: UUID, model_file_extension: str) -> bool:
-        """Save the serialized ML model.
+    def save(self, model_content: str, model_id: UUID, model_file_extension: str) -> None:
+        """Save a trained model.
 
         Args:
-            model_content: The serialized ML model
-            model_id: The ID of the ML model
-            model_file_extension: The extension of the ML model file
-
-        Returns:
-            bool: True if the model was saved successfully, False otherwise
+            model_content: The content of the model to save.
+            model_id: The ID of the model to save.
+            model_file_extension: The extension of the model file.
         """
-
         path = self._get_model_file_path(model_id, model_file_extension)
 
-        return FsUtil.save_file(model_content, path)
+        FsUtil.save_file(model_content, path)
 
-    def load(self, model_id: UUID, model_file_extension: str) -> str | None:
-        """Load the serialized ML model.
+    def load(self, model_id: UUID, model_file_extension: str) -> str:
+        """Load a previously saved model.
 
         Args:
-            model_id: The ID of the ML model
-            model_file_extension: The extension of the ML model file
+            model_id: The ID of the model to load.
+            model_file_extension: The extension of the model file.
 
         Returns:
-            str | None: The serialized ML model, or None if the model was not found
-        """
+            The content of the model file.
 
+        Raises:
+            ResourceNotFoundError: If the model file does not exist.
+        """
         path = self._get_model_file_path(model_id, model_file_extension)
+
+        if not FsUtil.file_exists(path):
+            logger.error(f"Model not found: {model_id}")
+            raise ResourceNotFoundError(f"Model not found: {model_id}")
 
         return FsUtil.read_file(path)
 
-    def delete(self, model_id: UUID, model_file_extension: str) -> bool:
-        """Delete a serialized ML model.
+    def delete(self, model_id: UUID, model_file_extension: str) -> None:
+        """Delete a previously saved model.
 
         Args:
-            model_id: The ID of the ML model
-            model_file_extension: The extension of the ML model file
+            model_id: The ID of the model to delete.
+            model_file_extension: The extension of the model file.
 
-        Returns:
-            bool: True if the model was deleted successfully, False otherwise
+        Raises:
+            ResourceNotFoundError: If the model file does not exist.
         """
-
         path = self._get_model_file_path(model_id, model_file_extension)
 
-        return FsUtil.delete_file(path)
+        if not FsUtil.file_exists(path):
+            logger.error(f"Model not found: {model_id}")
+            raise ResourceNotFoundError(f"Model not found: {model_id}")
+
+        FsUtil.delete_file(path)
 
     def _get_model_file_path(self, model_id: UUID, model_file_extension: str) -> Path:
-        return Path(f"{ENV.ML_MODELS_DIR}/{self.MODEL_FILE_PREFIX}-{model_id}{model_file_extension}")
+        return Path(f"{ENV.ML_MODELS_DIR}/{self.MODEL_FILE_PREFIX}-{model_id}.{model_file_extension}")

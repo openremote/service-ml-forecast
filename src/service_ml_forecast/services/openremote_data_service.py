@@ -19,9 +19,9 @@ import logging
 
 from service_ml_forecast.clients.openremote.models import AssetDatapoint
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
+from service_ml_forecast.common.time_util import TimeUtil
 from service_ml_forecast.models.feature_data_wrappers import FeatureDatapoints, ForecastFeatureSet, TrainingFeatureSet
 from service_ml_forecast.models.model_config import ModelConfig
-from service_ml_forecast.util.time_util import TimeUtil
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +44,7 @@ class OpenRemoteDataService:
             asset_datapoints: The predicted datapoints
 
         Returns:
-            bool: True if the datapoints were written successfully, False otherwise
+            True if the datapoints were written successfully, False otherwise.
         """
 
         return self.client.write_predicted_datapoints(
@@ -60,8 +60,7 @@ class OpenRemoteDataService:
             config: The model configuration
 
         Returns:
-            TrainingFeatureSet | None: The training feature set
-            None if unable to retrieve target feature datapoints
+            The training feature set or None if the training feature set could not be retrieved.
         """
 
         target_feature_datapoints: FeatureDatapoints
@@ -75,7 +74,10 @@ class OpenRemoteDataService:
         )
 
         if datapoints is None:
-            logger.error(f"Unable to retrieve target feature datapoints for {config.id}")
+            logger.error(
+                f"Failed to retrieve target datapoints for {config.target.asset_id} "
+                f"{config.target.attribute_name} - skipping"
+            )
             return None
 
         target_feature_datapoints = FeatureDatapoints(
@@ -97,10 +99,10 @@ class OpenRemoteDataService:
 
                 if regressor_datapoints is None:
                     logger.error(
-                        f"Unable to retrieve regressor datapoints for {config.id}"
-                        f" - {regressor.asset_id} - {regressor.attribute_name}",
+                        f"Failed to retrieve regressor datapoints for {regressor.asset_id} "
+                        f"{regressor.attribute_name} - skipping"
                     )
-                    return None  # Early return if unable to retrieve regressor datapoints
+                    continue
 
                 regressors.append(
                     FeatureDatapoints(
@@ -123,14 +125,8 @@ class OpenRemoteDataService:
             config: The model configuration
 
         Returns:
-            ForecastFeatureSet | None: The forecast feature set
-            None if no regressors are configured or if unable to retrieve regressor datapoints
+            The forecast feature set or None if the forecast feature set could not be retrieved.
         """
-
-        # Return None if no regressors are configured
-        # Don't need to include a feature set if no regressors are configured for forecasting
-        if config.regressors is None:
-            return None
 
         regressors: list[FeatureDatapoints] = []
 
@@ -146,10 +142,9 @@ class OpenRemoteDataService:
 
                 if regressor_datapoints is None:
                     logger.error(
-                        f"Unable to retrieve regressor datapoints for {config.id} "
-                        f"- {regressor.asset_id} - {regressor.attribute_name}",
+                        f"No predicted datapoints found for {regressor.asset_id} {regressor.attribute_name} - skipping"
                     )
-                    return None  # Early return if unable to retrieve regressor datapoints
+                    continue
 
                 regressors.append(
                     FeatureDatapoints(

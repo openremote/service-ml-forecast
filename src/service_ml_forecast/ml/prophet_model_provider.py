@@ -23,11 +23,11 @@ from prophet import Prophet
 from prophet.serialize import model_from_json, model_to_json
 
 from service_ml_forecast.clients.openremote.models import AssetDatapoint
+from service_ml_forecast.common.time_util import TimeUtil
 from service_ml_forecast.ml.model_provider import ModelProvider
 from service_ml_forecast.models.feature_data_wrappers import ForecastFeatureSet, ForecastResult, TrainingFeatureSet
 from service_ml_forecast.models.model_config import ProphetModelConfig
 from service_ml_forecast.services.model_storage_service import ModelStorageService
-from service_ml_forecast.util.time_util import TimeUtil
 
 logger = logging.getLogger(__name__)
 
@@ -48,9 +48,6 @@ class ProphetModelProvider(ModelProvider[Prophet]):
             return None
 
         dataframe = _prepare_training_dataframe(training_dataset)
-        if dataframe is None:
-            logger.error("Failed to obtain valid dataframe for training the Prophet model")
-            return None
 
         # Construct the model
         model = Prophet()
@@ -74,32 +71,17 @@ class ProphetModelProvider(ModelProvider[Prophet]):
 
         return model
 
-    def load_model(self, model_id: UUID) -> Prophet | None:
-        model_json = self.model_storage_service.load(model_id, ".json")
-        if model_json is None:
-            logger.error(f"Failed to load model -- {model_id}")
-            return None
-
+    def load_model(self, model_id: UUID) -> Prophet:
+        model_json = self.model_storage_service.load(model_id, "json")
         return model_from_json(model_json)
 
-    def save_model(self, model: Prophet) -> bool:
-        try:
-            model_json = model_to_json(model)
-            if not self.model_storage_service.save(model_json, self.config.id, ".json"):
-                logger.error(f"Failed to save trained model -- {self.config.id}")
-                return False
+    def save_model(self, model: Prophet) -> None:
+        model_json = model_to_json(model)
+        self.model_storage_service.save(model_json, self.config.id, "json")
+        logger.info(f"Saved trained model -- {self.config.id}")
 
-            logger.info(f"Saved trained model -- {self.config.id}")
-            return True
-        except Exception as e:
-            logger.exception(f"Failed to save trained model -- {self.config.id}: {e}")
-            return False
-
-    def generate_forecast(self, forecast_feature_set: ForecastFeatureSet | None = None) -> ForecastResult | None:
+    def generate_forecast(self, forecast_feature_set: ForecastFeatureSet | None = None) -> ForecastResult:
         model = self.load_model(self.config.id)
-        if model is None:
-            logger.error(f"Failed to load model -- {self.config.id}")
-            return None
 
         future = model.make_future_dataframe(
             periods=self.config.forecast_periods,
@@ -110,16 +92,13 @@ class ProphetModelProvider(ModelProvider[Prophet]):
         # round the future timestamps to the forecast frequency
         future["ds"] = future["ds"].dt.round(self.config.forecast_frequency)
 
-        # Add future regressor values to the future dataframe if provided
         if forecast_feature_set is not None:
-            logger.info(f"Requested forecast is using regressor(s) -- {self.config.id}")
             for regressor in forecast_feature_set.regressors:
                 regressor_dataframe = _convert_datapoints_to_dataframe(
                     regressor.datapoints,
                     rename_y=regressor.attribute_name,
                 )
 
-                # Interpolate the regressor values to the future data point timestamps
                 future = pd.merge_asof(
                     future,
                     regressor_dataframe[["ds", regressor.attribute_name]],
@@ -131,10 +110,6 @@ class ProphetModelProvider(ModelProvider[Prophet]):
 
         # noinspection PyTypeChecker
         datapoints = _convert_prophet_forecast_to_datapoints(forecast)
-
-        if datapoints is None or len(datapoints) == 0:
-            logger.error(f"Failed to generate forecast -- {self.config.id}")
-            return None
 
         return ForecastResult(
             asset_id=self.config.target.asset_id,
@@ -167,7 +142,7 @@ def _convert_datapoints_to_dataframe(datapoints: list[AssetDatapoint], rename_y:
     return dataframe
 
 
-def _prepare_training_dataframe(training_dataset: TrainingFeatureSet) -> pd.DataFrame | None:
+def _prepare_training_dataframe(training_dataset: TrainingFeatureSet) -> pd.DataFrame:
     target = training_dataset.target
     regressors = training_dataset.regressors
 

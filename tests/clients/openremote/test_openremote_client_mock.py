@@ -5,7 +5,7 @@ import respx
 
 from service_ml_forecast.clients.openremote.models import Asset, AssetDatapoint, AssetDatapointPeriod
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
-from service_ml_forecast.util.time_util import TimeUtil
+from service_ml_forecast.common.time_util import TimeUtil
 from tests.conftest import (
     MOCK_OPENREMOTE_URL,
     TEST_ASSET_ID,

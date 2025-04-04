@@ -21,11 +21,11 @@ install:
 
 # Run tests
 test:
-	$(PYTEST) $(TEST_DIR) -v -o log_cli=true --cache-clear
+	$(PYTEST) $(TEST_DIR) -vv --cache-clear
 
 # Run tests with coverage
 test-coverage:
-	$(PYTEST) $(TEST_DIR) -v -o log_cli=true --cache-clear --cov=src --cov-report=term
+	$(PYTEST) $(TEST_DIR) -vv --cache-clear --cov=src --cov-report=term
 
 # Run linting and type checking
 lint:

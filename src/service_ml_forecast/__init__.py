@@ -39,17 +39,14 @@ class AppInfo(BaseModel):
     version: str
 
 
-def get_app_info() -> AppInfo | None:
+def get_app_info() -> AppInfo:
     """Read app info (name, description, version) from pyproject.toml file."""
-    try:
-        pyproject_path = find_project_root() / "pyproject.toml"
+    pyproject_path = find_project_root() / "pyproject.toml"
 
-        with open(pyproject_path, "rb") as f:
-            pyproject_data = tomli.load(f)
+    with open(pyproject_path, "rb") as f:
+        pyproject_data = tomli.load(f)
 
-        return AppInfo(**pyproject_data["project"])
-    except (FileNotFoundError, KeyError, tomli.TOMLDecodeError):
-        return None
+    return AppInfo(**pyproject_data["project"])
 
 
 __app_info__ = get_app_info()
