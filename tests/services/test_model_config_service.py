@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 from service_ml_forecast.models.model_config import ProphetModelConfig
 from service_ml_forecast.services.model_config_service import ModelConfigService
 
@@ -33,7 +35,7 @@ def test_get_config_not_found(config_service: ModelConfigService) -> None:
     - Requesting a configuration with an unknown ID returns None
     - The system handles non-existent configurations gracefully
     """
-    config = config_service.get("non-existent-id")
+    config = config_service.get(uuid4())
     assert config is None
 
 

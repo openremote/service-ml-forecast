@@ -17,6 +17,7 @@
 
 import logging
 from pathlib import Path
+from uuid import UUID
 
 from service_ml_forecast.config import ENV
 from service_ml_forecast.util.fs_util import FsUtil
@@ -29,10 +30,7 @@ class ModelStorageService:
 
     MODEL_FILE_PREFIX = "model"
 
-    def __init__(self) -> None:
-        self.dir = ENV.ML_MODELS_DIR
-
-    def save(self, model_content: str, model_id: str, model_file_extension: str) -> bool:
+    def save(self, model_content: str, model_id: UUID, model_file_extension: str) -> bool:
         """Save the serialized ML model.
 
         Args:
@@ -44,11 +42,11 @@ class ModelStorageService:
             bool: True if the model was saved successfully, False otherwise
         """
 
-        path = Path(f"{self.dir}/{self.MODEL_FILE_PREFIX}-{model_id}{model_file_extension}")
+        path = self._get_model_file_path(model_id, model_file_extension)
 
         return FsUtil.save_file(model_content, path)
 
-    def load(self, model_id: str, model_file_extension: str) -> str | None:
+    def load(self, model_id: UUID, model_file_extension: str) -> str | None:
         """Load the serialized ML model.
 
         Args:
@@ -59,11 +57,11 @@ class ModelStorageService:
             str | None: The serialized ML model, or None if the model was not found
         """
 
-        path = Path(f"{self.dir}/{self.MODEL_FILE_PREFIX}-{model_id}{model_file_extension}")
+        path = self._get_model_file_path(model_id, model_file_extension)
 
         return FsUtil.read_file(path)
 
-    def delete(self, model_id: str, model_file_extension: str) -> bool:
+    def delete(self, model_id: UUID, model_file_extension: str) -> bool:
         """Delete a serialized ML model.
 
         Args:
@@ -74,6 +72,9 @@ class ModelStorageService:
             bool: True if the model was deleted successfully, False otherwise
         """
 
-        path = Path(f"{self.dir}/{self.MODEL_FILE_PREFIX}-{model_id}{model_file_extension}")
+        path = self._get_model_file_path(model_id, model_file_extension)
 
         return FsUtil.delete_file(path)
+
+    def _get_model_file_path(self, model_id: UUID, model_file_extension: str) -> Path:
+        return Path(f"{ENV.ML_MODELS_DIR}/{self.MODEL_FILE_PREFIX}-{model_id}{model_file_extension}")

@@ -16,6 +16,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 from typing import Protocol, TypeVar
+from uuid import UUID
 
 from service_ml_forecast.models.feature_data_wrappers import ForecastFeatureSet, ForecastResult, TrainingFeatureSet
 
@@ -60,7 +61,7 @@ class ModelProvider(Protocol[ModelType]):
             True if the model was saved successfully, False otherwise.
         """
 
-    def load_model(self, model_config_id: str) -> ModelType | None:
+    def load_model(self, model_config_id: UUID) -> ModelType | None:
         """Load the trained model via the model storage service.
 
         Args:

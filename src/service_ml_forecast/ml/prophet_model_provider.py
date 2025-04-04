@@ -16,6 +16,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 import logging
+from uuid import UUID
 
 import pandas as pd
 from prophet import Prophet
@@ -73,7 +74,7 @@ class ProphetModelProvider(ModelProvider[Prophet]):
 
         return model
 
-    def load_model(self, model_id: str) -> Prophet | None:
+    def load_model(self, model_id: UUID) -> Prophet | None:
         model_json = self.model_storage_service.load(model_id, ".json")
         if model_json is None:
             logger.error(f"Failed to load model -- {model_id}")

@@ -17,7 +17,7 @@
 
 from enum import Enum
 from typing import Annotated, Literal
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
 
@@ -37,8 +37,8 @@ class AssetAttributeFeature(BaseModel):
 class BaseModelConfig(BaseModel):
     """Base configuration for all ML models."""
 
-    id: str = Field(
-        default_factory=lambda: str(uuid4()),
+    id: UUID = Field(
+        default_factory=uuid4,
         description="ID of the model configuration. If not provided, a random uuid will be generated.",
     )
     realm: str = Field(description="Realm of where the assets and their datapoints are available.")

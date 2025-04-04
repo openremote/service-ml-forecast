@@ -75,7 +75,6 @@ class FsUtil:
 
         Args:
             path: Path to the directory
-            extension: The extension of the files to get. (e.g. "json", "pkl")
 
         Returns:
             A list of all the file names in the directory
