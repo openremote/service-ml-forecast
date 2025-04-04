@@ -2,17 +2,20 @@ import json
 import logging.config
 import shutil
 import tempfile
+import threading
 from collections.abc import Generator
 from http import HTTPStatus
 from pathlib import Path
 
 import pytest
 import respx
+import uvicorn
 
 from service_ml_forecast.clients.openremote.models import AssetDatapoint
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 from service_ml_forecast.config import ENV
 from service_ml_forecast.logging_config import LOGGING_CONFIG
+from service_ml_forecast.main import app
 from service_ml_forecast.models.model_config import ProphetModelConfig
 from service_ml_forecast.services.model_config_service import ModelConfigService
 from service_ml_forecast.services.model_storage_service import ModelStorageService
@@ -33,12 +36,16 @@ MOCK_SERVICE_USER_SECRET = "service_user_secret"
 MOCK_ACCESS_TOKEN = "mock_access_token"
 MOCK_TOKEN_EXPIRY_SECONDS = 60
 
+# FASTAPI SERVER
+FASTAPI_SERVER_HOST = "127.0.0.1"
+FASTAPI_SERVER_PORT = 8007
+
 # Create a temporary directory for tests
 TEST_TMP_DIR: Path = Path(tempfile.mkdtemp(prefix="service_ml_forecast_test_"))
 
-ENV.BASE_DIR = TEST_TMP_DIR
-ENV.MODELS_DIR = TEST_TMP_DIR / "models"
-ENV.CONFIGS_DIR = TEST_TMP_DIR / "configs"
+ENV.ML_BASE_DIR = TEST_TMP_DIR
+ENV.ML_MODELS_DIR = TEST_TMP_DIR / "models"
+ENV.ML_CONFIGS_DIR = TEST_TMP_DIR / "configs"
 
 
 # Clean up temporary directory after each test call
@@ -48,6 +55,21 @@ def cleanup_test_tmp_dir() -> Generator[None]:
     shutil.rmtree(TEST_TMP_DIR, ignore_errors=True)
 
 
+# Create an instance of our FastAPI server for use in E2E tests
+@pytest.fixture(scope="session")
+def fastapi_server() -> Generator[None]:
+    """Run the fastapi server via uvicorn in a separate thread."""
+    config = uvicorn.Config(app=app, host=FASTAPI_SERVER_HOST, port=FASTAPI_SERVER_PORT, log_level="error")
+    server = uvicorn.Server(config)
+    thread = threading.Thread(target=server.run)
+    thread.daemon = True
+    thread.start()
+    yield
+
+    # Allow the server to shut down gracefully
+    server.should_exit = True
+
+
 @pytest.fixture
 def openremote_client() -> OpenRemoteClient | None:
     """Create an OpenRemote client for testing against a real instance."""
@@ -55,10 +77,10 @@ def openremote_client() -> OpenRemoteClient | None:
 
     try:
         client = OpenRemoteClient(
-            openremote_url=ENV.OPENREMOTE_URL,
-            keycloak_url=ENV.OPENREMOTE_KEYCLOAK_URL,
-            service_user=ENV.OPENREMOTE_SERVICE_USER,
-            service_user_secret=ENV.OPENREMOTE_SERVICE_USER_SECRET,
+            openremote_url=ENV.ML_OR_URL,
+            keycloak_url=ENV.ML_OR_KEYCLOAK_URL,
+            service_user=ENV.ML_OR_SERVICE_USER,
+            service_user_secret=ENV.ML_OR_SERVICE_USER_SECRET,
         )
         if not client.health_check():
             pytest.skip(reason="Unable to reach the OpenRemote Manager API")

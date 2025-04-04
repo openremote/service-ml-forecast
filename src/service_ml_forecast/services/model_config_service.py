@@ -43,7 +43,7 @@ class ModelConfigService:
             ModelConfig | None: The saved ML model configuration, or None if the configuration was not saved
         """
 
-        path = Path(f"{ENV.CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config.id}.json")
+        path = Path(f"{ENV.ML_CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config.id}.json")
         file_saved = FsUtil.save_file(config.model_dump_json(), path)
 
         if not file_saved:
@@ -61,13 +61,13 @@ class ModelConfigService:
         """
 
         configs = []
-        config_files = FsUtil.get_all_file_names(ENV.CONFIGS_DIR, "json")
+        config_files = FsUtil.get_all_file_names(ENV.ML_CONFIGS_DIR, "json")
 
         if config_files is None or len(config_files) == 0:
             return []
 
         for file in config_files:
-            path = Path(f"{ENV.CONFIGS_DIR}/{file}")
+            path = Path(f"{ENV.ML_CONFIGS_DIR}/{file}")
 
             file_content = FsUtil.read_file(path)
 
@@ -95,7 +95,7 @@ class ModelConfigService:
             MLModelConfig | None: The ML model configuration, or None if the configuration was not found
         """
 
-        path = Path(f"{ENV.CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config_id}.json")
+        path = Path(f"{ENV.ML_CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config_id}.json")
         file_content = FsUtil.read_file(path)
 
         if file_content is None:
@@ -123,7 +123,7 @@ class ModelConfigService:
             ModelConfig: The updated ML model configuration
         """
 
-        path = Path(f"{ENV.CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config.id}.json")
+        path = Path(f"{ENV.ML_CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config.id}.json")
         file_saved = FsUtil.save_file(config.model_dump_json(), path)
 
         if not file_saved:
@@ -136,7 +136,7 @@ class ModelConfigService:
     def delete(self, config_id: UUID) -> bool:
         """Delete the ML model configuration based on the provided ID."""
 
-        path = Path(f"{ENV.CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config_id}.json")
+        path = Path(f"{ENV.ML_CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config_id}.json")
         file_deleted = FsUtil.delete_file(path)
 
         if not file_deleted:

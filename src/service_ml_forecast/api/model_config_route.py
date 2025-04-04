@@ -11,6 +11,15 @@ router = APIRouter(prefix="/model/config", tags=["Model Config Endpoints"])
 config_service = ModelConfigService()
 
 # TODO: Permissions and realm access control
+# User realm will be extracted from the token
+# But that doesnt always work if we have a super user with access to all realms
+
+# TODO: Asset name for get all configs (DTO?)
+# The list returned should also contain the asset name, so we retrieve that on the service layer
+# (we can query via openremote api)
+# So will need a response model for only returning the necessary data for the table with the asset name
+# We can also add a proxy route and let the frontend call a seperate api to  get a list of assets with their names
+# We need the proxy route anyways for filling up the dropdowns for assets and attributes with valid meta configs
 
 
 @router.post(

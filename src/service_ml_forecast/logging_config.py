@@ -28,7 +28,7 @@ LOGGING_CONFIG = {
     },
     "handlers": {
         "default": {
-            "level": ENV.LOG_LEVEL,
+            "level": ENV.ML_LOG_LEVEL,
             "formatter": "standard",
             "class": "logging.StreamHandler",
             "stream": "ext://sys.stdout",
@@ -37,18 +37,18 @@ LOGGING_CONFIG = {
     "loggers": {
         "": {
             "handlers": ["default"],
-            "level": ENV.LOG_LEVEL,
+            "level": ENV.ML_LOG_LEVEL,
             "propagate": False,
         },
-        "uvicorn": {"handlers": ["default"], "level": ENV.LOG_LEVEL, "propagate": False},
+        "uvicorn": {"handlers": ["default"], "level": ENV.ML_LOG_LEVEL, "propagate": False},
         "uvicorn.error": {
             "handlers": ["default"],
-            "level": ENV.LOG_LEVEL,
+            "level": ENV.ML_LOG_LEVEL,
             "propagate": False,
         },
         "uvicorn.access": {
             "handlers": ["default"],
-            "level": ENV.LOG_LEVEL,
+            "level": ENV.ML_LOG_LEVEL,
             "propagate": False,
         },
     },

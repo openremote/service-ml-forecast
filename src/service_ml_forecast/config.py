@@ -20,55 +20,48 @@ from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from service_ml_forecast import find_project_root
 
-def _find_project_root(start_path: Path = Path(__file__)) -> Path:
-    """Find the project root by looking for marker files."""
-    current = start_path.parent
-    while current != current.parent:
-        if any((current / marker).exists() for marker in ["pyproject.toml", ".env"]):
-            return current
-        current = current.parent
-    raise RuntimeError("Could not find project root")
-
-
-ENVFILE = Path(_find_project_root()) / ".env"
+PROJECT_ROOT = find_project_root()
 
 
 class AppEnvironment(BaseSettings):
     """Application environment settings.
 
     All settings can be overridden via environment variables.
+
+    The environment variables are prefixed with "ML_" to avoid conflicts with other services.
     """
 
     # Logging
-    LOG_LEVEL: str = "INFO"
+    ML_LOG_LEVEL: str = "INFO"
 
     # Environment
-    ENVIRONMENT: str = "development"
+    ML_ENVIRONMENT: str = "development"
 
     # File paths
-    BASE_DIR: Path = _find_project_root()
-    MODELS_DIR: Path = BASE_DIR / "deployment/data/models"
-    CONFIGS_DIR: Path = BASE_DIR / "deployment/data/configs"
+    ML_BASE_DIR: Path = PROJECT_ROOT
+    ML_MODELS_DIR: Path = ML_BASE_DIR / "deployment/data/models"
+    ML_CONFIGS_DIR: Path = ML_BASE_DIR / "deployment/data/configs"
 
     # FastAPI Settings
-    PUBLISH_DOCS: bool = True  # whether to make the docs available
+    ML_PUBLISH_DOCS: bool = True  # whether to make the docs available
 
     # OpenRemote Settings
-    OPENREMOTE_URL: str = "http://localhost:8080"
-    OPENREMOTE_KEYCLOAK_URL: str = "http://localhost:8081"
-    OPENREMOTE_SERVICE_USER: str = "serviceuser"
-    OPENREMOTE_SERVICE_USER_SECRET: str = "secret"
+    ML_OR_URL: str = "http://localhost:8080"
+    ML_OR_KEYCLOAK_URL: str = "http://localhost:8081"
+    ML_OR_SERVICE_USER: str = "serviceuser"
+    ML_OR_SERVICE_USER_SECRET: str = "secret"
 
-    model_config = SettingsConfigDict(case_sensitive=True, env_prefix="", env_file=ENVFILE, env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(case_sensitive=True, env_file=".env", env_file_encoding="utf-8")
 
     def is_production(self) -> bool:
         """Check if the environment is production."""
-        return self.ENVIRONMENT == "production"
+        return self.ML_ENVIRONMENT == "production"
 
     def is_development(self) -> bool:
         """Check if the environment is development."""
-        return self.ENVIRONMENT == "development"
+        return self.ML_ENVIRONMENT == "development"
 
 
 ENV = AppEnvironment()
