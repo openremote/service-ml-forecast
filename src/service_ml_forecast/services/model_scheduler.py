@@ -100,8 +100,8 @@ class ModelScheduler(Singleton):
         job_id = f"{TRAINING_JOB_ID_PREFIX}:{config.id}"
         seconds = TimeUtil.parse_iso_duration(config.training_interval)
 
-        # Do not add the job if the config has not changed
-        if self.is_job_config_unchanged(job_id, config):
+        # Do not add/update job if the config is still the same
+        if self._job_config_matches(job_id, config):
             return
 
         self.scheduler.add_job(
@@ -119,8 +119,8 @@ class ModelScheduler(Singleton):
         job_id = f"{FORECAST_JOB_ID_PREFIX}:{config.id}"
         seconds = TimeUtil.parse_iso_duration(config.forecast_interval)
 
-        # Do not add the job if the config has not changed
-        if self.is_job_config_unchanged(job_id, config):
+        # Do not add/update job if the config is still the same
+        if self._job_config_matches(job_id, config):
             return
 
         self.scheduler.add_job(
@@ -139,35 +139,35 @@ class ModelScheduler(Singleton):
 
         try:
             configs = self.config_storage.get_all()
-            if not configs:
-                return
+            # Clean stale/removed jobs for the given configs
+            self._cleanup_stale_jobs(configs)
 
+            # Queue training and forecast jobs for enabled configs
             for config in configs:
-                # Order is important here (train -> forecast)
-                self._add_training_job(config)
-                self._add_forecast_job(config)
-
-                # Check for removed configs and remove the corresponding jobs
-                self._cleanup_stale_jobs(configs)
+                if config.enabled:
+                    self._add_training_job(config)
+                    self._add_forecast_job(config)
 
         except Exception as e:
-            logger.exception(f"Failed to poll configurations and schedule jobs: {e}")
+            logger.exception(f"Failed to poll configurations: {e}")
 
     def _cleanup_stale_jobs(self, configs: list[ModelConfig]) -> None:
         """Remove jobs for configs that are no longer present in the config storage"""
 
-        # training and forecast jobs for the given configs
-        training_jobs = [f"{TRAINING_JOB_ID_PREFIX}:{config.id}" for config in configs]
-        forecast_jobs = [f"{FORECAST_JOB_ID_PREFIX}:{config.id}" for config in configs]
+        # training and forecast jobs for the given configs that are enabled
+        training_jobs = [f"{TRAINING_JOB_ID_PREFIX}:{config.id}" for config in configs if config.enabled]
+        forecast_jobs = [f"{FORECAST_JOB_ID_PREFIX}:{config.id}" for config in configs if config.enabled]
 
-        # All valid jobs (expected to be in the job store)
-        valid_jobs = training_jobs + forecast_jobs + [CONFIG_WATCHER_JOB_ID]
+        expected_jobs = training_jobs + forecast_jobs + [CONFIG_WATCHER_JOB_ID]
 
         for job in self.scheduler.get_jobs():
-            if job.id not in valid_jobs:  # Remove jobs if they are not in the valid jobs list
+            # Remove jobs that are not expected to be in the job store
+            if job.id not in expected_jobs:
                 self.scheduler.remove_job(job.id)
 
-    def is_job_config_unchanged(self, job_id: str, config: ModelConfig) -> bool:
+    def _job_config_matches(self, job_id: str, config: ModelConfig) -> bool:
+        """Check if the config for the given job matches the config in the config storage"""
+
         existing_job = self.scheduler.get_job(job_id)
 
         if existing_job is not None and existing_job.args is not None:

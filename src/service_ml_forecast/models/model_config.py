@@ -43,6 +43,10 @@ class BaseModelConfig(BaseModel):
     )
     realm: str = Field(description="Realm of where the assets and their datapoints are available.")
     name: str = Field(description="Friendly name for the model configuration.")
+    enabled: bool = Field(
+        default=True,
+        description="Whether the model is enabled and will be scheduled for training and forecasting.",
+    )
     type: ModelTypeEnum = Field(description="Which machine learning model to use.")
     target: AssetAttributeFeature = Field(
         description="Asset attribute datapoint to predict. This datapoint must have historical data available.",

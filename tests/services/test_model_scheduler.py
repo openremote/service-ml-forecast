@@ -89,10 +89,20 @@ def test_scheduler_job_management(
 
     # Remove the config and check that the jobs are removed
     assert config_service.delete(prophet_basic_config.id)
-    configs = config_service.get_all()
-    model_scheduler._cleanup_stale_jobs(configs)  # trigger cleanup of stale jobs
+    model_scheduler._poll_configs()
+    assert model_scheduler.scheduler.get_job(f"{TRAINING_JOB_ID_PREFIX}:{prophet_basic_config.id}") is None
+    assert model_scheduler.scheduler.get_job(f"{FORECAST_JOB_ID_PREFIX}:{prophet_basic_config.id}") is None
 
-    # Check that the jobs are removed
+    # Re-add the config and check that the jobs are created
+    assert config_service.save(prophet_basic_config)
+    model_scheduler._poll_configs()
+    assert model_scheduler.scheduler.get_job(f"{TRAINING_JOB_ID_PREFIX}:{prophet_basic_config.id}") is not None
+    assert model_scheduler.scheduler.get_job(f"{FORECAST_JOB_ID_PREFIX}:{prophet_basic_config.id}") is not None
+
+    # Disable the config and check that the jobs are removed
+    prophet_basic_config.enabled = False
+    assert config_service.update(prophet_basic_config)
+    model_scheduler._poll_configs()
     assert model_scheduler.scheduler.get_job(f"{TRAINING_JOB_ID_PREFIX}:{prophet_basic_config.id}") is None
     assert model_scheduler.scheduler.get_job(f"{FORECAST_JOB_ID_PREFIX}:{prophet_basic_config.id}") is None
 
