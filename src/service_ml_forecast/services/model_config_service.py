@@ -44,7 +44,7 @@ class ModelConfigService:
             ModelConfig | None: The saved ML model configuration, or None if the configuration was not saved
         """
 
-        path = Path(f"{self.dir}/{self.CONFIG_FILE_PREFIX}-{config.id}.json")
+        path = self._get_config_file_path(config.id)
         file_saved = FsUtil.save_file(config.model_dump_json(), path)
 
         if not file_saved:
@@ -62,7 +62,7 @@ class ModelConfigService:
         """
 
         configs = []
-        config_files = FsUtil.get_all_file_names(self.dir, "json")
+        config_files = FsUtil.get_all_file_names(ENV.ML_CONFIGS_DIR, "json")
 
         if config_files is None or len(config_files) == 0:
             return []
@@ -96,7 +96,7 @@ class ModelConfigService:
             MLModelConfig | None: The ML model configuration, or None if the configuration was not found
         """
 
-        path = Path(f"{self.dir}/{self.CONFIG_FILE_PREFIX}-{config_id}.json")
+        path = self._get_config_file_path(config_id)
         file_content = FsUtil.read_file(path)
 
         if file_content is None:
@@ -124,7 +124,7 @@ class ModelConfigService:
             ModelConfig: The updated ML model configuration
         """
 
-        path = Path(f"{self.dir}/{self.CONFIG_FILE_PREFIX}-{config.id}.json")
+        path = self._get_config_file_path(config.id)
         file_saved = FsUtil.save_file(config.model_dump_json(), path)
 
         if not file_saved:
@@ -137,7 +137,7 @@ class ModelConfigService:
     def delete(self, config_id: UUID) -> bool:
         """Delete the ML model configuration based on the provided ID."""
 
-        path = Path(f"{self.dir}/{self.CONFIG_FILE_PREFIX}-{config_id}.json")
+        path = self._get_config_file_path(config_id)
         file_deleted = FsUtil.delete_file(path)
 
         if not file_deleted:
