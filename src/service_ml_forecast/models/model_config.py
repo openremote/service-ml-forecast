@@ -25,6 +25,8 @@ from service_ml_forecast.models.model_type import ModelTypeEnum
 
 
 class AssetAttributeFeature(BaseModel):
+    """Asset attribute feature with the asset id, attribute name and the cutoff timestamp."""
+
     asset_id: str = Field(description="Asset ID", min_length=22, max_length=22)
     attribute_name: str = Field(
         description="Name of the attribute of the asset. This attribute requires historical data.",
@@ -68,6 +70,8 @@ class BaseModelConfig(BaseModel):
 
 
 class ProphetSeasonalityModeEnum(str, Enum):
+    """Seasonality modes of the Prophet model."""
+
     ADDITIVE = "additive"
     MULTIPLICATIVE = "multiplicative"
 

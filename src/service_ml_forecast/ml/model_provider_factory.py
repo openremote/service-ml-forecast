@@ -42,6 +42,9 @@ class ModelProviderFactory:
             try:
                 return cast("ModelProvider[Any]", ProphetModelProvider(config=config))
             except Exception as e:
-                raise ValueError(f"Failed to convert config to ProphetMLConfig: {e}") from e
+                raise ValueError(
+                    f"Failed to create Prophet model provider for config {config.id}. "
+                    f"Error: {e!s}. Config details: {config.model_dump_json()}"
+                ) from e
 
-        raise ValueError(f"Unsupported model type: {config.type}")
+        raise ValueError(f"Unsupported model type: {config.type}. Supported types: {[t.value for t in ModelTypeEnum]}")

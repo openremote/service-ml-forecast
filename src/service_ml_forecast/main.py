@@ -36,10 +36,6 @@ logging.config.dictConfig(LOGGING_CONFIG)
 
 logger = logging.getLogger(__name__)
 
-if __app_info__ is None:
-    logger.critical("App initialization failed: Failed to read app info")
-    raise RuntimeError("App initialization failed: Failed to read app info")
-
 
 # FastAPI Lifecycle, handles startup and shutdown tasks
 @asynccontextmanager
@@ -79,7 +75,6 @@ app.include_router(model_config_route.router)
 
 def initialize_background_services() -> None:
     """Initialize background services, these run in the background and are not part of the FastAPI lifecycle"""
-
     # Setup the ML Model Scheduler
     openremote_client = OpenRemoteClient(
         openremote_url=ENV.ML_OR_URL,

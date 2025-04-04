@@ -29,7 +29,7 @@ def test_train_and_predict(
     assert model is not None
 
     # Save the model
-    assert model_provider.save_model(model)
+    model_provider.save_model(model)
     assert prophet_basic_config.id is not None
     assert model_provider.load_model(prophet_basic_config.id) is not None
 
@@ -67,7 +67,7 @@ def test_train_and_predict_with_regressor(
     )
     assert windspeed_model is not None
     # Save the windspeed model
-    assert windspeed_provider.save_model(windspeed_model)
+    windspeed_provider.save_model(windspeed_model)
     assert windspeed_provider.load_model(prophet_basic_config.id) is not None
 
     # Generate the forecast
@@ -99,7 +99,7 @@ def test_train_and_predict_with_regressor(
     assert tariff_model is not None
 
     # Save the tariff model
-    assert tarrif_provider.save_model(tariff_model)
+    tarrif_provider.save_model(tariff_model)
     assert tarrif_provider.load_model(prophet_multi_variable_config.id) is not None
 
     # Generate the forecast including the regressor forecast datapoints

@@ -41,27 +41,24 @@ class ModelProvider(Protocol[ModelType]):
             The trained model or None if the model could not be trained.
         """
 
-    def generate_forecast(self, forecast_featureset: ForecastFeatureSet | None = None) -> ForecastResult | None:
+    def generate_forecast(self, forecast_featureset: ForecastFeatureSet | None = None) -> ForecastResult:
         """Generate a forecast for the given forecast featureset.
 
         Args:
-            forecast_featureset: The forecast featureset to generate a forecast for.
+            forecast_featureset: any additional featureset to use for forecasting
 
         Returns:
             The forecast result or None if the forecast could not be generated.
         """
 
-    def save_model(self, model: ModelType) -> bool:
+    def save_model(self, model: ModelType) -> None:
         """Save the trained model via the model storage service.
 
         Args:
             model: The trained model to save.
-
-        Returns:
-            True if the model was saved successfully, False otherwise.
         """
 
-    def load_model(self, model_config_id: UUID) -> ModelType | None:
+    def load_model(self, model_config_id: UUID) -> ModelType:
         """Load the trained model via the model storage service.
 
         Args:

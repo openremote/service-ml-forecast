@@ -25,7 +25,7 @@ dependencies = [
     "isodate>=0.7.2",
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
     "pytest>=8.3.5",
     "pytest-cov>=6.0.0",
@@ -41,8 +41,8 @@ dev = [
 "Bug Tracker" = "https://github.com/openremote/service-ml-forecast/issues"
 
 [tool.setuptools]
-packages = ["service_ml_forecast"]
-package-dir = {"service_ml_forecast" = "src/service_ml_forecast"}
+packages = ["service_ml_forecast", "scripts"]
+package-dir = {"service_ml_forecast" = "src/service_ml_forecast", "scripts" = "scripts"}
 
 [tool.ruff]
 line-length = 120
@@ -106,3 +106,11 @@ filterwarnings = ["ignore:.*"]
 
 [project.scripts]
 service_ml_forecast = "service_ml_forecast.main:app"
+
+# CLI commands for development tasks
+lint = "scripts.tools:lint"
+start = "scripts.tools:start"
+test = "scripts.tools:test"
+test-coverage = "scripts.tools:test_coverage"
+format = "scripts.tools:format"
+build = "scripts.tools:build"

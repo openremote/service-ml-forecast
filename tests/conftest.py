@@ -71,7 +71,7 @@ def fastapi_server() -> Generator[None]:
 
 
 @pytest.fixture
-def openremote_client() -> OpenRemoteClient | None:
+def openremote_client() -> OpenRemoteClient:
     """Create an OpenRemote client for testing against a real instance."""
     from service_ml_forecast.config import ENV
 
@@ -92,7 +92,7 @@ def openremote_client() -> OpenRemoteClient | None:
 
 
 @pytest.fixture
-def mock_openremote_client() -> OpenRemoteClient | None:
+def mock_openremote_client() -> OpenRemoteClient:
     """Create a mock OpenRemote client with mocked authentication."""
     with respx.mock(base_url=MOCK_KEYCLOAK_URL) as respx_mock:
         # Mock the authentication endpoint

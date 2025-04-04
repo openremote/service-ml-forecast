@@ -6,6 +6,8 @@ import pytest
 import respx
 
 from service_ml_forecast.clients.openremote.models import AssetDatapoint
+from service_ml_forecast.common.exceptions import ResourceNotFoundError
+from service_ml_forecast.common.time_util import TimeUtil
 from service_ml_forecast.ml.model_provider_factory import ModelProviderFactory
 from service_ml_forecast.models.model_config import ProphetModelConfig
 from service_ml_forecast.services.model_config_service import ModelConfigService
@@ -14,12 +16,11 @@ from service_ml_forecast.services.model_scheduler import (
     FORECAST_JOB_ID_PREFIX,
     TRAINING_JOB_ID_PREFIX,
     ModelScheduler,
-    _execute_model_forecast,
-    _execute_model_training,
+    _model_forecast_job,
+    _model_training_job,
 )
 from service_ml_forecast.services.model_storage_service import ModelStorageService
 from service_ml_forecast.services.openremote_data_service import OpenRemoteDataService
-from service_ml_forecast.util.time_util import TimeUtil
 from tests.conftest import MOCK_OPENREMOTE_URL
 
 
@@ -84,12 +85,12 @@ def test_scheduler_job_management(
     # Training job has the correct parameters
     training_job = model_scheduler.scheduler.get_job(f"{TRAINING_JOB_ID_PREFIX}:{prophet_basic_config.id}")
     assert training_job is not None
-    assert training_job.func == _execute_model_training
+    assert training_job.func == _model_training_job
     expected_interval = datetime.timedelta(seconds=TimeUtil.parse_iso_duration(prophet_basic_config.training_interval))
     assert training_job.trigger.interval == expected_interval
 
     # Remove the config and check that the jobs are removed
-    assert config_service.delete(prophet_basic_config.id)
+    config_service.delete(prophet_basic_config.id)
     model_scheduler._poll_configs()
     assert model_scheduler.scheduler.get_job(f"{TRAINING_JOB_ID_PREFIX}:{prophet_basic_config.id}") is None
     assert model_scheduler.scheduler.get_job(f"{FORECAST_JOB_ID_PREFIX}:{prophet_basic_config.id}") is None
@@ -139,9 +140,9 @@ def test_training_execution(
                 json=windspeed_mock_datapoints,
             ),
         )
-        _execute_model_training(prophet_basic_config, mock_or_data_service)
+        _model_training_job(prophet_basic_config, mock_or_data_service)
 
-    assert model_storage.load(prophet_basic_config.id, ".json") is not None
+    assert model_storage.load(prophet_basic_config.id, "json") is not None
 
 
 def test_training_execution_with_missing_datapoints(
@@ -170,9 +171,10 @@ def test_training_execution_with_missing_datapoints(
                 json=[],
             ),
         )
-        _execute_model_training(prophet_basic_config, mock_or_data_service)
+        _model_training_job(prophet_basic_config, mock_or_data_service)
 
-    assert model_storage.load(prophet_basic_config.id, ".json") is None
+    with pytest.raises(ResourceNotFoundError):
+        model_storage.load(prophet_basic_config.id, "json")
 
 
 def test_forecast_execution(
@@ -193,7 +195,7 @@ def test_forecast_execution(
             return_value=respx.MockResponse(HTTPStatus.NO_CONTENT),
         )
 
-        _execute_model_forecast(trained_basic_model, mock_or_data_service)
+        _model_forecast_job(trained_basic_model, mock_or_data_service)
         assert route.called
 
 
@@ -240,7 +242,7 @@ def test_forecast_execution_with_regressor(
             return_value=respx.MockResponse(HTTPStatus.OK, json=regressor_forecast_datapoints),
         )
 
-        _execute_model_forecast(trained_regressor_model, mock_or_data_service)
+        _model_forecast_job(trained_regressor_model, mock_or_data_service)
         assert route.called
 
 
@@ -260,14 +262,14 @@ def test_forecast_execution_with_no_model(
 
     with respx.mock(base_url=MOCK_OPENREMOTE_URL, assert_all_called=False) as respx_mock:
         # mock write predicted datapoints for target
-        route = respx_mock.put(
+        respx_mock.put(
             f"/api/master/asset/predicted/{prophet_basic_config.target.asset_id}/{prophet_basic_config.target.attribute_name}",
         ).mock(
             return_value=respx.MockResponse(HTTPStatus.NO_CONTENT),
         )
 
-        _execute_model_forecast(prophet_basic_config, mock_or_data_service)
-        assert not route.called
+        with pytest.raises(ResourceNotFoundError):
+            _model_forecast_job(prophet_basic_config, mock_or_data_service)
 
 
 @pytest.fixture
@@ -291,7 +293,7 @@ def trained_basic_model(
                 json=windspeed_mock_datapoints,
             ),
         )
-        _execute_model_training(prophet_basic_config, mock_or_data_service)
+        _model_training_job(prophet_basic_config, mock_or_data_service)
 
     return prophet_basic_config
 
@@ -331,6 +333,6 @@ def trained_regressor_model(
                 json=windspeed_mock_datapoints,
             ),
         )
-        _execute_model_training(prophet_multi_variable_config, mock_or_data_service)
+        _model_training_job(prophet_multi_variable_config, mock_or_data_service)
 
     return prophet_multi_variable_config
