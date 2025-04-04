@@ -3,48 +3,38 @@
 [![Open Source? Yes!](https://badgen.net/badge/Open%20Source%20%3F/Yes%21/blue?icon=github)](https://github.com/Naereen/badges/)
 
 ## Installation
-GNU Make is used for project management purposes. It simplifies the process of running the commands like building, testing, linting, formatting, etc. and ensures consistency across different operating systems.
+This project uses [uv](https://docs.astral.sh/uv/) for project management. `uv` is a Python package and project manager that simplifies dependency management, environment creation, and running commands.
+
+For more information about uv, visit the [official documentation](https://docs.astral.sh/uv/).
 
 ### Prerequisites
-- Python 3.10+ [Download](https://www.python.org/downloads/)
-    - Or use a package manager:
-        - Ubuntu/Debian: `sudo apt install python3 python3-pip python3-venv`
-        - Fedora: `sudo dnf install python3 python3-pip python3-virtualenv`
-        - Arch Linux: `sudo pacman -S python python-pip python-virtualenv`
-        - macOS: `brew install python`
-    - [Pyenv](https://github.com/pyenv/pyenv) is also recommended for managing multiple versions of Python
-- GNU Make
-    - [Windows](https://gnuwin32.sourceforge.net/packages/make.htm)
-    - macOS: `brew install make`
-    - Linux:
-        - Ubuntu/Debian: `sudo apt install make`
-        - Fedora: `sudo dnf install make`
-        - Arch Linux: `sudo pacman -S make`
-        - Other: Depends on your package manager/distribution
+[uv](https://docs.astral.sh/uv/) - Python package and project manager
+- Install with curl (macOS/Linux): `curl -LsSf https://astral.sh/uv/install.sh | sh`
+- Install with PowerShell (Windows): `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"`
+- Or install with pip: `pip install uv`
+- Or with Homebrew (macOS): `brew install uv`
 
 ### Setup python environment
+`uv venv` automatically creates a virtual environment with the python version specified in the `pyproject.toml` file.
+
 ```bash
-python -m venv .venv # On Ubuntu/Debian: python3
+# Create a virtual environment
+uv venv
 source .venv/bin/activate # On Windows: .venv\Scripts\activate
 ```
 
-### Make Commands
+### Install dependencies
+```bash
+uv sync
+```
 
-- List all available commands - `make help`
+### Helper Scripts
+*Make sure you have created a virtual environment via `uv venv`*
+- Run linting - `uv run lint`
+- Format code - `uv run format`
+- Run tests - `uv run test`
+- Run the application - `uv run start`
 
-- Install dependencies - `make install`
-
-- Run all tests - `make test`
-
-- Run linting - `make lint`
-
-- Format code - `make format`
-
-- Clean virtual environment - `make clean`
-
-- Clean virtual environment and install dependencies - `make clean-install`
-
-- Run the application - `make run`
 
 ## License
 
