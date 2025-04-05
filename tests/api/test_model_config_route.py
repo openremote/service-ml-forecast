@@ -159,7 +159,7 @@ def test_delete_model_config(fastapi_server: None) -> None:
 
 def test_delete_model_config_not_found(fastapi_server: None) -> None:
     """Test deleting a non-existent model config."""
-    non_existent_id = UUID("87654321-4321-8765-4321-876543210987")
+    non_existent_id = uuid4()
     with httpx.Client() as client:
         response = client.delete(f"{BASE_URL}/model/config/{non_existent_id}")
         assert response.status_code == httpx.codes.NOT_FOUND

@@ -62,4 +62,4 @@ class FsUtil:
     def delete_file(path: Path) -> None:
         """Delete a file."""
 
-        path.unlink(missing_ok=True)  # missing_ok=True prevents FileNotFoundError
+        path.unlink()

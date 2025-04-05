@@ -1,3 +1,10 @@
+"""
+This module contains the exception handlers for the FastAPI application.
+
+These need to be defined and registered with the FastAPI application otherwise
+FastAPI will throw 500 errors to the client.
+"""
+
 from http.client import CONFLICT, NOT_FOUND
 
 from fastapi import FastAPI, Request
@@ -28,11 +35,12 @@ async def resource_already_exists_handler(request: Request, exc: Exception) -> J
     )
 
 
-def bind_exception_handlers(app: FastAPI) -> None:
-    """Bind all exception handlers with the FastAPI application."""
+def register_exception_handlers(app: FastAPI) -> None:
+    """Binds the additional exception handlers to the FastAPI application.
 
-    # Handle ResourceNotFoundError exceptions
+    Args:
+        app: The FastAPI application to bind the exception handlers to.
+    """
+
     app.add_exception_handler(ResourceNotFoundError, resource_not_found_handler)
-
-    # Handle ResourceAlreadyExistsError exceptions
     app.add_exception_handler(ResourceAlreadyExistsError, resource_already_exists_handler)
