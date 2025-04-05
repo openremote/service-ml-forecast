@@ -195,7 +195,7 @@ def _model_training_job(config: ModelConfig, data_service: OpenRemoteDataService
     if model is None:
         logger.error(
             f"Model training failed for {config.id} - no model returned. "
-            f"Model Type: {config.type}, Training Interval: {config.training_interval}"
+            f"Type: {config.type}, Training Interval: {config.training_interval}"
         )
         return
 
@@ -204,7 +204,8 @@ def _model_training_job(config: ModelConfig, data_service: OpenRemoteDataService
 
     end_time = time.perf_counter()
     logger.info(
-        f"Training job for {config.id} completed - duration: {end_time - start_time}s. Model Type: {config.type}"
+        f"Training job for {config.id} completed - duration: {end_time - start_time}s. "
+        f"Type: {config.type}, Training Interval: {config.training_interval}"
     )
 
 
@@ -248,7 +249,7 @@ def _model_forecast_job(config: ModelConfig, data_service: OpenRemoteDataService
 
     end_time = time.perf_counter()
     logger.info(
-        f"Forecasting job for {config.id} completed - duration: {end_time - start_time}s "
-        f"- wrote {len(forecast.datapoints)} datapoints. "
-        f"Model Type: {config.type}."
+        f"Forecasting job for {config.id} completed - duration: {end_time - start_time}s."
+        f"Wrote {len(forecast.datapoints)} datapoints."
+        f"Asset ID: {config.target.asset_id}, Attribute: {config.target.attribute_name}"
     )
