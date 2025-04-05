@@ -50,8 +50,8 @@ class ModelConfigService:
         path = self._get_config_file_path(config.id)
 
         if FsUtil.file_exists(path):
-            logger.error(f"Config already exists: {config.id}")
-            raise ResourceAlreadyExistsError(f"Config already exists: {config.id}")
+            logger.error(f"Could not save config: {config.id} - already exists")
+            raise ResourceAlreadyExistsError(f"Could not save config: {config.id} - already exists")
 
         FsUtil.save_file(config.model_dump_json(), path)
         return config
@@ -64,31 +64,37 @@ class ModelConfigService:
 
         Returns:
             The list of model configs.
-        """
-        configs = []
-        config_files = FsUtil.get_all_file_names(ENV.ML_CONFIGS_DIR, self.CONFIG_FILE_EXTENSION)
 
-        if config_files is None or len(config_files) == 0:
+        Raises:
+            ValidationError: If any config file contains invalid data.
+            PermissionError: If unable to access the configs directory or files.
+            NotADirectoryError: If the configs path is not a directory.
+        """
+
+        try:
+            config_files = FsUtil.get_all_file_names(ENV.ML_CONFIGS_DIR, self.CONFIG_FILE_EXTENSION)
+        except NotADirectoryError as e:
+            logger.error(f"Failed to read configs directory: {e}")
             return []
+
+        configs = []
 
         for file in config_files:
             path = Path(f"{ENV.ML_CONFIGS_DIR}/{file}")
 
-            if not FsUtil.file_exists(path):
-                logger.error(f"Config not found: {file}")
+            try:
+                file_content = FsUtil.read_file(path)
+                config = self.parse(file_content)
+                configs.append(config)
+            except FileNotFoundError as e:
+                logger.warning(f"Config file disappeared before reading {path}, possibily deleted: {e}")
+                continue
+            except ValidationError as e:
+                logger.error(f"Invalid config file detected: {path}, skipping - details: {e}")
                 continue
 
-            file_content = FsUtil.read_file(path)
-
-            try:
-                config = self.parse(file_content)
-                if realm is None or config.realm == realm:
-                    configs.append(config)
-            except ValidationError as e:
-                logger.exception(f"Failed to parse config file {path}: {e}")
-                continue  # Skip the file if it cannot be parsed
-
-        return configs
+        # Filter the configs by realm if provided
+        return [config for config in configs if realm is None or config.realm == realm]
 
     def get(self, config_id: UUID) -> ModelConfig:
         """Get the ML model configuration based on the provided ID.
@@ -104,11 +110,11 @@ class ModelConfigService:
         """
         path = self._get_config_file_path(config_id)
 
-        if not FsUtil.file_exists(path):
-            logger.error(f"Config not found: {config_id}")
-            raise ResourceNotFoundError(f"Config not found: {config_id}")
-
-        file_content = FsUtil.read_file(path)
+        try:
+            file_content = FsUtil.read_file(path)
+        except FileNotFoundError as e:
+            logger.error(f"Cannot get config: {config_id} - does not exist: {e}")
+            raise ResourceNotFoundError(f"Cannot get config: {config_id} - does not exist") from e
 
         return self.parse(file_content)
 
@@ -127,10 +133,11 @@ class ModelConfigService:
         path = self._get_config_file_path(config.id)
 
         if not FsUtil.file_exists(path):
-            logger.error(f"Config not found: {config.id}")
-            raise ResourceNotFoundError(f"Config not found: {config.id}")
+            logger.error(f"Cannot update config: {config.id} - does not exist")
+            raise ResourceNotFoundError(f"Cannot update config: {config.id} - does not exist")
 
         FsUtil.save_file(config.model_dump_json(), path)
+
         return config
 
     def delete(self, config_id: UUID) -> None:
@@ -144,11 +151,11 @@ class ModelConfigService:
         """
         path = self._get_config_file_path(config_id)
 
-        if not FsUtil.file_exists(path):
-            logger.error(f"Config not found: {config_id}")
-            raise ResourceNotFoundError(f"Config not found: {config_id}")
-
-        FsUtil.delete_file(path)
+        try:
+            FsUtil.delete_file(path)
+        except FileNotFoundError as e:
+            logger.error(f"Cannot delete config: {config_id} - does not exist: {e}")
+            raise ResourceNotFoundError(f"Cannot delete config: {config_id} - does not exist") from e
 
     def parse(self, json: str) -> ModelConfig:
         """Parse the provided ML model config JSON string into the concrete type.

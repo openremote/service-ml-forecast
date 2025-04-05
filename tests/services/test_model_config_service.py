@@ -55,6 +55,26 @@ def test_get_all_configs(config_service: ModelConfigService, prophet_basic_confi
     assert len(configs) > 0
 
 
+def test_get_all_configs_with_realm(
+    config_service: ModelConfigService, prophet_basic_config: ProphetModelConfig
+) -> None:
+    """Test retrieving all model configurations with a specific realm.
+
+    Verifies that:
+    - All saved configurations for the specified realm can be retrieved
+    - The collection is non-empty when configurations exist for the realm
+    """
+    prophet_basic_config.realm = "test"
+    assert config_service.save(prophet_basic_config)
+    configs = config_service.get_all(realm="test")
+    assert configs is not None
+    assert len(configs) > 0
+
+    configs = config_service.get_all(realm="non-existent")
+    assert configs is not None
+    assert len(configs) == 0
+
+
 def test_update_config(config_service: ModelConfigService, prophet_basic_config: ProphetModelConfig) -> None:
     """Test updating an existing model configuration.
 
