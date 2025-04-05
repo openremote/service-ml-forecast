@@ -34,8 +34,8 @@ jobs:
     - name: Run linting and type checking
       run: uv run lint
 
-    - name: Run tests
-      run: uv run test
+    - name: Run tests with coverage
+      run: uv run test-coverage
 
     - name: Run build steps
       run: uv run build

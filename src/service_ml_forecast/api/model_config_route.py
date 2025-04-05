@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 from service_ml_forecast.models.model_config import ModelConfig
 from service_ml_forecast.services.model_config_service import ModelConfigService
 
-router = APIRouter(prefix="/model/config", tags=["Model Config Endpoints"])
+router = APIRouter(prefix="/model/config", tags=["Model Configs"])
 
 
 config_service = ModelConfigService()
@@ -27,10 +27,9 @@ config_service = ModelConfigService()
 @router.post(
     "/",
     summary="Create a new model config",
-    response_description="The created model config",
     responses={
-        OK: {"model": ModelConfig},
-        CONFLICT: {"error": str},
+        OK: {"description": "Model config has been created"},
+        CONFLICT: {"description": "Model config already exists"},
     },
 )
 async def create_model_config(model_config: ModelConfig) -> ModelConfig:
@@ -40,10 +39,9 @@ async def create_model_config(model_config: ModelConfig) -> ModelConfig:
 @router.get(
     "/{id}",
     summary="Get a model config",
-    response_description="The model config",
     responses={
-        OK: {"model": ModelConfig},
-        NOT_FOUND: {"error": str},
+        OK: {"description": "Model config has been retrieved"},
+        NOT_FOUND: {"description": "Model config not found"},
     },
 )
 async def get_model_config(id: UUID) -> ModelConfig:
@@ -53,9 +51,8 @@ async def get_model_config(id: UUID) -> ModelConfig:
 @router.get(
     "/",
     summary="Get all model configs with optional realm filter",
-    response_description="The list of model configs",
     responses={
-        OK: {"model": list[ModelConfig]},
+        OK: {"description": "List of model configs has been retrieved"},
     },
 )
 async def get_model_configs(realm: str | None = None) -> list[ModelConfig]:
@@ -65,10 +62,9 @@ async def get_model_configs(realm: str | None = None) -> list[ModelConfig]:
 @router.put(
     "/",
     summary="Update a model config",
-    response_description="The updated model config",
     responses={
-        OK: {"model": ModelConfig},
-        NOT_FOUND: {"error": str},
+        OK: {"description": "Model config has been updated"},
+        NOT_FOUND: {"description": "Model config not found"},
     },
 )
 async def update_model_config(model_config: ModelConfig) -> ModelConfig:
@@ -78,10 +74,9 @@ async def update_model_config(model_config: ModelConfig) -> ModelConfig:
 @router.delete(
     "/{id}",
     summary="Delete a model config",
-    response_description="True if the model config was deleted successfully",
     responses={
-        OK: {"message": str},
-        NOT_FOUND: {"error": str},
+        OK: {"description": "Model config has been deleted"},
+        NOT_FOUND: {"description": "Model config not found"},
     },
 )
 async def delete_model_config(id: UUID) -> JSONResponse:
