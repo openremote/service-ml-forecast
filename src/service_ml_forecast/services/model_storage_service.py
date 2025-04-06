@@ -32,55 +32,56 @@ class ModelStorageService:
     MODEL_FILE_PREFIX = "model"
 
     def save(self, model_content: str, model_id: UUID, model_file_extension: str) -> None:
-        """Save a trained model.
+        """Save a model file. Will overwrite existing model file.
 
         Args:
-            model_content: The content of the model to save.
-            model_id: The ID of the model to save.
+            model_content: The model in serialized format.
+            model_id: The ID of the model.
             model_file_extension: The extension of the model file.
         """
         path = self._get_model_file_path(model_id, model_file_extension)
 
-        FsUtil.save_file(model_content, path)
+        # Overwrite the existing model file
+        FsUtil.create_file(path, model_content, overwrite=True)
 
-    def load(self, model_id: UUID, model_file_extension: str) -> str:
-        """Load a previously saved model.
+    def get(self, model_id: UUID, model_file_extension: str) -> str:
+        """Get a model file.
 
         Args:
-            model_id: The ID of the model to load.
+            model_id: The ID of the model.
             model_file_extension: The extension of the model file.
 
         Returns:
-            The content of the model file.
+            The model file content.
 
         Raises:
-            ResourceNotFoundError: If the model file does not exist.
+            ResourceNotFoundError: Model file was not found.
         """
         path = self._get_model_file_path(model_id, model_file_extension)
 
-        if not path.exists():
-            logger.error(f"Model not found: {model_id}")
-            raise ResourceNotFoundError(f"Model not found: {model_id}")
-
-        return FsUtil.read_file(path)
+        try:
+            return FsUtil.read_file(path)
+        except FileNotFoundError as e:
+            logger.error(f"Cannot get model file: {model_id} - does not exist: {e}")
+            raise ResourceNotFoundError(f"Cannot get model file: {model_id} - does not exist") from e
 
     def delete(self, model_id: UUID, model_file_extension: str) -> None:
-        """Delete a previously saved model.
+        """Delete a model file.
 
         Args:
-            model_id: The ID of the model to delete.
+            model_id: The ID of the model.
             model_file_extension: The extension of the model file.
 
         Raises:
-            ResourceNotFoundError: If the model file does not exist.
+            ResourceNotFoundError: Model file was not found.
         """
         path = self._get_model_file_path(model_id, model_file_extension)
 
-        if not path.exists():
-            logger.error(f"Model not found: {model_id}")
-            raise ResourceNotFoundError(f"Model not found: {model_id}")
-
-        FsUtil.delete_file(path)
+        try:
+            FsUtil.delete_file(path)
+        except FileNotFoundError as e:
+            logger.error(f"Cannot delete model file: {model_id} - does not exist: {e}")
+            raise ResourceNotFoundError(f"Cannot delete model file: {model_id} - does not exist") from e
 
     def _get_model_file_path(self, model_id: UUID, model_file_extension: str) -> Path:
         return Path(f"{ENV.ML_MODELS_DIR}/{self.MODEL_FILE_PREFIX}-{model_id}.{model_file_extension}")

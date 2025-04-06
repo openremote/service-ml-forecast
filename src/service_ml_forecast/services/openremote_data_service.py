@@ -29,7 +29,6 @@ logger = logging.getLogger(__name__)
 class OpenRemoteDataService:
     """Service for interacting with the OpenRemote Manager API.
 
-
     Provides a wrapper around the OpenRemoteClient to provide a more convenient interface for the ML Forecast service.
     """
 

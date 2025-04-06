@@ -72,7 +72,7 @@ class ProphetModelProvider(ModelProvider[Prophet]):
         return model
 
     def load_model(self, model_id: UUID) -> Prophet:
-        model_json = self.model_storage_service.load(model_id, "json")
+        model_json = self.model_storage_service.get(model_id, "json")
         return model_from_json(model_json)
 
     def save_model(self, model: Prophet) -> None:
