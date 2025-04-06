@@ -45,7 +45,6 @@ class TimeUtil:
         Returns:
             The number of seconds.
         """
-
         # Parse the ISO 8601 duration string to a timedelta object
         duration_obj: Duration = parse_duration(duration, as_timedelta_if_possible=False)
 
@@ -64,7 +63,6 @@ class TimeUtil:
         Returns:
             The future timestamp in milliseconds.
         """
-
         future_time = pd.Timestamp.now() + periods * pd.tseries.frequencies.to_offset(frequency)
         timestamp = int(future_time.timestamp())
         millis = TimeUtil.sec_to_ms(timestamp)
@@ -81,5 +79,4 @@ class TimeUtil:
         Returns:
             The epoch timestamp in milliseconds. (last 3 digits will be 000)
         """
-
         return int(timestamp * 1000)

@@ -49,7 +49,7 @@ class ModelConfigService:
         """
         path = self._get_config_file_path(config.id)
 
-        if FsUtil.file_exists(path):
+        if path.exists():
             logger.error(f"Could not save config: {config.id} - already exists")
             raise ResourceAlreadyExistsError(f"Could not save config: {config.id} - already exists")
 
@@ -70,7 +70,6 @@ class ModelConfigService:
             PermissionError: If unable to access the configs directory or files.
             NotADirectoryError: If the configs path is not a directory.
         """
-
         try:
             config_files = FsUtil.get_all_file_names(ENV.ML_CONFIGS_DIR, self.CONFIG_FILE_EXTENSION)
         except NotADirectoryError as e:
@@ -132,7 +131,7 @@ class ModelConfigService:
         """
         path = self._get_config_file_path(config.id)
 
-        if not FsUtil.file_exists(path):
+        if not path.exists():
             logger.error(f"Cannot update config: {config.id} - does not exist")
             raise ResourceNotFoundError(f"Cannot update config: {config.id} - does not exist")
 

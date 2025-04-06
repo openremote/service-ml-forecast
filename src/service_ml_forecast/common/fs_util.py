@@ -46,12 +46,6 @@ class FsUtil:
         return content
 
     @staticmethod
-    def file_exists(path: Path) -> bool:
-        """Check if a file exists."""
-
-        return path.exists()
-
-    @staticmethod
     def get_all_file_names(path: Path, extension: str) -> list[str]:
         """Get all files in a directory."""
 
