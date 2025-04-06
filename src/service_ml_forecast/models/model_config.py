@@ -27,9 +27,9 @@ from service_ml_forecast.models.model_type import ModelTypeEnum
 class AssetAttributeFeature(BaseModel):
     """Asset attribute feature with the asset id, attribute name and the cutoff timestamp."""
 
-    asset_id: str = Field(description="Asset ID.")
+    asset_id: str = Field(description="ID of the asset from OpenRemote.", min_length=22, max_length=22)
     attribute_name: str = Field(
-        description="Name of the attribute of the asset. This attribute requires historical data.",
+        description="Name of the attribute of the asset.",
     )
     cutoff_timestamp: int = Field(
         description="Timestamp in milliseconds since epoch, all data after this timestamp will be used.",
@@ -41,7 +41,7 @@ class BaseModelConfig(BaseModel):
 
     id: UUID = Field(
         default_factory=uuid4,
-        description="ID of the model configuration. If not provided, a random uuid will be generated.",
+        description="ID of the model configuration. If not provided, a random uuid v4 will be generated.",
     )
     realm: str = Field(description="Realm of where the assets and their datapoints are available.")
     name: str = Field(description="Friendly name for the model configuration.")
@@ -51,12 +51,13 @@ class BaseModelConfig(BaseModel):
     )
     type: ModelTypeEnum = Field(description="Which machine learning model to use.")
     target: AssetAttributeFeature = Field(
-        description="Asset attribute datapoint to predict. This datapoint must have historical data available.",
+        description="The asset attribute to generate datapoints for. "
+        "There must be historical data available for training.",
     )
     regressors: list[AssetAttributeFeature] | None = Field(
         default=None,
-        description="List of model input asset attributes that will be used as regressors. "
-        "They must have historical data and predicted values available for the configured forecast period.",
+        description="List of asset attributes that will be used as regressors. "
+        "There must be historical data available for training.",
     )
     forecast_interval: str = Field(description="Forecast generation interval. Expects ISO 8601 duration strings.")
     training_interval: str = Field(description="Model training interval. Expects ISO 8601 duration strings.")
@@ -99,7 +100,6 @@ class ProphetModelConfig(BaseModelConfig):
         description="Proportion of historical data used for detecting changepoints. "
         "A higher value (e.g., 0.9-1.0) makes the model more responsive to recent trends.",
     )
-
     changepoint_prior_scale: float = Field(
         default=0.05,
         description="Controls trend flexibility at changepoints. "
