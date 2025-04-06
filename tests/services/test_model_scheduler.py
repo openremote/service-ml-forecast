@@ -63,6 +63,8 @@ def test_scheduler_job_management(
     - Training and forecast jobs are created for the config
     - Jobs have correct parameters and intervals
     - Jobs are properly removed when the config is deleted
+    - Jobs are properly added when a config is created
+    - Jobs are properly removed when the config is disabled
     - All jobs are properly cleaned up on stop
     """
 
