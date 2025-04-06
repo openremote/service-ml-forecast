@@ -68,7 +68,6 @@ class ModelScheduler(Singleton):
 
         Does not start the scheduler if it is already running.
         """
-
         if self.scheduler.running:
             logger.warning("Scheduler for ML Model Training already running")
             return
@@ -96,8 +95,7 @@ class ModelScheduler(Singleton):
         job_id = f"{TRAINING_JOB_ID_PREFIX}:{config.id}"
         seconds = TimeUtil.parse_iso_duration(config.training_interval)
 
-        # Do not add/update job if the config is still the same
-        if self._job_config_matches(job_id, config):
+        if not self._is_job_scheduling_needed(job_id, config):
             return
 
         self.scheduler.add_job(
@@ -117,8 +115,7 @@ class ModelScheduler(Singleton):
         job_id = f"{FORECAST_JOB_ID_PREFIX}:{config.id}"
         seconds = TimeUtil.parse_iso_duration(config.forecast_interval)
 
-        # Do not add/update job if the config is still the same
-        if self._job_config_matches(job_id, config):
+        if not self._is_job_scheduling_needed(job_id, config):
             return
 
         self.scheduler.add_job(
@@ -157,16 +154,20 @@ class ModelScheduler(Singleton):
             if job.id not in expected_jobs:
                 self.scheduler.remove_job(job.id)
 
-    def _job_config_matches(self, job_id: str, config: ModelConfig) -> bool:
-        """Check if the config for the given job matches the config in the config storage"""
+    def _is_job_scheduling_needed(self, job_id: str, config: ModelConfig) -> bool:
+        """Compares the given config with the config of an existing job.
 
+        Returns True if the job is not scheduled or if the config has changed.
+        """
         existing_job = self.scheduler.get_job(job_id)
 
-        if existing_job is not None and existing_job.args is not None:
-            job_config: ModelConfig = existing_job.args[0]
-            return job_config == config
+        # If the job is not scheduled, then scheduling is needed
+        if existing_job is None or existing_job.args is None:
+            return True
 
-        return False
+        # If the job is scheduled, then compare the configs
+        job_config: ModelConfig = existing_job.args[0]
+        return job_config == config
 
 
 def _model_training_job(config: ModelConfig, data_service: OpenRemoteDataService) -> None:
@@ -217,7 +218,6 @@ def _model_forecast_job(config: ModelConfig, data_service: OpenRemoteDataService
         config: The model configuration
         data_service: The data service
     """
-
     start_time = time.perf_counter()
     provider = ModelProviderFactory.create_provider(config)
 

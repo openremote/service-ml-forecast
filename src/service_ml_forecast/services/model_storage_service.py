@@ -58,7 +58,7 @@ class ModelStorageService:
         """
         path = self._get_model_file_path(model_id, model_file_extension)
 
-        if not FsUtil.file_exists(path):
+        if not path.exists():
             logger.error(f"Model not found: {model_id}")
             raise ResourceNotFoundError(f"Model not found: {model_id}")
 
@@ -76,7 +76,7 @@ class ModelStorageService:
         """
         path = self._get_model_file_path(model_id, model_file_extension)
 
-        if not FsUtil.file_exists(path):
+        if not path.exists():
             logger.error(f"Model not found: {model_id}")
             raise ResourceNotFoundError(f"Model not found: {model_id}")
 

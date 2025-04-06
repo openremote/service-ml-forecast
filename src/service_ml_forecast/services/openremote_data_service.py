@@ -46,7 +46,6 @@ class OpenRemoteDataService:
         Returns:
             True if the datapoints were written successfully, False otherwise.
         """
-
         return self.client.write_predicted_datapoints(
             config.target.asset_id,
             config.target.attribute_name,
@@ -62,7 +61,6 @@ class OpenRemoteDataService:
         Returns:
             The training feature set or None if the training feature set could not be retrieved.
         """
-
         target_feature_datapoints: FeatureDatapoints
 
         # Retrieve target feature datapoints from OpenRemote
@@ -127,7 +125,6 @@ class OpenRemoteDataService:
         Returns:
             The forecast feature set or None if the forecast feature set could not be retrieved.
         """
-
         regressors: list[FeatureDatapoints] = []
 
         # Retrieve regressor predicted feature datapoints if configured
