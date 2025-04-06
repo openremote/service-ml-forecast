@@ -66,7 +66,7 @@ def test_scheduler_job_management(
     - Jobs are properly removed when the config is disabled
     - All jobs are properly cleaned up on stop
     """
-    assert config_service.save(prophet_basic_config)
+    assert config_service.create(prophet_basic_config)
     model_scheduler = ModelScheduler(mock_or_data_service)
     model_scheduler.start()
 
@@ -96,7 +96,7 @@ def test_scheduler_job_management(
     assert model_scheduler.scheduler.get_job(f"{FORECAST_JOB_ID_PREFIX}:{prophet_basic_config.id}") is None
 
     # Re-add the config and check that the jobs are created
-    assert config_service.save(prophet_basic_config)
+    assert config_service.create(prophet_basic_config)
     model_scheduler._poll_configs()
     assert model_scheduler.scheduler.get_job(f"{TRAINING_JOB_ID_PREFIX}:{prophet_basic_config.id}") is not None
     assert model_scheduler.scheduler.get_job(f"{FORECAST_JOB_ID_PREFIX}:{prophet_basic_config.id}") is not None
@@ -127,7 +127,7 @@ def test_training_execution(
     - The model is trained successfully with mock windspeed data
     - The trained model is properly stored
     """
-    assert config_service.save(prophet_basic_config)
+    assert config_service.create(prophet_basic_config)
 
     with respx.mock(base_url=MOCK_OPENREMOTE_URL) as respx_mock:
         # mock historical datapoints retrieval for target
@@ -141,7 +141,7 @@ def test_training_execution(
         )
         _model_training_job(prophet_basic_config, mock_or_data_service)
 
-    assert model_storage.load(prophet_basic_config.id, "json") is not None
+    assert model_storage.get(prophet_basic_config.id, "json") is not None
 
 
 def test_training_execution_with_missing_datapoints(
@@ -157,7 +157,7 @@ def test_training_execution_with_missing_datapoints(
     - No model is stored when training data is missing
     """
     prophet_basic_config.id = uuid4()  # override the id for this test
-    assert config_service.save(prophet_basic_config)
+    assert config_service.create(prophet_basic_config)
 
     with respx.mock(base_url=MOCK_OPENREMOTE_URL) as respx_mock:
         # mock historical datapoints retrieval for target with no datapoints
@@ -172,7 +172,7 @@ def test_training_execution_with_missing_datapoints(
         _model_training_job(prophet_basic_config, mock_or_data_service)
 
     with pytest.raises(ResourceNotFoundError):
-        model_storage.load(prophet_basic_config.id, "json")
+        model_storage.get(prophet_basic_config.id, "json")
 
 
 def test_forecast_execution(
@@ -253,7 +253,7 @@ def test_forecast_execution_with_no_model(
     - No predictions are written when model is missing
     """
     prophet_basic_config.id = uuid4()  # override the id for this test
-    assert config_service.save(prophet_basic_config)
+    assert config_service.create(prophet_basic_config)
 
     with respx.mock(base_url=MOCK_OPENREMOTE_URL, assert_all_called=False) as respx_mock:
         # mock write predicted datapoints for target
@@ -276,7 +276,7 @@ def trained_basic_model(
 ) -> ProphetModelConfig:
     """Fixture to create a trained basic model."""
 
-    assert config_service.save(prophet_basic_config)
+    assert config_service.create(prophet_basic_config)
 
     with respx.mock(base_url=MOCK_OPENREMOTE_URL) as respx_mock:
         # mock historical datapoints retrieval for target
@@ -303,7 +303,7 @@ def trained_regressor_model(
 ) -> ProphetModelConfig:
     """Fixture to create a trained regressor model."""
 
-    assert config_service.save(prophet_multi_variable_config)
+    assert config_service.create(prophet_multi_variable_config)
 
     # assert that the model has regressors
     assert prophet_multi_variable_config.regressors is not None
