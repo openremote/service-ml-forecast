@@ -32,7 +32,6 @@ def test_scheduler_lifecycle(mock_or_data_service: OpenRemoteDataService) -> Non
     - The config watcher job is created
     - All jobs are removed when the scheduler stops
     """
-
     model_scheduler = ModelScheduler(mock_or_data_service)
     model_scheduler.start()
 
@@ -67,7 +66,6 @@ def test_scheduler_job_management(
     - Jobs are properly removed when the config is disabled
     - All jobs are properly cleaned up on stop
     """
-
     assert config_service.save(prophet_basic_config)
     model_scheduler = ModelScheduler(mock_or_data_service)
     model_scheduler.start()
@@ -129,7 +127,6 @@ def test_training_execution(
     - The model is trained successfully with mock windspeed data
     - The trained model is properly stored
     """
-
     assert config_service.save(prophet_basic_config)
 
     with respx.mock(base_url=MOCK_OPENREMOTE_URL) as respx_mock:
@@ -159,7 +156,6 @@ def test_training_execution_with_missing_datapoints(
     - The system handles missing datapoints gracefully
     - No model is stored when training data is missing
     """
-
     prophet_basic_config.id = uuid4()  # override the id for this test
     assert config_service.save(prophet_basic_config)
 
@@ -188,7 +184,6 @@ def test_forecast_execution(
     - Forecast is generated successfully
     - Predicted datapoints are written to OpenRemote
     """
-
     with respx.mock(base_url=MOCK_OPENREMOTE_URL) as respx_mock:
         # mock write predicted datapoints for target
         route = respx_mock.put(
@@ -212,7 +207,6 @@ def test_forecast_execution_with_regressor(
     - Regressor predictions are properly retrieved
     - Final predictions are written to OpenRemote
     """
-
     # get regressor model from basic trained model
     regressor_model = ModelProviderFactory.create_provider(trained_basic_model)
     assert regressor_model is not None
@@ -258,7 +252,6 @@ def test_forecast_execution_with_no_model(
     - System handles missing model gracefully
     - No predictions are written when model is missing
     """
-
     prophet_basic_config.id = uuid4()  # override the id for this test
     assert config_service.save(prophet_basic_config)
 
