@@ -50,7 +50,7 @@ config_service = ModelConfigService()
     },
 )
 async def create_model_config(model_config: ModelConfig) -> ModelConfig:
-    return config_service.save(model_config)
+    return config_service.create(model_config)
 
 
 @router.get(
