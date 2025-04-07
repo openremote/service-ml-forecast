@@ -249,7 +249,7 @@ def _model_forecast_job(config: ModelConfig, data_service: OpenRemoteDataService
 
     end_time = time.perf_counter()
     logger.info(
-        f"Forecasting job for {config.id} completed - duration: {end_time - start_time}s."
-        f"Wrote {len(forecast.datapoints)} datapoints."
+        f"Forecasting job for {config.id} completed - duration: {end_time - start_time}s. "
+        f"Wrote {len(forecast.datapoints)} datapoints. "
         f"Asset ID: {config.target.asset_id}, Attribute: {config.target.attribute_name}"
     )
