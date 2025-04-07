@@ -165,9 +165,9 @@ class ModelScheduler(Singleton):
         if existing_job is None or existing_job.args is None:
             return True
 
-        # If the job is scheduled, then compare the configs
+        # Reschedule if the config has changed
         job_config: ModelConfig = existing_job.args[0]
-        return job_config == config
+        return job_config != config
 
 
 def _model_training_job(config: ModelConfig, data_service: OpenRemoteDataService) -> None:
