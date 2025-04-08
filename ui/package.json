@@ -10,9 +10,12 @@
   },
   "dependencies": {
     "@openremote/or-mwc-components": "^1.3.5",
+    "@openremote/or-panel": "^1.0.3",
     "@vaadin/router": "^2.0.0",
     "lit": "^3.2.1",
-    "lodash": "^4.17.21"
+    "lodash": "^4.17.21",
+    "raw-loader": "^4.0.2",
+    "simplebar": "^6.3.0"
   },
   "devDependencies": {
     "@rspack/cli": "^1.0.0-alpha.9",

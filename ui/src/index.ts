@@ -1,11 +1,14 @@
 import { Router } from '@vaadin/router';
 import "./pages/pages-config-list";
 import "./pages/pages-config-details";
+import "./pages/pages-not-found";
 import "./components/breadcrumb";
 import { IconSet, createSvgIconSet, IconSets, OrIconSet } from "@openremote/or-icon";
 import { html, render } from 'lit';
+
 const outlet = document.querySelector('#outlet') as HTMLElement;
 const router = new Router(outlet);
+
 
 function setupORIcons() {
 
@@ -19,8 +22,7 @@ function setupORIcons() {
                 style.id = "mdiFontStyle";
                 style.textContent = "@font-face {\n" +
                     "  font-family: \"Material Design Icons\";\n" +
-                    "  src: url(\"/node_modules/@mdi/font/materialdesignicons-webfont.eot\");\n" +
-                    "  src: url(\"/node_modules/@mdi/font/materialdesignicons-webfont.eot\") format(\"embedded-opentype\"), url(\"/node_modules/@mdi/font/materialdesignicons-webfont.woff2\") format(\"woff2\"), url(\"/node_modules/@mdi/font/materialdesignicons-webfont.woff\") format(\"woff\"), url(\"/node_modules/@mdi/font/materialdesignicons-webfont.ttf\") format(\"truetype\");\n" +
+                    "  src: url(\"/static/fonts/materialdesignicons-webfont.eot\") format(\"embedded-opentype\"), url(\"/static/fonts/materialdesignicons-webfont.woff2\") format(\"woff2\"), url(\"/static/fonts/materialdesignicons-webfont.woff\") format(\"woff\"), url(\"/static/fonts/materialdesignicons-webfont.ttf\") format(\"truetype\");\n" +
                     "  font-weight: normal;\n" +
                     "  font-style: normal;\n" +
                     "}";
@@ -39,8 +41,6 @@ function setupORIcons() {
     );
 }
 
-
-
 setupORIcons();
 
 const routes = [
@@ -55,14 +55,23 @@ const routes = [
         title: 'Configs',
     },
     {
+        path: '/configs/new',
+        component: 'page-config-details',
+        title: 'New Config',
+    },
+    {
         path: '/configs/:id',
         component: 'page-config-details',
         title: 'Config Details',
+    },
+    {
+        path: '/:pathMatch(.*)*',
+        redirect: '/configs',
     },
 ]
 
 // Render the breadcrumb component
 render(html`<breadcrumb-nav></breadcrumb-nav>`, outlet);
 
-// Set up the router
+
 router.setRoutes(routes);

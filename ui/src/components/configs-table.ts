@@ -1,6 +1,6 @@
 import { OrMwcTable, TableColumn, TableRow, TableConfig } from "@openremote/or-mwc-components/or-mwc-table";
 import { css, html, TemplateResult } from "lit";
-import { state, customElement } from "lit/decorators.js";
+import { customElement, property } from "lit/decorators.js";
 import { ModelConfig } from "../api/models";
 import { ServiceClient } from "../api/service-client";
 import "@openremote/or-mwc-components/or-mwc-input";
@@ -8,12 +8,11 @@ import "@openremote/or-mwc-components/or-mwc-input";
 @customElement("configs-table")
 export class ConfigsTable extends OrMwcTable {
 
-    @state()
+    @property({ type: Array })
     private modelConfigs: ModelConfig[] = [];
 
     private readonly serviceClient: ServiceClient = new ServiceClient();
 
-    // Define columns directly as a property
     public columns: TableColumn[] = [
         { title: "State", isSortable: true },
         { title: "Name", isSortable: true },
@@ -24,7 +23,6 @@ export class ConfigsTable extends OrMwcTable {
         { title: "Actions", isSortable: false }
     ];
 
-    // Define config directly as a property
     protected config: TableConfig = {
         stickyFirstColumn: false,
     };
@@ -34,7 +32,6 @@ export class ConfigsTable extends OrMwcTable {
         this.fetchConfigs();
     }
 
- 
     static get styles() {
         return [
             super.styles,
@@ -49,7 +46,7 @@ export class ConfigsTable extends OrMwcTable {
 
     fetchConfigs() {
         this.serviceClient.getModelConfigs().then(configs => {
-            this.modelConfigs = configs; // State update will trigger willUpdate
+            this.modelConfigs = configs;
         });
     }
 
@@ -61,12 +58,12 @@ export class ConfigsTable extends OrMwcTable {
 
     private getActionsRow(config: ModelConfig): TemplateResult {
         const handleEdit = (e: Event) => {
-            e.stopPropagation(); // Prevent row click event
+            e.stopPropagation();
             this.dispatchEvent(new CustomEvent('edit-config', { detail: config, bubbles: true, composed: true }));
         };
 
         const handleDelete = (e: Event) => {
-            e.stopPropagation(); // Prevent row click event
+            e.stopPropagation();
             this.dispatchEvent(new CustomEvent('delete-config', { detail: config, bubbles: true, composed: true }));
         };
 

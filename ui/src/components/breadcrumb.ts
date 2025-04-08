@@ -1,6 +1,7 @@
-import { LitElement, html } from 'lit';
+import { LitElement, css, html, unsafeCSS } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { Router, RouterLocation } from '@vaadin/router';
+import {DefaultColor3, DefaultColor4} from "@openremote/core";
 
 interface BreadcrumbPart {
   path: string;
@@ -9,6 +10,45 @@ interface BreadcrumbPart {
 
 @customElement('breadcrumb-nav')
 export class BreadcrumbNav extends LitElement {
+
+  static get styles() {
+    return css`
+
+
+      nav {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 16px;
+      }
+
+      a {
+        color: var(--or-app-color4, ${unsafeCSS(DefaultColor4)});
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        --or-icon-width: 16px;
+        --or-icon-height: 16px;
+      }
+
+      a:hover {
+        color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)}); 
+      }
+
+      span[aria-current="page"] {
+        color: rgba(0, 0, 0, 0.87); 
+        font-weight: 500; 
+      }
+
+      span[aria-hidden="true"] {
+        color: rgba(0, 0, 0, 0.38);
+        user-select: none;
+      }
+    `;
+  }
+    
+
   @state()
   private parts: BreadcrumbPart[] = [];
 
@@ -62,11 +102,11 @@ export class BreadcrumbNav extends LitElement {
   render() {
     return html`
       <nav aria-label="breadcrumb">
-        <a href="${this.HOME_LINK.path}" 
+        <a href="${this.HOME_LINK.path}"
            @click=${(e: MouseEvent) => this.handleNavigation(e, this.HOME_LINK.path)}>
-          ${this.HOME_LINK.name}
+          <or-icon icon="puzzle"></or-icon> ${this.HOME_LINK.name}
         </a>
-        ${this.parts.map((part, index) => 
+        ${this.parts.map((part, index) =>
           this.renderBreadcrumbItem(part, index === this.parts.length - 1)
         )}
       </nav>

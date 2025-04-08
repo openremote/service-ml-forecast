@@ -50,11 +50,14 @@ export default {
     new rspack.HtmlRspackPlugin({
       template: './index.html',
     }),
+    new rspack.CopyRspackPlugin({
+      patterns: [
+        { from: 'static', to: 'static' },
+      ],
+    }),
   ],
   devServer: {
     port: 8001,
     historyApiFallback: true,
-    static: ['assets']
-    
   },
 }; 

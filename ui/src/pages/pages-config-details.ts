@@ -1,5 +1,5 @@
 import { html, LitElement } from "lit";
-import { state, customElement } from "lit/decorators.js";
+import { state, customElement, property } from "lit/decorators.js";
 import { ModelConfig } from "../api/models";
 import { ServiceClient } from "../api/service-client";
 import { RouterLocation } from "@vaadin/router";
@@ -11,20 +11,18 @@ export class PageConfigDetails extends LitElement {
     @state()
     configId?: string;
 
-    @state()
+    @property({ type: Object })
     private modelConfig: ModelConfig | null = null;
 
-    @state()
+    @property({ type: Boolean })
     private loading: boolean = true;
 
     private readonly serviceClient: ServiceClient = new ServiceClient();
 
-
-    onBeforeEnter(location: RouterLocation) {
+    onAfterEnter(location: RouterLocation) {
         this.configId = location.params.id as string;
         return this.loadConfig();
     }
-
 
     private async loadConfig() {
         if (!this.configId) {
@@ -45,8 +43,8 @@ export class PageConfigDetails extends LitElement {
             return html`<div>Loading config details...</div>`;
         }
 
-        if (!this.modelConfig) {
-            return html`<div>Config not found</div>`;
+        if (!this.modelConfig?.id) {
+            return html`<div>Creating new config</div>`;
         }
 
         return html`
