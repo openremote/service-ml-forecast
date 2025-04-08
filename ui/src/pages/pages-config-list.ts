@@ -1,32 +1,33 @@
-import {html, LitElement} from "lit";
-import {state, customElement} from "lit/decorators.js";
+import {html, LitElement, css} from "lit";
+import {customElement} from "lit/decorators.js";
 import { ModelConfig } from "../api/models";
-import { ServiceClient } from "../api/service-client";
-import "@openremote/or-mwc-components/or-mwc-input";
+import { Router } from '@vaadin/router';
+import "../components/configs-table";
 
 
 @customElement("page-config-list")
 export class PageConfigList extends LitElement {
 
-    @state()
-    private modelConfigs: ModelConfig[] = [];
 
-    private readonly serviceClient: ServiceClient = new ServiceClient();
+    private _handleEditConfig(e: CustomEvent<ModelConfig>) {
+        const config = e.detail;
+        Router.go(`/configs/${config.id}`);
+    }
 
-    connectedCallback() {
-        super.connectedCallback();
-        this.serviceClient.getModelConfigs().then(configs => {
-            this.modelConfigs = configs;
-        });
+    private _handleDeleteConfig(e: CustomEvent<ModelConfig>) {
+        const config = e.detail;
+        console.log("Delete config:", config);
+        alert(`Delete requested for config: ${config.name}`);
     }
 
     protected render() {
         return html`
-            <h1>Model Configs</h1>
-            <or-mwc-input type="button" label="Search"></or-mwc-input>
-            <ul>
-                ${this.modelConfigs.map(config => html`<li><a href="/configs/${config.id}">${config.name}</a></li>`)}
-            </ul>
-        `;  
+            <h1>Forecast Configs</h1>
+            <configs-table
+                @edit-config="${this._handleEditConfig}"
+                @delete-config="${this._handleDeleteConfig}"
+            >
+            </configs-table>
+        `;
     }
 }

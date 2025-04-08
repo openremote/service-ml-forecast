@@ -39,7 +39,6 @@ export default {
             },
           },
         },
-        type: 'javascript/auto',
       },
       {
         test: /\.css$/,
@@ -53,11 +52,9 @@ export default {
     }),
   ],
   devServer: {
-    static: {
-      directory: path.join(__dirname, 'dist'),
-    },
-    compress: true,
-    port: 9007,
-    historyApiFallback: true
+    port: 8001,
+    historyApiFallback: true,
+    static: ['assets']
+    
   },
 }; 

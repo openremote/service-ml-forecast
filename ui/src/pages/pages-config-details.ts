@@ -1,14 +1,15 @@
-import {html, LitElement} from "lit";
-import {state, customElement, property} from "lit/decorators.js";
+import { html, LitElement } from "lit";
+import { state, customElement } from "lit/decorators.js";
 import { ModelConfig } from "../api/models";
 import { ServiceClient } from "../api/service-client";
+import { RouterLocation } from "@vaadin/router";
 
 
 @customElement("page-config-details")
 export class PageConfigDetails extends LitElement {
 
-    @property({type: String})
-    id: string = "";
+    @state()
+    configId?: string;
 
     @state()
     private modelConfig: ModelConfig | null = null;
@@ -18,19 +19,21 @@ export class PageConfigDetails extends LitElement {
 
     private readonly serviceClient: ServiceClient = new ServiceClient();
 
-    connectedCallback() {
-        super.connectedCallback();
-        this.loadConfig();
+
+    onBeforeEnter(location: RouterLocation) {
+        this.configId = location.params.id as string;
+        return this.loadConfig();
     }
 
+
     private async loadConfig() {
-        if (!this.id) {
+        if (!this.configId) {
             this.loading = false;
             return;
         }
-        
+
         try {
-            this.modelConfig = await this.serviceClient.getModelConfig(this.id);
+            this.modelConfig = await this.serviceClient.getModelConfig(this.configId);
             this.loading = false;
         } catch (err) {
             this.loading = false;
@@ -41,11 +44,11 @@ export class PageConfigDetails extends LitElement {
         if (this.loading) {
             return html`<div>Loading config details...</div>`;
         }
-        
+
         if (!this.modelConfig) {
             return html`<div>Config not found</div>`;
         }
-        
+
         return html`
             <div>
                 <h1>Model Config: ${this.modelConfig.name}</h1>
@@ -75,6 +78,6 @@ export class PageConfigDetails extends LitElement {
                 
   
             </div>
-        `;  
+        `;
     }
 }
