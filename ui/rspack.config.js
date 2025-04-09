@@ -59,5 +59,7 @@ export default {
   devServer: {
     port: 8001,
     historyApiFallback: true,
+    hot: true,
+    watchFiles: ['/**/*'],
   },
 }; 

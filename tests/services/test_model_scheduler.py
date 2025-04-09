@@ -20,11 +20,11 @@ from service_ml_forecast.services.model_scheduler import (
     _model_training_job,
 )
 from service_ml_forecast.services.model_storage_service import ModelStorageService
-from service_ml_forecast.services.openremote_data_service import OpenRemoteDataService
+from service_ml_forecast.services.openremote_service import OpenRemoteService
 from tests.conftest import MOCK_OPENREMOTE_URL
 
 
-def test_scheduler_lifecycle(mock_or_data_service: OpenRemoteDataService) -> None:
+def test_scheduler_lifecycle(mock_openremote_service: OpenRemoteService) -> None:
     """Test the initialization, starting and stopping of the MLModelScheduler.
 
     Verifies that:
@@ -32,7 +32,7 @@ def test_scheduler_lifecycle(mock_or_data_service: OpenRemoteDataService) -> Non
     - The config watcher job is created
     - All jobs are removed when the scheduler stops
     """
-    model_scheduler = ModelScheduler(mock_or_data_service)
+    model_scheduler = ModelScheduler(mock_openremote_service)
     model_scheduler.start()
 
     assert model_scheduler.scheduler.running
@@ -52,7 +52,7 @@ def test_scheduler_lifecycle(mock_or_data_service: OpenRemoteDataService) -> Non
 
 
 def test_scheduler_job_management(
-    mock_or_data_service: OpenRemoteDataService,
+    mock_openremote_service: OpenRemoteService,
     config_service: ModelConfigService,
     prophet_basic_config: ProphetModelConfig,
 ) -> None:
@@ -67,7 +67,7 @@ def test_scheduler_job_management(
     - All jobs are properly cleaned up on stop
     """
     assert config_service.create(prophet_basic_config)
-    model_scheduler = ModelScheduler(mock_or_data_service)
+    model_scheduler = ModelScheduler(mock_openremote_service)
     model_scheduler.start()
 
     assert model_scheduler.scheduler.running
@@ -115,7 +115,7 @@ def test_scheduler_job_management(
 
 
 def test_training_execution(
-    mock_or_data_service: OpenRemoteDataService,
+    mock_openremote_service: OpenRemoteService,
     config_service: ModelConfigService,
     prophet_basic_config: ProphetModelConfig,
     model_storage: ModelStorageService,
@@ -139,13 +139,13 @@ def test_training_execution(
                 json=windspeed_mock_datapoints,
             ),
         )
-        _model_training_job(prophet_basic_config, mock_or_data_service)
+        _model_training_job(prophet_basic_config, mock_openremote_service)
 
     assert model_storage.get(prophet_basic_config.id, "json") is not None
 
 
 def test_training_execution_with_missing_datapoints(
-    mock_or_data_service: OpenRemoteDataService,
+    mock_openremote_service: OpenRemoteService,
     config_service: ModelConfigService,
     prophet_basic_config: ProphetModelConfig,
     model_storage: ModelStorageService,
@@ -169,14 +169,14 @@ def test_training_execution_with_missing_datapoints(
                 json=[],
             ),
         )
-        _model_training_job(prophet_basic_config, mock_or_data_service)
+        _model_training_job(prophet_basic_config, mock_openremote_service)
 
     with pytest.raises(ResourceNotFoundError):
         model_storage.get(prophet_basic_config.id, "json")
 
 
 def test_forecast_execution(
-    mock_or_data_service: OpenRemoteDataService,
+    mock_openremote_service: OpenRemoteService,
     trained_basic_model: ProphetModelConfig,
 ) -> None:
     """Test basic forecast execution with a single-variable model.
@@ -192,12 +192,12 @@ def test_forecast_execution(
             return_value=respx.MockResponse(HTTPStatus.NO_CONTENT),
         )
 
-        _model_forecast_job(trained_basic_model, mock_or_data_service)
+        _model_forecast_job(trained_basic_model, mock_openremote_service)
         assert route.called
 
 
 def test_forecast_execution_with_regressor(
-    mock_or_data_service: OpenRemoteDataService,
+    mock_openremote_service: OpenRemoteService,
     trained_regressor_model: ProphetModelConfig,
     trained_basic_model: ProphetModelConfig,
 ) -> None:
@@ -238,12 +238,12 @@ def test_forecast_execution_with_regressor(
             return_value=respx.MockResponse(HTTPStatus.OK, json=regressor_forecast_datapoints),
         )
 
-        _model_forecast_job(trained_regressor_model, mock_or_data_service)
+        _model_forecast_job(trained_regressor_model, mock_openremote_service)
         assert route.called
 
 
 def test_forecast_execution_with_no_model(
-    mock_or_data_service: OpenRemoteDataService,
+    mock_openremote_service: OpenRemoteService,
     config_service: ModelConfigService,
     prophet_basic_config: ProphetModelConfig,
 ) -> None:
@@ -264,12 +264,12 @@ def test_forecast_execution_with_no_model(
         )
 
         with pytest.raises(ResourceNotFoundError):
-            _model_forecast_job(prophet_basic_config, mock_or_data_service)
+            _model_forecast_job(prophet_basic_config, mock_openremote_service)
 
 
 @pytest.fixture
 def trained_basic_model(
-    mock_or_data_service: OpenRemoteDataService,
+    mock_openremote_service: OpenRemoteService,
     config_service: ModelConfigService,
     prophet_basic_config: ProphetModelConfig,
     windspeed_mock_datapoints: list[AssetDatapoint],
@@ -288,14 +288,14 @@ def trained_basic_model(
                 json=windspeed_mock_datapoints,
             ),
         )
-        _model_training_job(prophet_basic_config, mock_or_data_service)
+        _model_training_job(prophet_basic_config, mock_openremote_service)
 
     return prophet_basic_config
 
 
 @pytest.fixture
 def trained_regressor_model(
-    mock_or_data_service: OpenRemoteDataService,
+    mock_openremote_service: OpenRemoteService,
     config_service: ModelConfigService,
     prophet_multi_variable_config: ProphetModelConfig,
     windspeed_mock_datapoints: list[AssetDatapoint],
@@ -328,6 +328,6 @@ def trained_regressor_model(
                 json=windspeed_mock_datapoints,
             ),
         )
-        _model_training_job(prophet_multi_variable_config, mock_or_data_service)
+        _model_training_job(prophet_multi_variable_config, mock_openremote_service)
 
     return prophet_multi_variable_config

@@ -27,7 +27,7 @@ from service_ml_forecast.common.time_util import TimeUtil
 from service_ml_forecast.ml.model_provider_factory import ModelProviderFactory
 from service_ml_forecast.models.model_config import ModelConfig
 from service_ml_forecast.services.model_config_service import ModelConfigService
-from service_ml_forecast.services.openremote_data_service import OpenRemoteDataService
+from service_ml_forecast.services.openremote_service import OpenRemoteService
 
 logger = logging.getLogger(__name__)
 
@@ -43,9 +43,9 @@ CONFIG_POLLING_INTERVAL = 30  # Poll configs for changes every 30 seconds
 class ModelScheduler(Singleton):
     """Manages the scheduling of ML model training and forecasting jobs."""
 
-    def __init__(self, data_service: OpenRemoteDataService) -> None:
+    def __init__(self, openremote_service: OpenRemoteService) -> None:
         self.config_storage = ModelConfigService()
-        self.data_service = data_service
+        self.openremote_service = openremote_service
 
         executors = {
             "process_pool": ProcessPoolExecutor(max_workers=1),  # For CPU-intensive training tasks
@@ -101,7 +101,7 @@ class ModelScheduler(Singleton):
         self.scheduler.add_job(
             _model_training_job,
             trigger="interval",
-            args=[config, self.data_service],
+            args=[config, self.openremote_service],
             seconds=seconds,
             id=job_id,
             name=job_id,
@@ -121,7 +121,7 @@ class ModelScheduler(Singleton):
         self.scheduler.add_job(
             _model_forecast_job,
             trigger="interval",
-            args=[config, self.data_service],
+            args=[config, self.openremote_service],
             seconds=seconds,
             id=job_id,
             name=job_id,
@@ -170,7 +170,7 @@ class ModelScheduler(Singleton):
         return job_config != config
 
 
-def _model_training_job(config: ModelConfig, data_service: OpenRemoteDataService) -> None:
+def _model_training_job(config: ModelConfig, data_service: OpenRemoteService) -> None:
     """Model training job. Constructs the model provider, retrieves the training feature set,
     trains the model, and saves the model.
 
@@ -210,7 +210,7 @@ def _model_training_job(config: ModelConfig, data_service: OpenRemoteDataService
     )
 
 
-def _model_forecast_job(config: ModelConfig, data_service: OpenRemoteDataService) -> None:
+def _model_forecast_job(config: ModelConfig, data_service: OpenRemoteService) -> None:
     """Model forecast job. Constructs the model provider, retrieves the forecast feature set,
     generates the forecast, and writes the forecasted datapoints to OpenRemote.
 

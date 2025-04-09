@@ -1,18 +1,19 @@
 import { LitElement, css, html, unsafeCSS } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { Router, RouterLocation } from '@vaadin/router';
-import {DefaultColor3, DefaultColor4} from "@openremote/core";
+import * as Core from "@openremote/core";
+import { getRealm } from '../util';
 
 interface BreadcrumbPart {
-  path: string;
-  name: string;
+    path: string;
+    name: string;
 }
 
 @customElement('breadcrumb-nav')
 export class BreadcrumbNav extends LitElement {
 
-  static get styles() {
-    return css`
+    static get styles() {
+        return css`
 
 
       nav {
@@ -23,7 +24,7 @@ export class BreadcrumbNav extends LitElement {
       }
 
       a {
-        color: var(--or-app-color4, ${unsafeCSS(DefaultColor4)});
+        color: var(--or-app-color4, ${unsafeCSS(Core.DefaultColor4)});
         text-decoration: none;
         display: inline-flex;
         align-items: center;
@@ -33,7 +34,7 @@ export class BreadcrumbNav extends LitElement {
       }
 
       a:hover {
-        color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)}); 
+        color: var(--or-app-color3, ${unsafeCSS(Core.DefaultColor3)}); 
       }
 
       span[aria-current="page"] {
@@ -46,70 +47,77 @@ export class BreadcrumbNav extends LitElement {
         user-select: none;
       }
     `;
-  }
-    
+    }
 
-  @state()
-  private parts: BreadcrumbPart[] = [];
 
-  private readonly HOME_LINK = {
-    path: '/',
-    name: 'ML Forecast Service'
-  };
+    @state()
+    private parts: BreadcrumbPart[] = [];
 
-  private readonly handleLocationChange = (event: CustomEvent<{ location: RouterLocation }>) => {
-    this.updateBreadcrumbs(event.detail.location);
-  };
+    @state()
+    private readonly realm: string = getRealm(window.location.pathname);
 
-  connectedCallback() {
-    super.connectedCallback();
-    window.addEventListener('vaadin-router-location-changed', this.handleLocationChange);
-  }
+    private readonly HOME_LINK = {
+        path: `/${this.realm}/configs`,
+        name: 'ML Forecast Service'
+    };
 
-  disconnectedCallback() {
-    window.removeEventListener('vaadin-router-location-changed', this.handleLocationChange);
-    super.disconnectedCallback();
-  }
+    private readonly handleLocationChange = (event: CustomEvent<{ location: RouterLocation }>) => {
+        this.updateBreadcrumbs(event.detail.location);
+    };
 
-  private updateBreadcrumbs(location: RouterLocation) {
-    const pathParts = location.pathname.split('/').filter(Boolean);
-    this.parts = pathParts.reduce<BreadcrumbPart[]>((parts, part) => {
-      const path = `/${parts.length ? parts[parts.length - 1].path.slice(1) + '/' : ''}${part}`;
-      const name = this.formatPartName(part);
-      return [...parts, { path, name }];
-    }, []);
-  }
+    connectedCallback() {
+        super.connectedCallback();
+        window.addEventListener('vaadin-router-location-changed', this.handleLocationChange);
+    }
 
-  private formatPartName(part: string): string {
-    return part.charAt(0).toUpperCase() + part.slice(1);
-  }
+    disconnectedCallback() {
+        window.removeEventListener('vaadin-router-location-changed', this.handleLocationChange);
+        super.disconnectedCallback();
+    }
 
-  private renderBreadcrumbItem(part: BreadcrumbPart, isLast: boolean) {
-    return html`
+    private updateBreadcrumbs(location: RouterLocation) {
+        const pathParts = location.pathname.split('/').filter(Boolean);
+
+     
+     
+        // slice the first part as it is the realm and not part of the breadcrumb
+        this.parts = pathParts.slice(1).reduce<BreadcrumbPart[]>((parts, part) => {
+            const path = `/${this.realm}/${parts.length ? parts[parts.length - 1].path.slice(1) + '/' : ''}${part}`;
+            const name = this.formatPartName(part);
+            return [...parts, { path, name }];
+        }, []);
+    }
+
+    private formatPartName(part: string): string {
+        return part.charAt(0).toUpperCase() + part.slice(1);
+    }
+
+    private renderBreadcrumbItem(part: BreadcrumbPart, isLast: boolean) {
+        return html`
       <span aria-hidden="true"> &gt; </span>
       ${isLast
-        ? html`<span aria-current="page">${part.name}</span>`
-        : html`<a href="${part.path}" @click=${(e: MouseEvent) => this.handleNavigation(e, part.path)}>${part.name}</a>`
-      }
+                ? html`<span aria-current="page">${part.name}</span>`
+                : html`<a href="${part.path}" @click=${(e: MouseEvent) => this.handleNavigation(e, part.path)}>${part.name}</a>`
+            }
     `;
-  }
+    }
 
-  private handleNavigation(event: MouseEvent, path: string) {
-    event.preventDefault();
-    Router.go(path);
-  }
+    private handleNavigation(event: MouseEvent, path: string) {
+        event.preventDefault();
+        Router.go(path);
+    }
 
-  render() {
-    return html`
+    render() {
+        return html`
       <nav aria-label="breadcrumb">
         <a href="${this.HOME_LINK.path}"
            @click=${(e: MouseEvent) => this.handleNavigation(e, this.HOME_LINK.path)}>
           <or-icon icon="puzzle"></or-icon> ${this.HOME_LINK.name}
         </a>
         ${this.parts.map((part, index) =>
-          this.renderBreadcrumbItem(part, index === this.parts.length - 1)
+            this.renderBreadcrumbItem(part, index === this.parts.length - 1)
         )}
       </nav>
     `;
-  }
+    }
 }

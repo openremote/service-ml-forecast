@@ -17,7 +17,7 @@
 
 import logging
 
-from service_ml_forecast.clients.openremote.models import AssetDatapoint
+from service_ml_forecast.clients.openremote.models import Asset, AssetDatapoint
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 from service_ml_forecast.common.time_util import TimeUtil
 from service_ml_forecast.models.feature_data_wrappers import FeatureDatapoints, ForecastFeatureSet, TrainingFeatureSet
@@ -26,7 +26,7 @@ from service_ml_forecast.models.model_config import ModelConfig
 logger = logging.getLogger(__name__)
 
 
-class OpenRemoteDataService:
+class OpenRemoteService:
     """Service for interacting with the OpenRemote Manager API.
 
     Provides a wrapper around the OpenRemoteClient to provide a more convenient interface for the ML Forecast service.
@@ -154,3 +154,18 @@ class OpenRemoteDataService:
         )
 
         return forecast_feature_set
+    
+
+
+    def get_assets(self, realm: str) -> list[Asset]:
+        """Get all assets from OpenRemote.
+
+        Returns:
+            A list of all assets from OpenRemote.
+        """
+        assets = self.client.retrieve_assets(realm)
+        if assets is None:
+            logger.error(f"Failed to retrieve assets for realm {realm}")
+            return []
+        return assets
+

@@ -1,77 +1,40 @@
 import { Router } from '@vaadin/router';
 import "./pages/pages-config-list";
-import "./pages/pages-config-details";
-import "./pages/pages-not-found";
+import "./pages/pages-config-viewer";
 import "./components/breadcrumb";
-import { IconSet, createSvgIconSet, IconSets, OrIconSet } from "@openremote/or-icon";
 import { html, render } from 'lit';
+import { setupORIcons } from './util';
 
 const outlet = document.querySelector('#outlet') as HTMLElement;
 const router = new Router(outlet);
 
-
-function setupORIcons() {
-
-    function createMdiIconSet(): IconSet {
-        return {
-            getIconTemplate(icon: string) {
-                return html`<span style="font-family: 'Material Design Icons';" class="mdi-${icon}"></span>`;
-            },
-            onAdd(): void {
-                const style = document.createElement("style");
-                style.id = "mdiFontStyle";
-                style.textContent = "@font-face {\n" +
-                    "  font-family: \"Material Design Icons\";\n" +
-                    "  src: url(\"/static/fonts/materialdesignicons-webfont.eot\") format(\"embedded-opentype\"), url(\"/static/fonts/materialdesignicons-webfont.woff2\") format(\"woff2\"), url(\"/static/fonts/materialdesignicons-webfont.woff\") format(\"woff\"), url(\"/static/fonts/materialdesignicons-webfont.ttf\") format(\"truetype\");\n" +
-                    "  font-weight: normal;\n" +
-                    "  font-style: normal;\n" +
-                    "}";
-                document.head.appendChild(style);
-            }
-        };
-    }
-
-    IconSets.addIconSet(
-        "mdi",
-        createMdiIconSet()
-    );
-    IconSets.addIconSet(
-        "or",
-        createSvgIconSet(OrIconSet.size, OrIconSet.icons)
-    );
-}
-
+// Important, these setup the MDI icons for the or-icon component
 setupORIcons();
 
+// Define the routes
 const routes = [
     {
-        path: '/',
-        redirect: '/configs',
-        title: 'Home',
-    },
-    {
-        path: '/configs',
+        path: '/:realm/configs',
         component: 'page-config-list',
-        title: 'Configs',
     },
     {
-        path: '/configs/new',
-        component: 'page-config-details',
-        title: 'New Config',
+        path: '/:realm/configs/new',
+        component: 'page-config-viewer',
     },
     {
-        path: '/configs/:id',
-        component: 'page-config-details',
-        title: 'Config Details',
+        path: '/:realm/configs/:id',
+        component: 'page-config-viewer',
     },
     {
         path: '/:pathMatch(.*)*',
-        redirect: '/configs',
+        action: () => {
+            render(html`<div>404</div>`, outlet);
+        }
     },
 ]
 
 // Render the breadcrumb component
 render(html`<breadcrumb-nav></breadcrumb-nav>`, outlet);
 
-
+// Set the routes -- Vaadin will then handle these paths
 router.setRoutes(routes);
