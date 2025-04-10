@@ -1,8 +1,7 @@
 import { LitElement, css, html, unsafeCSS } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { Router, RouterLocation } from '@vaadin/router';
-import * as Core from "@openremote/core";
-import { getRealm } from '../util';
+import { getRealm, Theme } from '../util';
 
 interface BreadcrumbPart {
     path: string;
@@ -24,7 +23,7 @@ export class BreadcrumbNav extends LitElement {
       }
 
       a {
-        color: var(--or-app-color4, ${unsafeCSS(Core.DefaultColor4)});
+        color: var(--or-app-color4, ${unsafeCSS(Theme.color4)});
         text-decoration: none;
         display: inline-flex;
         align-items: center;
@@ -34,7 +33,7 @@ export class BreadcrumbNav extends LitElement {
       }
 
       a:hover {
-        color: var(--or-app-color3, ${unsafeCSS(Core.DefaultColor3)}); 
+        color: var(--or-app-color3, ${unsafeCSS(Theme.color3)}); 
       }
 
       span[aria-current="page"] {

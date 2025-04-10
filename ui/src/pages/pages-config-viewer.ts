@@ -1,14 +1,13 @@
 import { css, html, LitElement } from "lit";
-import { state, customElement, property } from "lit/decorators.js";
+import { customElement, property } from "lit/decorators.js";
 import { ProphetModelConfig, ProphetSeasonalityModeEnum } from "../services/models";
 import { ApiService } from "../services/api-service";
 import { RouterLocation } from "@vaadin/router";
 import "@openremote/or-icon";
 import "@openremote/or-panel";
-import * as Core from "@openremote/core";
 import { unsafeCSS } from "lit";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
-
+import { Theme } from "../util";
 
 
 enum TimeDurationUnit {
@@ -30,7 +29,7 @@ export class PageConfigViewer extends LitElement {
             :host {
                 --or-panel-background-color: #fff;
                 --or-panel-heading-text-transform: uppercase;
-                --or-panel-heading-color: var(--or-app-color3, ${unsafeCSS(Core.DefaultColor3)});
+                --or-panel-heading-color: var(--or-app-color3, ${unsafeCSS(Theme.color3)});
                 --or-panel-heading-font-size: 14px;
             }
 
@@ -61,21 +60,22 @@ export class PageConfigViewer extends LitElement {
                 max-width: 300px;
             }
 
-            or-mwc-input[type="switch"] {
+            or-mwc-input[type="checkbox"] {
                 flex: none;
-             
             }
 
-            #config-name {
-                min-width: 400px;
-            }
-
-            #config-header {
+            .config-header {
                 width: 100%;
                 display: flex;
                 flex-direction: row;
                 align-items: center;
                 justify-content: space-between;
+            }
+
+            .config-header-name {
+                display: flex;
+                width: 100%;
+                gap: 20px;
             }
         `;
     }
@@ -101,7 +101,7 @@ export class PageConfigViewer extends LitElement {
         const match = (/PT(\d+)([HM])/).exec(duration);
         return match ? match[2] : null;
     }
-    
+
     // Extract the number from the Pandas Offset string
     getNumberFromPandasOffset(offset: string): number | null {
         const match = (/(\d+)(min|h)/).exec(offset);
@@ -125,7 +125,7 @@ export class PageConfigViewer extends LitElement {
         return this.loadConfig();
     }
 
-   
+
     private async loadConfig() {
         if (!this.configId) {
             this.loading = false;
@@ -155,7 +155,7 @@ export class PageConfigViewer extends LitElement {
         const name = target.name;
 
         // handle checkboxes
-        if (name === "daily_seasonality" || name === "weekly_seasonality" || name === "yearly_seasonality") {
+        if (name === "daily_seasonality" || name === "weekly_seasonality" || name === "yearly_seasonality" || name === "enabled") {
             value = (target as HTMLInputElement).checked;
             return;
         }
@@ -165,9 +165,10 @@ export class PageConfigViewer extends LitElement {
             ...this.formData,
             [name]: value
         };
+    }
 
-        
-
+    handleAddRegressor() {
+        console.log("add regressor");
     }
 
     protected render() {
@@ -175,18 +176,24 @@ export class PageConfigViewer extends LitElement {
             return html`<div>Loading config details...</div>`;
         }
 
-        if (!this.modelConfig?.id) {
-            return html`<div>Creating new config</div>`;
-        }
-
         return html`
             <form id="config-form" class="config-viewer">
-                <div id="config-header">
-                    <or-mwc-input name="name" outlined type="${InputType.TEXT}" label="Model Name" @or-mwc-input-changed="${this.onInput}"
-                                  value="${this.formData.name}" required minlength="1" maxlength="255"
-                    ></or-mwc-input>
-                    <div id="config-header-controls">
-                        <or-mwc-input type="${InputType.BUTTON}" id="save-btn" label="save" raised"></or-mwc-input>
+                <div class="config-header">
+
+                    <div class="config-header-name">
+                        <or-mwc-input name="name" focused outlined type="${InputType.TEXT}" label="Model Name" @or-mwc-input-changed="${this.onInput}"
+                                    value="${this.formData.name}" required minlength="1" maxlength="255"
+                        ></or-mwc-input>
+
+
+                        <!-- enabled -->
+                        <or-mwc-input class="enabled-switch" type="${InputType.CHECKBOX}" name="enabled" @or-mwc-input-changed="${this.onInput}"
+                                    label="Enabled" value="${this.formData.enabled}" required></or-mwc-input>
+
+                    </div>
+
+                    <div class="config-header-controls">
+                        <or-mwc-input type="${InputType.BUTTON}" id="save-btn" label="save" raised></or-mwc-input>
                     </div>
                 </div>
 
@@ -249,13 +256,13 @@ export class PageConfigViewer extends LitElement {
                             <or-mwc-input type="${InputType.SELECT}" .options="${[[ProphetSeasonalityModeEnum.ADDITIVE, "Additive"], [ProphetSeasonalityModeEnum.MULTIPLICATIVE, "Multiplicative"]]}" name="seasonality_mode" @or-mwc-input-changed="${this.onInput}"
                                 label="Seasonality mode" value="${this.formData.seasonality_mode}" required></or-mwc-input>
                             <!-- daily_seasonality -->
-                            <or-mwc-input type="${InputType.SWITCH}" name="daily_seasonality" @or-mwc-input-changed="${this.onInput}"
+                            <or-mwc-input type="${InputType.CHECKBOX}" name="daily_seasonality" @or-mwc-input-changed="${this.onInput}"
                                 label="Daily seasonality" value="${this.formData.daily_seasonality}" required></or-mwc-input>
                             <!-- weekly_seasonality -->
-                            <or-mwc-input type="${InputType.SWITCH}" name="weekly_seasonality" @or-mwc-input-changed="${this.onInput}"
+                            <or-mwc-input type="${InputType.CHECKBOX}" name="weekly_seasonality" @or-mwc-input-changed="${this.onInput}"
                                 label="Weekly seasonality" value="${this.formData.weekly_seasonality}" required></or-mwc-input>
                             <!-- yearly_seasonality -->
-                            <or-mwc-input  type="${InputType.SWITCH}"  name="yearly_seasonality" @or-mwc-input-changed="${this.onInput}"
+                            <or-mwc-input  type="${InputType.CHECKBOX}"  name="yearly_seasonality" @or-mwc-input-changed="${this.onInput}"
                                     label="Yearly seasonality" value="${this.formData.yearly_seasonality}" required></or-mwc-input>
                         </div>
                     </div>
@@ -263,6 +270,11 @@ export class PageConfigViewer extends LitElement {
 
                 <!-- Regressors, these will be dynamic based on the model type -->
                 <or-panel heading="REGRESSOR">
+                    <div class="column">
+                        <div class="row">
+                            <or-mwc-input type="${InputType.BUTTON}" icon="plus" label="add regressor" @click="${this.handleAddRegressor}"></or-mwc-input>
+                        </div>
+                    </div>
                 </or-panel>
             </form>
                 

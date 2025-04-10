@@ -3,10 +3,9 @@ import { customElement, property } from "lit/decorators.js";
 import { Asset, ModelConfig } from "../services/models";
 import { Router } from '@vaadin/router';
 import "../components/configs-table";
-import * as Core from "@openremote/core";
 import { unsafeCSS } from "lit";
 import "@openremote/or-panel";
-import { getRealm } from "../util";
+import { getRealm, Theme } from "../util";
 import { ApiService } from "../services/api-service";
 import "../components/loading-spinner";
 import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
@@ -38,7 +37,7 @@ export class PageConfigList extends LitElement {
                 flex-direction: row;
                 align-items: center;
                 gap: 4px;
-                --or-icon-fill: var(--or-app-color3, ${unsafeCSS(Core.DefaultColor4)});
+                --or-icon-fill: var(--or-app-color3, ${unsafeCSS(Theme.color3)});
             }
             .title {
                 font-size: 18px;
@@ -46,7 +45,7 @@ export class PageConfigList extends LitElement {
                 display: flex;
                 flex-direction: row;
                 align-items: center;
-                color: var(--or-app-color3, ${unsafeCSS(Core.DefaultColor3)});
+                color: var(--or-app-color3, ${unsafeCSS(Theme.color3)});
             }
         `;
     }

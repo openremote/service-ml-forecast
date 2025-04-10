@@ -5,6 +5,7 @@ import {
     OrIconSet,
 } from "@openremote/or-icon";
 import { html } from "lit";
+import * as Core from "@openremote/core";
 
 /**
  * Get the realm from the path
@@ -49,3 +50,20 @@ export function setupORIcons() {
     IconSets.addIconSet("mdi", createMdiIconSet());
     IconSets.addIconSet("or", createSvgIconSet(OrIconSet.size, OrIconSet.icons));
 }
+
+
+// TODO: Get colors from OR so we can use the managers theme
+export const Theme = {
+    color1: Core.DefaultColor1,
+    color2: Core.DefaultColor2,
+    color3: Core.DefaultColor3,
+    color4: Core.DefaultColor4,
+    color5: Core.DefaultColor5,
+    color6: Core.DefaultColor6,
+    color7: Core.DefaultColor7,
+    color8: Core.DefaultColor8,
+    color9: Core.DefaultColor9,
+    color10: Core.DefaultColor10,
+    color11: Core.DefaultColor11,
+}
+
