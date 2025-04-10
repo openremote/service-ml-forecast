@@ -3,13 +3,17 @@ import "./pages/pages-config-list";
 import "./pages/pages-config-viewer";
 import "./components/breadcrumb";
 import { html, render } from 'lit';
-import { setupORIcons } from './util';
+import { setRealmTheme, setupORIcons } from './util';
 
 const outlet = document.querySelector('#outlet') as HTMLElement;
 const router = new Router(outlet);
 
 // Important, these setup the MDI icons for the or-icon component
 setupORIcons();
+
+
+// Set theme to body
+await setRealmTheme();
 
 // Define the routes
 const routes = [

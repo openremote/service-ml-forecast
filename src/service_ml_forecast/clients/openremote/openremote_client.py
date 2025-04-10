@@ -28,6 +28,7 @@ from service_ml_forecast.clients.openremote.models import (
     AssetDatapoint,
     AssetDatapointPeriod,
     AssetDatapointQuery,
+    ManagerConfig,
 )
 
 
@@ -318,4 +319,27 @@ class OpenRemoteClient:
                 return [Asset(**asset) for asset in assets]
             except (httpx.HTTPStatusError, httpx.ConnectError) as e:
                 self.logger.error(f"Error retrieving assets: {e}")
+                return None
+
+    def retrieve_manager_config(self) -> ManagerConfig | None:
+        """Retrieve the configuration of the manager.
+
+        Args:
+            realm: The realm to retrieve the configuration from.
+
+        Returns:
+            RealmConfig | None: The configuration of the realm or None
+        """
+
+        url = f"{self.openremote_url}/api/master/configuration/manager"
+        request = self.__build_request("GET", url)
+
+        with httpx.Client() as client:
+            try:
+                response = client.send(request)
+                response.raise_for_status()
+                return ManagerConfig(**response.json())
+
+            except (httpx.HTTPStatusError, httpx.ConnectError) as e:
+                self.logger.error(f"Error retrieving manager config: {e}")
                 return None

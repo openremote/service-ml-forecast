@@ -1,7 +1,7 @@
-import { LitElement, css, html, unsafeCSS } from 'lit';
+import { LitElement, css, html } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { Router, RouterLocation } from '@vaadin/router';
-import { getRealm, Theme } from '../util';
+import { getRealm } from '../util';
 
 interface BreadcrumbPart {
     path: string;
@@ -23,7 +23,7 @@ export class BreadcrumbNav extends LitElement {
       }
 
       a {
-        color: var(--or-app-color4, ${unsafeCSS(Theme.color4)});
+        color: var(--or-app-color4);
         text-decoration: none;
         display: inline-flex;
         align-items: center;
@@ -33,7 +33,7 @@ export class BreadcrumbNav extends LitElement {
       }
 
       a:hover {
-        color: var(--or-app-color3, ${unsafeCSS(Theme.color3)}); 
+        color: var(--or-app-color3); 
       }
 
       span[aria-current="page"] {

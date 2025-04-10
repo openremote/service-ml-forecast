@@ -1,11 +1,10 @@
 import { html, LitElement, css } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import { customElement, state } from "lit/decorators.js";
 import { Asset, ModelConfig } from "../services/models";
 import { Router } from '@vaadin/router';
 import "../components/configs-table";
-import { unsafeCSS } from "lit";
 import "@openremote/or-panel";
-import { getRealm, Theme } from "../util";
+import { getRealm } from "../util";
 import { ApiService } from "../services/api-service";
 import "../components/loading-spinner";
 import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
@@ -37,7 +36,7 @@ export class PageConfigList extends LitElement {
                 flex-direction: row;
                 align-items: center;
                 gap: 4px;
-                --or-icon-fill: var(--or-app-color3, ${unsafeCSS(Theme.color3)});
+                --or-icon-fill: var(--or-app-color3);
             }
             .title {
                 font-size: 18px;
@@ -45,7 +44,7 @@ export class PageConfigList extends LitElement {
                 display: flex;
                 flex-direction: row;
                 align-items: center;
-                color: var(--or-app-color3, ${unsafeCSS(Theme.color3)});
+                color: var(--or-app-color3);
             }
         `;
     }
@@ -130,7 +129,7 @@ export class PageConfigList extends LitElement {
                 <div class="config-header">
                     <div class="title-container">
                         <or-icon icon="chart-bell-curve"></or-icon>
-                    <span class="title">Forecast Configurations - (DEBUG: ${getRealm(window.location.pathname)})</span>
+                    <span class="title">Forecast Configurations</span>
                 </div>
                 <or-mwc-input type="${InputType.BUTTON}" icon="plus" label="configure new forecast" @click="${this.handleAddConfig}"></or-mwc-input>
             </div>

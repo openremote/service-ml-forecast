@@ -17,7 +17,7 @@
 
 import logging
 
-from service_ml_forecast.clients.openremote.models import Asset, AssetDatapoint
+from service_ml_forecast.clients.openremote.models import Asset, AssetDatapoint, RealmConfig
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 from service_ml_forecast.common.time_util import TimeUtil
 from service_ml_forecast.models.feature_data_wrappers import FeatureDatapoints, ForecastFeatureSet, TrainingFeatureSet
@@ -181,3 +181,21 @@ class OpenRemoteService:
             return []
 
         return assets
+
+    def get_realm_config(self, realm: str) -> RealmConfig | None:
+        """Get the realm configuration for a given realm.
+
+        Returns:
+            The realm configuration or None if the realm configuration could not be retrieved.
+        """
+        config = self.client.retrieve_manager_config()
+
+        if config is None:
+            logger.warning("Unable to retrieve manager config")
+            return None
+
+        if realm not in config.realms:
+            logger.warning(f"Realm {realm} not found in manager config")
+            return None
+
+        return config.realms[realm]

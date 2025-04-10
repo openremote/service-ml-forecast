@@ -196,3 +196,21 @@ export interface ProphetModelConfig extends BaseModelConfig {
  */
 export type ModelConfig = ProphetModelConfig; // Add other config types here with | (e.g., | OtherModelConfig)
 
+/**
+ * Represents the configuration of a realm.
+ * Corresponds to Python class RealmConfig.
+ */
+export interface RealmConfig {
+  /**
+   * Styles of the realm.
+   */
+  styles: string;
+  /**
+   * Logo of the realm.
+   */
+  logo: string;
+  /**
+   * Logo of the realm for mobile devices.
+   */
+  logoMobile: string;
+}

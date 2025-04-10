@@ -17,9 +17,9 @@
 
 from http.client import OK
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
-from service_ml_forecast.clients.openremote.models import Asset
+from service_ml_forecast.clients.openremote.models import Asset, RealmConfig
 from service_ml_forecast.dependencies import get_openremote_service
 from service_ml_forecast.services.openremote_service import OpenRemoteService
 
@@ -55,3 +55,22 @@ async def get_assets_by_ids(
 ) -> list[Asset]:
     ids_list = [asset_id.strip() for asset_id in ids_str.split(",") if asset_id.strip()]
     return openremote_service.get_assets_by_ids(ids_list, realm)
+
+
+# e.g. /openremote/realm/config/master
+@router.get(
+    "/realm/config/{realm}",
+    summary="Retrieve the configuration of a realm",
+    responses={
+        OK: {"description": "Realm configuration has been retrieved"},
+    },
+)
+async def get_realm_config(
+    realm: str, openremote_service: OpenRemoteService = Depends(get_openremote_service)
+) -> RealmConfig:
+    config = openremote_service.get_realm_config(realm)
+
+    if config is None:
+        raise HTTPException(status_code=404, detail="Realm configuration not found")
+
+    return config

@@ -3,9 +3,8 @@ import { css, html, TemplateResult } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { Asset, ModelConfig } from "../services/models";
 import "@openremote/or-mwc-components/or-mwc-input";
-import { getRealm, Theme } from "../util";
+import { getRealm } from "../util";
 import { Router } from "@vaadin/router";
-import { unsafeCSS } from "lit";
 import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
 
 
@@ -58,19 +57,19 @@ export class ConfigsTable extends OrMwcTable {
 
             
                 .state-label.enabled {
-                    border: 1px solid var(--or-app-color3, ${unsafeCSS(Theme.color4)});
-                    color: var(--or-app-color3, ${unsafeCSS(Theme.color4)});
+                    border: 1px solid var(--or-app-color3);
+                    color: var(--or-app-color3);
                 }
 
 
                 .state-label.disabled {
-                    border: 1px solid var(--or-app-color3, ${unsafeCSS(Theme.color3)});
-                    color: var(--or-app-color3, ${unsafeCSS(Theme.color3)});
+                    border: 1px solid var(--or-app-color3);
+                    color: var(--or-app-color3);
                     opacity: 0.5;
                 }
 
                 .warning {
-                    color: var(--or-app-color6, ${unsafeCSS(Theme.color6)});
+                    color: var(--or-app-color6);
                     display: flex;
                     align-items: center;
                     gap: 5px;

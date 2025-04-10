@@ -73,3 +73,17 @@ class AssetDatapointQuery(BaseModel):
     toTimestamp: int
     fromTime: str = ""
     toTime: str = ""
+
+
+class RealmConfig(BaseModel):
+    """Realm configuration."""
+
+    styles: str | None = None
+    logo: str | None = None
+    logoMobile: str | None = None
+
+
+class ManagerConfig(BaseModel):
+    """Structure containing configurations for all realms."""
+
+    realms: dict[str, RealmConfig]

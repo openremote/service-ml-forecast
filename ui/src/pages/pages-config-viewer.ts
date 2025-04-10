@@ -5,9 +5,7 @@ import { ApiService } from "../services/api-service";
 import { RouterLocation } from "@vaadin/router";
 import "@openremote/or-icon";
 import "@openremote/or-panel";
-import { unsafeCSS } from "lit";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
-import { Theme } from "../util";
 
 
 enum TimeDurationUnit {
@@ -29,7 +27,7 @@ export class PageConfigViewer extends LitElement {
             :host {
                 --or-panel-background-color: #fff;
                 --or-panel-heading-text-transform: uppercase;
-                --or-panel-heading-color: var(--or-app-color3, ${unsafeCSS(Theme.color3)});
+                --or-panel-heading-color: var(--or-app-color3);
                 --or-panel-heading-font-size: 14px;
             }
 
@@ -236,7 +234,7 @@ export class PageConfigViewer extends LitElement {
 
                     </div>
 
-                    <!-- Note: I know this is odd, but the disable state would not update properly via the disabled attribute -->
+                    <!-- Note: I know this is odd, but the disable state would not update properly via the disabled/.disabled/?disabled attribute -->
                     <div class="config-header-controls">
                         ${this.isValid ? 
                         html`<or-mwc-input type="${InputType.BUTTON}" id="save-btn" label="save" raised></or-mwc-input>` 
