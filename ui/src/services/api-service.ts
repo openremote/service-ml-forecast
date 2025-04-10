@@ -37,9 +37,12 @@ export class ApiService {
     }
 
     async updateModelConfig(modelConfig: ModelConfig) : Promise<void> {
-        const response = await fetch(`${this.baseUrl}/model/config/${modelConfig.id}`, {
+        const response = await fetch(`${this.baseUrl}/model/config`, {
             method: "PUT",
             body: JSON.stringify(modelConfig),
+            headers: {
+                "Content-Type": "application/json",
+            },
         });
         return response.json();
     }
@@ -48,6 +51,9 @@ export class ApiService {
         const response = await fetch(`${this.baseUrl}/model/config`, {
             method: "POST",
             body: JSON.stringify(modelConfig),
+            headers: {
+                "Content-Type": "application/json",
+            },
         });
         return response.json();
     }

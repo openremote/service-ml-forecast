@@ -105,7 +105,6 @@ export class PageConfigViewer extends LitElement {
         seasonality_mode: ProphetSeasonalityModeEnum.ADDITIVE,
     }
 
-
     // Extract the number from the ISO 8601 Duration string
     getNumberFromDuration(duration: string): number | null {
         const match = (/PT(\d+)([HM])/).exec(duration);
@@ -130,13 +129,11 @@ export class PageConfigViewer extends LitElement {
         return match ? match[2] : null;
     }
 
-
     @state()
     private loading: boolean = true;
 
     @state()
     private isValid: boolean = false;
-
 
     private readonly apiService: ApiService = new ApiService();
 
@@ -151,7 +148,6 @@ export class PageConfigViewer extends LitElement {
             this.loading = false;
             return;
         }
-
         try {
             this.modelConfig = await this.apiService.getModelConfig(this.configId);
             this.formData = this.modelConfig;
@@ -190,9 +186,22 @@ export class PageConfigViewer extends LitElement {
         };
     }
 
+    // TODO: Better error handling
+    async onSave() {
+        let isExistingConfig = this.modelConfig !== null;
+
+        // Update the config
+        if (isExistingConfig) {
+            await this.apiService.updateModelConfig(this.formData);
+        } 
+        // Create a new config
+        else {
+            await this.apiService.createModelConfig(this.formData);
+        }
+    }
+    
     isFormValid() {
         const inputs = this.shadowRoot?.querySelectorAll('or-mwc-input') as NodeListOf<HTMLInputElement>;
-
         // Iterate over all inputs and check if they are valid via HTML5 validation
         if (inputs) {
             return Array.from(inputs).every(input => input.checkValidity());
@@ -200,10 +209,8 @@ export class PageConfigViewer extends LitElement {
         return false;
     }
     
-    updated(changedProperties: PropertyValues) {
-        if (changedProperties.has('formData')) {
-            this.isValid = this.isFormValid();
-        }
+    updated(_changedProperties: PropertyValues) {
+        this.isValid = this.isFormValid();
     }
 
 
@@ -236,7 +243,7 @@ export class PageConfigViewer extends LitElement {
                     <!-- Note: I know this is odd, but the disable state would not update properly via the disabled/.disabled/?disabled attribute -->
                     <div class="config-header-controls">
                         ${this.isValid ? 
-                        html`<or-mwc-input type="${InputType.BUTTON}" id="save-btn" label="save" raised></or-mwc-input>` 
+                        html`<or-mwc-input type="${InputType.BUTTON}" id="save-btn" label="save" raised @click="${this.onSave}"></or-mwc-input>` 
                         : 
                         html`<or-mwc-input type="${InputType.BUTTON}" id="save-btn" label="save" raised disabled></or-mwc-input>`}
                     </div>
@@ -280,9 +287,13 @@ export class PageConfigViewer extends LitElement {
                 <or-panel heading="FORECAST TARGET">
                     <div class="column">
                         <div class="row">
-                            <or-mwc-input type="${InputType.TEXT}" name="target.asset_id" label="Asset" .value="${this.formData.target.asset_id}" required></or-mwc-input>
+                            <or-mwc-input type="${InputType.TEXT}" name="target.asset_id"
+                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onInput(e)}"
+                                label="Asset" .value="${this.formData.target.asset_id}" required></or-mwc-input>
                     
-                            <or-mwc-input type="${InputType.TEXT}" name="target.attribute_name" label="Attribute" .value="${this.formData.target.attribute_name}" required></or-mwc-input>
+                            <or-mwc-input type="${InputType.TEXT}" name="target.attribute_name"
+                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onInput(e)}"
+                            label="Attribute" .value="${this.formData.target.attribute_name}" required></or-mwc-input>
                      
                             <or-mwc-input type="${InputType.NUMBER}" name="target.cutoff_timestamp" label="Use datapoints since" .value="${this.formData.target.cutoff_timestamp}" required></or-mwc-input>
                         </div>
