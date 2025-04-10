@@ -7,15 +7,22 @@ name = "service-ml-forecast"
 version = "0.1.0"
 description = "Machine Learning Forecast Service"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.13"
 dependencies = [
     "fastapi>=0.115.11",
     "uvicorn>=0.34.0",
     "pyyaml>=6.0.2",
     "tomli>=2.2.1",
     "httpx>=0.28.1",
+    "apscheduler>=3.11.0",
     "pydantic>=2.10.6",
     "pydantic-settings>=2.8.1",
+    "prophet>=1.1.6",
+    "plotly>=6.0.1",
+    "pandas>=2.2.3",
+    "numpy>=2.2.4",
+    "pyzmq>=26.3.0",
+    "isodate>=0.7.2",
 ]
 
 [dependency-groups]
@@ -26,6 +33,7 @@ dev = [
     "ruff>=0.11.0",
     "build>=1.2.2",
     "respx>=0.22.0",
+    "pandas-stubs>=2.2.3",
 ]
 
 [project.urls]
@@ -38,9 +46,10 @@ package-dir = {"service_ml_forecast" = "src/service_ml_forecast", "scripts" = "s
 
 [tool.ruff]
 line-length = 120
-target-version = "py310"
+target-version = "py313"
 fix = true
 unsafe-fixes = false
+indent-width = 4
 
 [tool.ruff.lint]
 select = [
@@ -58,14 +67,19 @@ select = [
     "PL",    # pylint
     "RUF",   # ruff-specific rules
 ]
+ignore = ["PLR0913"]
 fixable = ["ALL"]
 
 [tool.ruff.format]
 line-ending = "auto"
 quote-style = "double"
+docstring-code-format = true
+docstring-code-line-length = "dynamic"
+indent-style = "space"
+
 
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.13"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
@@ -74,10 +88,11 @@ check_untyped_defs = true
 disallow_untyped_decorators = true
 no_implicit_optional = true
 warn_redundant_casts = true
-warn_unused_ignores = true
+warn_unused_ignores = false
 warn_no_return = true
 warn_unreachable = true
 strict_optional = true
+strict = true
 ignore_missing_imports = true
 
 [tool.ruff.lint.isort]
@@ -87,6 +102,7 @@ combine-as-imports = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = "test_*.py"
+filterwarnings = ["ignore:.*"]
 
 [project.scripts]
 service_ml_forecast = "service_ml_forecast.main:app"

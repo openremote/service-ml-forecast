@@ -1,0 +1,50 @@
+# Copyright 2025, OpenRemote Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+from typing import Any, cast
+
+from service_ml_forecast.ml.model_provider import ModelProvider
+from service_ml_forecast.ml.prophet_model_provider import ProphetModelProvider
+from service_ml_forecast.models.model_config import ModelConfig
+from service_ml_forecast.models.model_type import ModelTypeEnum
+
+
+class ModelProviderFactory:
+    """Factory for creating ML model providers based on the provided model config."""
+
+    @staticmethod
+    def create_provider(
+        config: ModelConfig,
+    ) -> ModelProvider[Any]:
+        """Create a model provider instance based on the model config type.
+
+        Args:
+            config: The model configuration.
+
+        Returns:
+            The model provider instance.
+        """
+        if config.type == ModelTypeEnum.PROPHET:
+            try:
+                return cast("ModelProvider[Any]", ProphetModelProvider(config=config))
+            except Exception as e:
+                raise ValueError(
+                    f"Failed to create Prophet model provider for config {config.id}. "
+                    f"Error: {e!s}. Config details: {config.model_dump_json()}"
+                ) from e
+
+        raise ValueError(f"Unsupported model type: {config.type}. Supported types: {[t.value for t in ModelTypeEnum]}")

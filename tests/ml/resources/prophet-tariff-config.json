@@ -1,0 +1,23 @@
+{
+    "id": "d3c119a6-1018-4ebd-932b-a509eb7ab841",
+    "realm": "master",
+    "name": "Tariff Forecast",
+    "enabled": true,
+    "type": "prophet",
+    "target": {
+      "asset_id": "44ORIhkDVAlT97dYGUD9l9",
+      "attribute_name": "tariff",
+      "cutoff_timestamp": 1716153600000
+    },
+    "forecast_interval": "PT120S",
+    "training_interval": "PT60S",
+    "forecast_periods": 7,
+    "forecast_frequency": "1h",
+    "regressors": [
+      {
+        "asset_id": "44ORIhkDVAlT97dYGUD9b8",
+        "attribute_name": "windSpeed",
+        "cutoff_timestamp": 1716153600000
+      }
+    ]
+}

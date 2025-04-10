@@ -24,31 +24,31 @@ LOGGING_CONFIG = {
         "standard": {
             "format": "%(asctime)s %(levelname)s [%(name)s:%(lineno)d] - %(message)s",
             "datefmt": "%Y-%m-%d %H:%M:%S",
-        }
+        },
     },
     "handlers": {
         "default": {
-            "level": ENV.LOG_LEVEL,
+            "level": ENV.ML_LOG_LEVEL,
             "formatter": "standard",
             "class": "logging.StreamHandler",
             "stream": "ext://sys.stdout",
-        }
+        },
     },
     "loggers": {
         "": {
             "handlers": ["default"],
-            "level": ENV.LOG_LEVEL,
+            "level": ENV.ML_LOG_LEVEL,
             "propagate": False,
         },
-        "uvicorn": {"handlers": ["default"], "level": ENV.LOG_LEVEL, "propagate": False},
+        "uvicorn": {"handlers": ["default"], "level": ENV.ML_LOG_LEVEL, "propagate": False},
         "uvicorn.error": {
             "handlers": ["default"],
-            "level": ENV.LOG_LEVEL,
+            "level": ENV.ML_LOG_LEVEL,
             "propagate": False,
         },
         "uvicorn.access": {
             "handlers": ["default"],
-            "level": ENV.LOG_LEVEL,
+            "level": ENV.ML_LOG_LEVEL,
             "propagate": False,
         },
     },

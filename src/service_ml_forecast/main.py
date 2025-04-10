@@ -24,30 +24,25 @@ from fastapi.concurrency import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 
 from service_ml_forecast import __app_info__
+from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 from service_ml_forecast.config import ENV
 from service_ml_forecast.logging_config import LOGGING_CONFIG
+from service_ml_forecast.services.model_scheduler import ModelScheduler
+from service_ml_forecast.services.openremote_data_service import OpenRemoteDataService
 
 # Load the logging configuration
 logging.config.dictConfig(LOGGING_CONFIG)
 
 logger = logging.getLogger(__name__)
 
-if __app_info__ is None:
-    logger.exception("App initialization failed: Failed to read app info")
-    raise RuntimeError("App initialization failed: Failed to read app info")
-
 
 # FastAPI Lifecycle, handles startup and shutdown tasks
 @asynccontextmanager
-async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
-    # Startup tasks
-    logger.info("Starting application")
-    logger.info("Application details: %s", __app_info__)
+async def lifespan(_app: FastAPI) -> AsyncGenerator[None]:
+    logger.info("FastAPI instance starting")
 
-    yield
-
-    # Shutdown tasks
-    logger.info("Shutting down application")
+    yield  # yield to the FastAPI app
+    logger.info("FastAPI instance shutting down")
 
 
 app = FastAPI(
@@ -60,7 +55,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-if not ENV.PUBLISH_DOCS:
+if not ENV.ML_PUBLISH_DOCS:
     app.docs_url = None
     app.redoc_url = None
     app.openapi_url = None
@@ -75,6 +70,23 @@ app.add_middleware(
 )
 
 
+def initialize_background_services() -> None:
+    """Initialize background services, these run in the background and are not part of the FastAPI lifecycle"""
+    # Setup the ML Model Scheduler
+    openremote_client = OpenRemoteClient(
+        openremote_url=ENV.ML_OR_URL,
+        keycloak_url=ENV.ML_OR_KEYCLOAK_URL,
+        service_user=ENV.ML_OR_SERVICE_USER,
+        service_user_secret=ENV.ML_OR_SERVICE_USER_SECRET,
+    )
+    or_data_service = OpenRemoteDataService(openremote_client)
+    model_scheduler = ModelScheduler(or_data_service)
+    model_scheduler.start()
+
+
 if __name__ == "__main__":
+    logger.info("Application details: %s", __app_info__)
+
+    initialize_background_services()
     reload = ENV.is_development()
     uvicorn.run("service_ml_forecast.main:app", host="0.0.0.0", port=8000, reload=reload)

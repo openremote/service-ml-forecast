@@ -21,6 +21,16 @@ import tomli
 from pydantic import BaseModel
 
 
+def find_project_root(start_path: Path = Path(__file__)) -> Path:
+    """Find the project root by looking for marker files."""
+    current = start_path.parent
+    while current != current.parent:
+        if any((current / marker).exists() for marker in ["pyproject.toml", ".env"]):
+            return current
+        current = current.parent
+    raise RuntimeError("Could not find project root")
+
+
 class AppInfo(BaseModel):
     """Application information."""
 
@@ -29,17 +39,14 @@ class AppInfo(BaseModel):
     version: str
 
 
-def get_app_info() -> AppInfo | None:
+def get_app_info() -> AppInfo:
     """Read app info (name, description, version) from pyproject.toml file."""
-    try:
-        pyproject_path = Path(__file__).parents[2] / "pyproject.toml"
+    pyproject_path = find_project_root() / "pyproject.toml"
 
-        with open(pyproject_path, "rb") as f:
-            pyproject_data = tomli.load(f)
+    with open(pyproject_path, "rb") as f:
+        pyproject_data = tomli.load(f)
 
-        return AppInfo(**pyproject_data["project"])
-    except (FileNotFoundError, KeyError, tomli.TOMLDecodeError):
-        return None
+    return AppInfo(**pyproject_data["project"])
 
 
 __app_info__ = get_app_info()

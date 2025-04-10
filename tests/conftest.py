@@ -1,9 +1,24 @@
+import json
+import logging.config
+import shutil
+import tempfile
+from collections.abc import Generator
 from http import HTTPStatus
+from pathlib import Path
 
 import pytest
 import respx
 
+from service_ml_forecast.clients.openremote.models import AssetDatapoint
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
+from service_ml_forecast.config import ENV
+from service_ml_forecast.logging_config import LOGGING_CONFIG
+from service_ml_forecast.models.model_config import ProphetModelConfig
+from service_ml_forecast.services.model_config_service import ModelConfigService
+from service_ml_forecast.services.model_storage_service import ModelStorageService
+from service_ml_forecast.services.openremote_data_service import OpenRemoteDataService
+
+logging.config.dictConfig(LOGGING_CONFIG)
 
 # Common test data used across multiple tests
 TEST_ASSET_ID = "44ORIhkDVAlT97dYGUD9n5"
@@ -18,6 +33,20 @@ MOCK_SERVICE_USER_SECRET = "service_user_secret"
 MOCK_ACCESS_TOKEN = "mock_access_token"
 MOCK_TOKEN_EXPIRY_SECONDS = 60
 
+# Create a temporary directory for tests
+TEST_TMP_DIR: Path = Path(tempfile.mkdtemp(prefix="service_ml_forecast_test_"))
+
+ENV.ML_BASE_DIR = TEST_TMP_DIR
+ENV.ML_MODELS_DIR = TEST_TMP_DIR / "models"
+ENV.ML_CONFIGS_DIR = TEST_TMP_DIR / "configs"
+
+
+# Clean up temporary directory after each test call
+@pytest.fixture(scope="function", autouse=True)
+def cleanup_test_tmp_dir() -> Generator[None]:
+    yield
+    shutil.rmtree(TEST_TMP_DIR, ignore_errors=True)
+
 
 @pytest.fixture
 def openremote_client() -> OpenRemoteClient | None:
@@ -26,10 +55,10 @@ def openremote_client() -> OpenRemoteClient | None:
 
     try:
         client = OpenRemoteClient(
-            openremote_url=ENV.OPENREMOTE_URL,
-            keycloak_url=ENV.OPENREMOTE_KEYCLOAK_URL,
-            service_user=ENV.OPENREMOTE_SERVICE_USER,
-            service_user_secret=ENV.OPENREMOTE_SERVICE_USER_SECRET,
+            openremote_url=ENV.ML_OR_URL,
+            keycloak_url=ENV.ML_OR_KEYCLOAK_URL,
+            service_user=ENV.ML_OR_SERVICE_USER,
+            service_user_secret=ENV.ML_OR_SERVICE_USER_SECRET,
         )
         if not client.health_check():
             pytest.skip(reason="Unable to reach the OpenRemote Manager API")
@@ -53,7 +82,7 @@ def mock_openremote_client() -> OpenRemoteClient | None:
                     "token_type": "Bearer",
                     "expires_in": MOCK_TOKEN_EXPIRY_SECONDS,
                 },
-            )
+            ),
         )
 
         client = OpenRemoteClient(
@@ -63,3 +92,53 @@ def mock_openremote_client() -> OpenRemoteClient | None:
             service_user_secret=MOCK_SERVICE_USER_SECRET,
         )
         return client
+
+
+@pytest.fixture
+def config_service() -> ModelConfigService:
+    return ModelConfigService()
+
+
+@pytest.fixture
+def model_storage() -> ModelStorageService:
+    return ModelStorageService()
+
+
+@pytest.fixture
+def prophet_basic_config() -> ProphetModelConfig:
+    config_path = Path(__file__).parent / "ml/resources/prophet-windspeed-config.json"
+    with open(config_path) as f:
+        return ProphetModelConfig(**json.load(f))
+
+
+@pytest.fixture
+def prophet_multi_variable_config() -> ProphetModelConfig:
+    config_path = Path(__file__).parent / "ml/resources/prophet-tariff-config.json"
+    with open(config_path) as f:
+        return ProphetModelConfig(**json.load(f))
+
+
+@pytest.fixture
+def windspeed_mock_datapoints() -> list[AssetDatapoint]:
+    windspeed_data_path = Path(__file__).parent / "ml/resources/mock-datapoints-windspeed.json"
+    with open(windspeed_data_path) as f:
+        datapoints: list[AssetDatapoint] = json.load(f)
+        return datapoints
+
+
+@pytest.fixture
+def tariff_mock_datapoints() -> list[AssetDatapoint]:
+    tariff_data_path = Path(__file__).parent / "ml/resources/mock-datapoints-tariff.json"
+    with open(tariff_data_path) as f:
+        datapoints: list[AssetDatapoint] = json.load(f)
+        return datapoints
+
+
+@pytest.fixture
+def or_data_service(openremote_client: OpenRemoteClient) -> OpenRemoteDataService:
+    return OpenRemoteDataService(openremote_client)
+
+
+@pytest.fixture
+def mock_or_data_service(mock_openremote_client: OpenRemoteClient) -> OpenRemoteDataService:
+    return OpenRemoteDataService(mock_openremote_client)
