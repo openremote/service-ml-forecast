@@ -230,7 +230,7 @@ export class PageConfigViewer extends LitElement {
 
                         <or-mwc-input type="${InputType.CHECKBOX}" name="enabled" 
                                 @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onCheckboxInput(e)}"
-                                label="Enabled" .value="${this.formData.enabled}" required></or-mwc-input>
+                                label="Enabled" .value="${this.formData.enabled}"></or-mwc-input>
 
                     </div>
 
@@ -322,15 +322,15 @@ export class PageConfigViewer extends LitElement {
                             <!-- daily_seasonality -->
                             <or-mwc-input type="${InputType.CHECKBOX}" name="daily_seasonality" 
                                 @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onCheckboxInput(e)}"
-                                label="Daily seasonality" .value="${this.formData.daily_seasonality}" required></or-mwc-input>
+                                label="Daily seasonality" .value="${this.formData.daily_seasonality}"></or-mwc-input>
                             <!-- weekly_seasonality -->
                             <or-mwc-input type="${InputType.CHECKBOX}" name="weekly_seasonality"
                                 @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onCheckboxInput(e)}"
-                                label="Weekly seasonality" .value="${this.formData.weekly_seasonality}" required></or-mwc-input>
+                                label="Weekly seasonality" .value="${this.formData.weekly_seasonality}"></or-mwc-input>
                             <!-- yearly_seasonality -->
                             <or-mwc-input  type="${InputType.CHECKBOX}"  name="yearly_seasonality" 
                                 @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onCheckboxInput(e)}"
-                                label="Yearly seasonality" .value="${this.formData.yearly_seasonality}" required></or-mwc-input>
+                                label="Yearly seasonality" .value="${this.formData.yearly_seasonality}"></or-mwc-input>
                         </div>
                     </div>
                 </or-panel>
