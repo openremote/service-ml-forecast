@@ -49,7 +49,7 @@ def cleanup_test_tmp_dir() -> Generator[None]:
 
 
 @pytest.fixture
-def openremote_client() -> OpenRemoteClient:
+def openremote_client() -> OpenRemoteClient | None:
     """Create an OpenRemote client for testing against a real instance."""
     from service_ml_forecast.config import ENV
 
@@ -70,7 +70,7 @@ def openremote_client() -> OpenRemoteClient:
 
 
 @pytest.fixture
-def mock_openremote_client() -> OpenRemoteClient:
+def mock_openremote_client() -> OpenRemoteClient | None:
     """Create a mock OpenRemote client with mocked authentication."""
     with respx.mock(base_url=MOCK_KEYCLOAK_URL) as respx_mock:
         # Mock the authentication endpoint
