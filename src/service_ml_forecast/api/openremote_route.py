@@ -15,7 +15,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-from http.client import OK
+from http.client import NOT_FOUND, OK
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
@@ -63,6 +63,7 @@ async def get_assets_by_ids(
     summary="Retrieve the configuration of a realm",
     responses={
         OK: {"description": "Realm configuration has been retrieved"},
+        NOT_FOUND: {"description": "Realm configuration not found"},
     },
 )
 async def get_realm_config(
