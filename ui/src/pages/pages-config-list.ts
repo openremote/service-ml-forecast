@@ -1,5 +1,5 @@
 import { html, LitElement, css } from "lit";
-import { customElement, property } from "lit/decorators.js";
+import { customElement, property, state } from "lit/decorators.js";
 import { Asset, ModelConfig } from "../services/models";
 import { Router } from '@vaadin/router';
 import "../components/configs-table";
@@ -53,13 +53,13 @@ export class PageConfigList extends LitElement {
 
     private readonly apiService: ApiService = new ApiService();
 
-    @property({ type: Array })
+    @state()
     private modelConfigs?: ModelConfig[] = [];
 
-    @property({ type: Array })
+    @state()
     private configAssets?: Asset[] = [];
 
-    @property({ type: Boolean })
+    @state()
     private loading: boolean = true;
 
     connectedCallback() {

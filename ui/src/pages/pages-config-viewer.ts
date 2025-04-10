@@ -1,6 +1,6 @@
-import { css, html, LitElement } from "lit";
-import { customElement, property } from "lit/decorators.js";
-import { ProphetModelConfig, ProphetSeasonalityModeEnum } from "../services/models";
+import { css, html, LitElement, PropertyValues } from "lit";
+import { customElement, property, state } from "lit/decorators.js";
+import { ModelTypeEnum, ProphetModelConfig, ProphetSeasonalityModeEnum } from "../services/models";
 import { ApiService } from "../services/api-service";
 import { RouterLocation } from "@vaadin/router";
 import "@openremote/or-icon";
@@ -83,11 +83,28 @@ export class PageConfigViewer extends LitElement {
     @property({ type: String })
     configId?: string;
 
-    @property({ type: Object })
+    @state()
     private modelConfig: ProphetModelConfig | null = null;
 
-    @property({ type: Object })
-    private formData: ProphetModelConfig = new ProphetModelConfig();
+    @state()
+    private formData: ProphetModelConfig = {
+        type: ModelTypeEnum.PROPHET,
+        realm: "",
+        name: "",
+        enabled: true,
+        target: {
+            asset_id: "",
+            attribute_name: "",
+            cutoff_timestamp: 0
+        },
+        forecast_interval: "PT1H",
+        forecast_periods: 48,
+        forecast_frequency: "1h",
+        training_interval: "PT24H",
+        changepoint_range: 0.8,
+        changepoint_prior_scale: 0.05,
+        seasonality_mode: ProphetSeasonalityModeEnum.ADDITIVE,
+    }
 
 
     // Extract the number from the ISO 8601 Duration string
@@ -115,8 +132,12 @@ export class PageConfigViewer extends LitElement {
     }
 
 
-    @property({ type: Boolean })
+    @state()
     private loading: boolean = true;
+
+    @state()
+    private isValid: boolean = false;
+
 
     private readonly apiService: ApiService = new ApiService();
 
@@ -134,17 +155,19 @@ export class PageConfigViewer extends LitElement {
 
         try {
             this.modelConfig = await this.apiService.getModelConfig(this.configId);
-            this.loading = false;
             this.formData = this.modelConfig;
-            console.log(this.formData);
+            this.loading = false;
+            return;
         } catch (err) {
             this.loading = false;
         }
     }
 
     onInput(ev: OrInputChangedEvent) {
-        let value = ev.detail?.value;
+        let value: string | boolean | number | undefined = ev.detail?.value;
         const target = ev.target as HTMLInputElement;
+
+        console.log(target.name, value);
 
         if (!target) {
             return;
@@ -154,18 +177,39 @@ export class PageConfigViewer extends LitElement {
         }
         const name = target.name;
 
-        // handle checkboxes
-        if (name === "daily_seasonality" || name === "weekly_seasonality" || name === "yearly_seasonality" || name === "enabled") {
-            value = (target as HTMLInputElement).checked;
-            return;
-        }
-
-        console.log(name, value);
         this.formData = {
             ...this.formData,
             [name]: value
         };
     }
+
+    onCheckboxInput(ev: OrInputChangedEvent) {
+        let value: boolean = ev.detail?.value;
+        const target = ev.target as HTMLInputElement;
+
+        this.formData = {
+            ...this.formData,
+            [target.name]: value
+        };
+    }
+
+    isFormValid() {
+        const inputs = this.shadowRoot?.querySelectorAll('or-mwc-input') as NodeListOf<HTMLInputElement>;
+
+        // Iterate over all inputs and check if they are valid via HTML5 validation
+        if (inputs) {
+            return Array.from(inputs).every(input => input.checkValidity());
+        }
+        return false;
+    }
+    
+    updated(changedProperties: PropertyValues) {
+        if (changedProperties.has('formData')) {
+            this.isValid = this.isFormValid();
+            console.log(this.isValid);
+        }
+    }
+
 
     handleAddRegressor() {
         console.log("add regressor");
@@ -181,19 +225,23 @@ export class PageConfigViewer extends LitElement {
                 <div class="config-header">
 
                     <div class="config-header-name">
-                        <or-mwc-input name="name" focused outlined type="${InputType.TEXT}" label="Model Name" @or-mwc-input-changed="${this.onInput}"
-                                    value="${this.formData.name}" required minlength="1" maxlength="255"
+                        <or-mwc-input name="name" focused outlined type="${InputType.TEXT}" label="Model Name" 
+                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onInput(e)}"
+                            .value="${this.formData.name}" required minlength="1" maxlength="255"
                         ></or-mwc-input>
 
-
-                        <!-- enabled -->
-                        <or-mwc-input class="enabled-switch" type="${InputType.CHECKBOX}" name="enabled" @or-mwc-input-changed="${this.onInput}"
-                                    label="Enabled" value="${this.formData.enabled}" required></or-mwc-input>
+                        <or-mwc-input type="${InputType.CHECKBOX}" name="enabled" 
+                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onCheckboxInput(e)}"
+                                label="Enabled" .value="${this.formData.enabled}" required></or-mwc-input>
 
                     </div>
 
+                    <!-- Note: I know this is odd, but the disable state would not update properly via the disabled attribute -->
                     <div class="config-header-controls">
-                        <or-mwc-input type="${InputType.BUTTON}" id="save-btn" label="save" raised></or-mwc-input>
+                        ${this.isValid ? 
+                        html`<or-mwc-input type="${InputType.BUTTON}" id="save-btn" label="save" raised></or-mwc-input>` 
+                        : 
+                        html`<or-mwc-input type="${InputType.BUTTON}" id="save-btn" label="save" raised disabled></or-mwc-input>`}
                     </div>
                 </div>
 
@@ -201,8 +249,9 @@ export class PageConfigViewer extends LitElement {
                 <or-panel heading="MODEL">
                     <div class="column">
                         <div class="row">
-                            <or-mwc-input class="header-item" name="type" required @or-mwc-input-changed="${this.onInput}"
-                            label="Model Type" type="${InputType.SELECT}" .options="${[["prophet", "Prophet"]]}" value="${this.formData.type}">
+                            <or-mwc-input class="header-item" name="type" required 
+                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onInput(e)}"
+                                label="Model Type" type="${InputType.SELECT}" .options="${[["prophet", "Prophet"]]}" .value="${this.formData.type}">
                         </or-mwc-input>
                         </div>
                     </div>
@@ -212,30 +261,44 @@ export class PageConfigViewer extends LitElement {
                 <or-panel heading="FORECAST GENERATION">
                     <div class="column">
                         <div class="row">
-                            <or-mwc-input type="${InputType.TEXT}" name="forecast_interval" @or-mwc-input-changed="${this.onInput}"
-                                label="Generate new forecast every" value="${this.formData.forecast_interval}" required></or-mwc-input>
+                            <or-mwc-input type="${InputType.TEXT}" name="forecast_interval" 
+                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onInput(e)}"
+                                label="Generate new forecast every" .value="${this.formData.forecast_interval}" required></or-mwc-input>
                         </div>
          
                         <div class="row">
                             <!-- forecast_periods -->
-                            <or-mwc-input type="${InputType.NUMBER}" name="forecast_periods" @or-mwc-input-changed="${this.onInput}"
-                                    label="Forecasted datapoints" value="${this.formData.forecast_periods}" required></or-mwc-input>
-                            <or-mwc-input type="${InputType.TEXT}" name="forecast_frequency" @or-mwc-input-changed="${this.onInput}"
-                                label="Time between datapoints" value="${this.formData.forecast_frequency}" required></or-mwc-input>
+                            <or-mwc-input type="${InputType.NUMBER}" name="forecast_periods" 
+                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onInput(e)}"
+                                label="Forecasted datapoints" .value="${this.formData.forecast_periods}" required></or-mwc-input>
+                                
+                            <or-mwc-input type="${InputType.TEXT}" name="forecast_frequency" 
+                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onInput(e)}"
+                                label="Time between datapoints" .value="${this.formData.forecast_frequency}" required></or-mwc-input>
                         </div>
                     </div>
                 </or-panel>
 
                 <!-- Forecast target, the asset and attribute to forecast -->
                 <or-panel heading="FORECAST TARGET">
+                    <div class="column">
+                        <div class="row">
+                            <or-mwc-input type="${InputType.TEXT}" name="target.asset_id" label="Asset" .value="${this.formData.target.asset_id}" required></or-mwc-input>
+                    
+                            <or-mwc-input type="${InputType.TEXT}" name="target.attribute_name" label="Attribute" .value="${this.formData.target.attribute_name}" required></or-mwc-input>
+                     
+                            <or-mwc-input type="${InputType.NUMBER}" name="target.cutoff_timestamp" label="Use datapoints since" .value="${this.formData.target.cutoff_timestamp}" required></or-mwc-input>
+                        </div>
+                    </div>
                 </or-panel>
 
                 <!-- Model training, e.g the schedule-->
                 <or-panel heading="MODEL TRAINING">
                     <div class="column">
                         <div class="row">
-                            <or-mwc-input type="${InputType.TEXT}" name="training_interval" @or-mwc-input-changed="${this.onInput}"
-                                label="Training interval" value="${this.formData.training_interval}" required></or-mwc-input>
+                            <or-mwc-input type="${InputType.TEXT}" name="training_interval" 
+                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onInput(e)}"
+                                label="Training interval" .value="${this.formData.training_interval}" required></or-mwc-input>
                         </div>
                     </div>
                 </or-panel>
@@ -245,25 +308,31 @@ export class PageConfigViewer extends LitElement {
                     <div class="column">
                         <div class="row">
                             <!-- changepoint_range -->
-                            <or-mwc-input type="${InputType.NUMBER}" name="changepoint_range" @or-mwc-input-changed="${this.onInput}"
-                                label="Changepoint range" value="${this.formData.changepoint_range}" max="1.0" min="0.0" step="0.01" required></or-mwc-input>
+                            <or-mwc-input type="${InputType.NUMBER}" name="changepoint_range" 
+                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onInput(e)}"
+                                label="Changepoint range" .value="${this.formData.changepoint_range}" max="1.0" min="0.0" step="0.01" required></or-mwc-input>
                             <!-- changepoint_prior_scale -->
-                            <or-mwc-input type="${InputType.NUMBER}" name="changepoint_prior_scale" @or-mwc-input-changed="${this.onInput}"
-                                label="Changepoint prior scale" value="${this.formData.changepoint_prior_scale}" max="1.0" min="0.0" step="0.01" required></or-mwc-input>
+                            <or-mwc-input type="${InputType.NUMBER}" name="changepoint_prior_scale" 
+                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onInput(e)}"
+                                label="Changepoint prior scale" .value="${this.formData.changepoint_prior_scale}" max="1.0" min="0.0" step="0.01" required></or-mwc-input>
                         </div>
                         <div class="row">
                             <!-- seasonality_mode -->
-                            <or-mwc-input type="${InputType.SELECT}" .options="${[[ProphetSeasonalityModeEnum.ADDITIVE, "Additive"], [ProphetSeasonalityModeEnum.MULTIPLICATIVE, "Multiplicative"]]}" name="seasonality_mode" @or-mwc-input-changed="${this.onInput}"
-                                label="Seasonality mode" value="${this.formData.seasonality_mode}" required></or-mwc-input>
+                            <or-mwc-input type="${InputType.SELECT}" .options="${[[ProphetSeasonalityModeEnum.ADDITIVE, "Additive"], [ProphetSeasonalityModeEnum.MULTIPLICATIVE, "Multiplicative"]]}" name="seasonality_mode" 
+                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onInput(e)}"
+                                label="Seasonality mode" .value="${this.formData.seasonality_mode}" required></or-mwc-input>
                             <!-- daily_seasonality -->
-                            <or-mwc-input type="${InputType.CHECKBOX}" name="daily_seasonality" @or-mwc-input-changed="${this.onInput}"
-                                label="Daily seasonality" value="${this.formData.daily_seasonality}" required></or-mwc-input>
+                            <or-mwc-input type="${InputType.CHECKBOX}" name="daily_seasonality" 
+                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onCheckboxInput(e)}"
+                                label="Daily seasonality" .value="${this.formData.daily_seasonality}" required></or-mwc-input>
                             <!-- weekly_seasonality -->
-                            <or-mwc-input type="${InputType.CHECKBOX}" name="weekly_seasonality" @or-mwc-input-changed="${this.onInput}"
-                                label="Weekly seasonality" value="${this.formData.weekly_seasonality}" required></or-mwc-input>
+                            <or-mwc-input type="${InputType.CHECKBOX}" name="weekly_seasonality"
+                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onCheckboxInput(e)}"
+                                label="Weekly seasonality" .value="${this.formData.weekly_seasonality}" required></or-mwc-input>
                             <!-- yearly_seasonality -->
-                            <or-mwc-input  type="${InputType.CHECKBOX}"  name="yearly_seasonality" @or-mwc-input-changed="${this.onInput}"
-                                    label="Yearly seasonality" value="${this.formData.yearly_seasonality}" required></or-mwc-input>
+                            <or-mwc-input  type="${InputType.CHECKBOX}"  name="yearly_seasonality" 
+                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onCheckboxInput(e)}"
+                                label="Yearly seasonality" .value="${this.formData.yearly_seasonality}" required></or-mwc-input>
                         </div>
                     </div>
                 </or-panel>
