@@ -16,6 +16,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 from http.client import OK
+
 from fastapi import APIRouter, Depends, Query
 
 from service_ml_forecast.clients.openremote.models import Asset
@@ -50,7 +51,7 @@ async def get_assets(
 async def get_assets_by_ids(
     realm: str,
     ids_str: str = Query(..., alias="ids", description="Comma-separated list of asset IDs"),
-    openremote_service: OpenRemoteService = Depends(get_openremote_service)
+    openremote_service: OpenRemoteService = Depends(get_openremote_service),
 ) -> list[Asset]:
-    ids_list = [asset_id.strip() for asset_id in ids_str.split(',') if asset_id.strip()]
+    ids_list = [asset_id.strip() for asset_id in ids_str.split(",") if asset_id.strip()]
     return openremote_service.get_assets_by_ids(ids_list, realm)

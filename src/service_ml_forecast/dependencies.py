@@ -39,6 +39,7 @@ __model_config_service = ModelConfigService()
 # --- Dependencies ---
 # These can be monkeypatched for testing purposes
 
+
 def get_config_service() -> ModelConfigService:
     """
     Get the model config service dependency.
