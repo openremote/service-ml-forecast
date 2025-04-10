@@ -7,6 +7,7 @@ const __dirname = path.dirname(__filename);
 
 export default {
   mode: 'development',
+  devtool: 'eval-source-map',
   entry: {
     main: './src/index.ts',
   },

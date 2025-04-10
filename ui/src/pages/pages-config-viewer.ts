@@ -1,6 +1,7 @@
 import { css, html, LitElement, PropertyValues } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { ModelTypeEnum, ProphetModelConfig, ProphetSeasonalityModeEnum } from "../services/models";
+import { ModelTypeEnum, ProphetSeasonalityModeEnum } from "../services/models";
+import type { ProphetModelConfig } from "../services/models";
 import { ApiService } from "../services/api-service";
 import { RouterLocation } from "@vaadin/router";
 import "@openremote/or-icon";
@@ -165,8 +166,6 @@ export class PageConfigViewer extends LitElement {
         let value: string | boolean | number | undefined = ev.detail?.value;
         const target = ev.target as HTMLInputElement;
 
-        console.log(target.name, value);
-
         if (!target) {
             return;
         }
@@ -204,12 +203,12 @@ export class PageConfigViewer extends LitElement {
     updated(changedProperties: PropertyValues) {
         if (changedProperties.has('formData')) {
             this.isValid = this.isFormValid();
-            console.log(this.isValid);
         }
     }
 
 
     handleAddRegressor() {
+        // TODO: Implement this
         console.log("add regressor");
     }
 

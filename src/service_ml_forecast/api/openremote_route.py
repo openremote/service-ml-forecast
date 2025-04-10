@@ -23,10 +23,9 @@ from service_ml_forecast.clients.openremote.models import Asset, RealmConfig
 from service_ml_forecast.dependencies import get_openremote_service
 from service_ml_forecast.services.openremote_service import OpenRemoteService
 
-router = APIRouter(prefix="/openremote", tags=["OpenRemote Assets"])
+router = APIRouter(prefix="/openremote", tags=["OpenRemote"])
 
 
-# e.g. /openremote/assets?realm=master
 @router.get(
     "/assets",
     summary="Retrieve assets that have attributes that store historical data",
@@ -40,7 +39,6 @@ async def get_assets(
     return openremote_service.get_assets_with_historical_datapoints(realm)
 
 
-# e.g. /openremote/assets/ids?realm=master&ids=123,456,789
 @router.get(
     "/assets/ids",
     summary="Retrieve assets by a comma-separated list of Asset IDs",
@@ -57,7 +55,6 @@ async def get_assets_by_ids(
     return openremote_service.get_assets_by_ids(ids_list, realm)
 
 
-# e.g. /openremote/realm/config/master
 @router.get(
     "/realm/config/{realm}",
     summary="Retrieve the configuration of a realm",

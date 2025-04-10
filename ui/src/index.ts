@@ -2,6 +2,8 @@ import { Router } from '@vaadin/router';
 import "./pages/pages-config-list";
 import "./pages/pages-config-viewer";
 import "./components/breadcrumb";
+import "./pages/pages-not-found";
+
 import { html, render } from 'lit';
 import { setRealmTheme, setupORIcons } from './util';
 
@@ -29,15 +31,14 @@ const routes = [
         path: '/:realm/configs/:id',
         component: 'page-config-viewer',
     },
+    // 404 page -- should be the last route
     {
-        path: '/:pathMatch(.*)*',
-        action: () => {
-            render(html`<div>404</div>`, outlet);
-        }
+        path: '(.*)',
+        component: 'page-not-found',
     },
 ]
 
-// Render the breadcrumb component
+// Breadcrumb component (navigational component)
 render(html`<breadcrumb-nav></breadcrumb-nav>`, outlet);
 
 // Set the routes -- Vaadin will then handle these paths
