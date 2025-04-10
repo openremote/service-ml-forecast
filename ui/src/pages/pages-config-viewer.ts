@@ -6,7 +6,7 @@ import { RouterLocation } from "@vaadin/router";
 import "@openremote/or-icon";
 import "@openremote/or-panel";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
-
+import "../components/loading-spinner";
 
 enum TimeDurationUnit {
     MINUTE = "M",
@@ -215,7 +215,7 @@ export class PageConfigViewer extends LitElement {
 
     protected render() {
         if (this.loading) {
-            return html`<div>Loading config details...</div>`;
+            return html`<loading-spinner></loading-spinner>`;
         }
 
         return html`
