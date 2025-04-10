@@ -63,7 +63,7 @@ class FsUtil:
 
     @staticmethod
     def read_file(path: Path) -> str:
-        """Read the contents from a file."
+        """Read the contents from a file.
 
         Args:
             path: Path to read from
