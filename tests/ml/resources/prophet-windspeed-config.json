@@ -13,4 +13,4 @@
     "training_interval": "PT30S",
     "forecast_periods": 7,
     "forecast_frequency": "1h"
-  }
+}
