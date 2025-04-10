@@ -35,6 +35,7 @@ def test_retrieve_assets(mock_openremote_client: OpenRemoteClient) -> None:
                     {
                         "id": TEST_ASSET_ID,
                         "realm": "master",
+                        "name": "Test Asset",
                         "attributes": {
                             TEST_ATTRIBUTE_NAME: {
                                 "name": TEST_ATTRIBUTE_NAME,

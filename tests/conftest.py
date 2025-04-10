@@ -3,6 +3,7 @@ import logging.config
 import shutil
 import tempfile
 import threading
+import time
 from collections.abc import Generator
 from http import HTTPStatus
 from pathlib import Path
@@ -64,6 +65,10 @@ def fastapi_server() -> Generator[None]:
     thread = threading.Thread(target=server.run)
     thread.daemon = True
     thread.start()
+
+    # Wait for the server to start
+    time.sleep(1)
+
     yield
 
     # Allow the server to shut down gracefully
