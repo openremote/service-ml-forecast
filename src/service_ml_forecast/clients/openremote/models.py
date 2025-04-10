@@ -32,6 +32,7 @@ class Asset(BaseModel):
     """Minimal asset of OpenRemote."""
 
     id: str
+    name: str
     realm: str
     parentId: str | None = None
     attributes: dict[str, AssetAttribute]

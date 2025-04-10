@@ -15,26 +15,42 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-from fastapi import APIRouter, Depends
+from http.client import OK
+from fastapi import APIRouter, Depends, Query
 
 from service_ml_forecast.clients.openremote.models import Asset
 from service_ml_forecast.dependencies import get_openremote_service
 from service_ml_forecast.services.openremote_service import OpenRemoteService
 
-router = APIRouter(prefix="/openremote", tags=["OpenRemote"])
+router = APIRouter(prefix="/openremote", tags=["OpenRemote Assets"])
 
 
 # e.g. /openremote/assets?realm=master
-@router.get("/assets")
+@router.get(
+    "/assets",
+    summary="Retrieve assets that have attributes that store historical data",
+    responses={
+        OK: {"description": "Assets have been retrieved"},
+    },
+)
 async def get_assets(
     realm: str, openremote_service: OpenRemoteService = Depends(get_openremote_service)
 ) -> list[Asset]:
     return openremote_service.get_assets_with_historical_datapoints(realm)
 
 
-# e.g. /openremote/assets?ids=123,456,789&realm=master
-@router.get("/assets")
+# e.g. /openremote/assets/ids?realm=master&ids=123,456,789
+@router.get(
+    "/assets/ids",
+    summary="Retrieve assets by a comma-separated list of Asset IDs",
+    responses={
+        OK: {"description": "Assets have been retrieved"},
+    },
+)
 async def get_assets_by_ids(
-    ids: list[str], realm: str, openremote_service: OpenRemoteService = Depends(get_openremote_service)
+    realm: str,
+    ids_str: str = Query(..., alias="ids", description="Comma-separated list of asset IDs"),
+    openremote_service: OpenRemoteService = Depends(get_openremote_service)
 ) -> list[Asset]:
-    return openremote_service.get_assets_by_ids(ids, realm)
+    ids_list = [asset_id.strip() for asset_id in ids_str.split(',') if asset_id.strip()]
+    return openremote_service.get_assets_by_ids(ids_list, realm)

@@ -1,6 +1,6 @@
 import { html, LitElement, css } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { ModelConfig } from "../services/models";
+import { Asset, ModelConfig } from "../services/models";
 import { Router } from '@vaadin/router';
 import "../components/configs-table";
 import * as Core from "@openremote/core";
@@ -10,7 +10,7 @@ import { getRealm } from "../util";
 import { ApiService } from "../services/api-service";
 import "../components/loading-spinner";
 import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
-import {showOkCancelDialog} from "@openremote/or-mwc-components/or-mwc-dialog";
+import { showOkCancelDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
 
 
 @customElement("page-config-list")
@@ -57,6 +57,9 @@ export class PageConfigList extends LitElement {
     @property({ type: Array })
     private modelConfigs?: ModelConfig[] = [];
 
+    @property({ type: Array })
+    private configAssets?: Asset[] = [];
+
     @property({ type: Boolean })
     private loading: boolean = true;
 
@@ -68,14 +71,15 @@ export class PageConfigList extends LitElement {
     async loadModelConfigs() {
         try {
             this.modelConfigs = await this.apiService.getModelConfigs();
+            this.configAssets = await this.apiService.getAssets(this.modelConfigs.map(c => c.target.asset_id));
             this.loading = false;
         } catch (error) {
             console.error("PageConfigList: Failed to fetch model configs:", error);
-            this.modelConfigs = []; 
+            this.modelConfigs = [];
+            this.configAssets = [];
             this.loading = false;
         }
     }
-
 
     private handleEditConfig(e: CustomEvent<ModelConfig>) {
         const config = e.detail;
@@ -86,21 +90,18 @@ export class PageConfigList extends LitElement {
     private async handleDeleteConfig(e: CustomEvent<ModelConfig>) {
         const config = e.detail;
         if (!config.id) {
-            console.error("Config ID is required");
+            console.error("PageConfigList: Config ID is required");
             return;
         }
-
 
         const result = await showOkCancelDialog("Delete config", `Are you sure you want to delete the config: ${config.name}?`, "Delete")
 
         if (result) {
-
-
-        try {
-            await this.apiService.deleteModelConfig(config.id);
-            this.modelConfigs = this.modelConfigs?.filter(c => c.id !== config.id);
-        } catch (error) {
-                console.error("Failed to delete config:", error);
+            try {
+                await this.apiService.deleteModelConfig(config.id);
+                this.modelConfigs = this.modelConfigs?.filter(c => c.id !== config.id);
+            } catch (error) {
+                console.error("PageConfigList: Failed to delete config:", error);
             }
         }
     }
@@ -120,6 +121,7 @@ export class PageConfigList extends LitElement {
             @edit-config="${this.handleEditConfig}"
             @delete-config="${this.handleDeleteConfig}"
             .modelConfigs="${this.modelConfigs}"
+            .configAssets="${this.configAssets}"
         >`;
     }
 

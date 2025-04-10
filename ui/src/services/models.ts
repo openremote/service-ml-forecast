@@ -1,5 +1,3 @@
-
-
 /**
  * Enum representing the different types of machine learning models available.
  * Corresponds to service_ml_forecast.models.model_type.ModelTypeEnum
@@ -29,6 +27,53 @@ export interface AssetAttributeFeature {
    * Constraints: gt=0
    */
   cutoff_timestamp: number;
+}
+
+/**
+ * Represents an asset attribute from OpenRemote.
+ * Corresponds to Python class service_ml_forecast.clients.openremote.models.AssetAttribute.
+ */
+export class AssetAttribute {
+  /**
+   * Name of the attribute.
+   */
+  name: string = "";
+  /**
+   * Value of the attribute. Can be any type or null.
+   */
+  value?: any | null = null; // Optional as it allows None
+  /**
+   * Timestamp of the attribute value in milliseconds since epoch.
+   */
+  timestamp: number = 0;
+}
+
+/**
+ * Represents a minimal asset from OpenRemote.
+ * Corresponds to Python class service_ml_forecast.clients.openremote.models.Asset.
+ */
+export class Asset {
+  /**
+   * ID of the asset.
+   */
+  id: string = "";
+  /**
+   * Realm of the asset.
+   */
+  realm: string = "";
+  /**
+   * Name of the asset.
+   */
+  name: string = "";
+  /**
+   * ID of the parent asset, if any.
+   * @default null
+   */
+  parentId?: string | null = null; // Optional as it has a default
+  /**
+   * Dictionary mapping attribute names to their corresponding AssetAttribute objects.
+   */
+  attributes: { [key: string]: AssetAttribute } = {};
 }
 
 /**

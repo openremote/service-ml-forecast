@@ -44,7 +44,7 @@ async def create_model_config(
 
 @router.get(
     "/{id}",
-    summary="Get a model config",
+    summary="Retrieve a model config by ID",
     responses={
         OK: {"description": "Model config has been retrieved"},
         NOT_FOUND: {"description": "Model config not found"},
@@ -56,7 +56,7 @@ async def get_model_config(id: UUID, config_service: ModelConfigService = Depend
 
 @router.get(
     "/",
-    summary="Get all model configs with optional realm filter",
+    summary="Retrieve all model configs with optional realm filter",
     responses={
         OK: {"description": "List of model configs has been retrieved"},
     },
@@ -83,7 +83,7 @@ async def update_model_config(
 
 @router.delete(
     "/{id}",
-    summary="Delete a model config",
+    summary="Delete a model config by ID",
     responses={
         OK: {"description": "Model config has been deleted"},
         NOT_FOUND: {"description": "Model config not found"},

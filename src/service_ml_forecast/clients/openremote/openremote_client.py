@@ -306,7 +306,7 @@ class OpenRemoteClient:
         """
 
         url = f"{self.openremote_url}/api/master/asset/query"
-        asset_query = {"recursive": True, "realm": {"name": realm}, "ids": asset_ids}
+        asset_query = {"recursive": False, "realm": {"name": realm}, "ids": asset_ids}
 
         request = self.__build_request("POST", url, data=asset_query)
 

@@ -152,18 +152,15 @@ export class PageConfigViewer extends LitElement {
         if (value === undefined) {
             return;
         }
-
         const name = target.name;
-        console.log(name, value);
 
-        // handle checkbox
+        // handle checkboxes
         if (name === "daily_seasonality" || name === "weekly_seasonality" || name === "yearly_seasonality") {
             value = (target as HTMLInputElement).checked;
-            console.log(name, value);
             return;
         }
 
-
+        console.log(name, value);
         this.formData = {
             ...this.formData,
             [name]: value

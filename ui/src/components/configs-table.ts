@@ -1,7 +1,7 @@
 import { OrMwcTable, TableColumn, TableRow, TableConfig } from "@openremote/or-mwc-components/or-mwc-table";
 import { css, html, TemplateResult } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { ModelConfig } from "../services/models";
+import { Asset, ModelConfig } from "../services/models";
 import "@openremote/or-mwc-components/or-mwc-input";
 import { getRealm } from "../util";
 import { Router } from "@vaadin/router";
@@ -49,17 +49,32 @@ export class ConfigsTable extends OrMwcTable {
                     font-weight: 500;
                     padding: 8px 12px;
                     border-radius: 30px;
+                    font-weight: 600;
                 
                 }
 
+                td:has(> .state-label.disabled) {
+                    width: 100px;
+                }
+
+            
                 .state-label.enabled {
                     border: 1px solid var(--or-app-color3, ${unsafeCSS(Colors.DefaultColor4)});
                     color: var(--or-app-color3, ${unsafeCSS(Colors.DefaultColor4)});
                 }
 
+
                 .state-label.disabled {
-                    border: 1px solid var(--or-app-color4, ${unsafeCSS(Colors.DefaultColor4)});
-                    background-color: var(--or-app-color4, ${unsafeCSS(Colors.DefaultColor4)});
+                    border: 1px solid var(--or-app-color3, ${unsafeCSS(Colors.DefaultColor3)});
+                    color: var(--or-app-color3, ${unsafeCSS(Colors.DefaultColor3)});
+                    opacity: 0.5;
+                }
+
+                .warning {
+                    color: var(--or-app-color6, ${unsafeCSS(Colors.DefaultColor6)});
+                    display: flex;
+                    align-items: center;
+                    gap: 5px;
                 }
 
   
@@ -70,12 +85,15 @@ export class ConfigsTable extends OrMwcTable {
     @property({ type: Array })
     public modelConfigs: ModelConfig[] = [];
 
+    @property({ type: Array })
+    public configAssets: Asset[] = [];
+
     public columns: TableColumn[] = [
         { title: "State", isSortable: true },
         { title: "Name", isSortable: true },
         { title: "Type", isSortable: true },
-        { title: "Asset ID", isSortable: true },
-        { title: "Attribute Name", isSortable: true },
+        { title: "Asset", isSortable: true },
+        { title: "Attribute", isSortable: true },
         { title: "Actions", isSortable: false }
     ];
 
@@ -106,15 +124,25 @@ export class ConfigsTable extends OrMwcTable {
         `;
     }
 
+    private getAssetNameTemplate(assetId: string): TemplateResult {
+        const asset = this.configAssets.find(a => a.id === assetId);
+
+        if (!asset) {
+            return html`<span title="Asset ID: ${assetId} could not be found" class="warning"><or-icon icon="alert-box-outline"></or-icon> Not found</span>`;
+        }
+
+        return html`<span title="Asset ID: ${assetId}">${asset.name}</span>`;
+    }
+
     protected getTableRows(configs: ModelConfig[]): TableRow[] {
         return configs.map(config => ({
             content: [
                 this.getStateRowTemplate(config) as any,
                 config.name,
                 config.type.charAt(0).toUpperCase() + config.type.slice(1), // Capitalize first letter
-                config.target.asset_id,
+                this.getAssetNameTemplate(config.target.asset_id),
                 config.target.attribute_name,
-                this.getActionsRowTemplate(config) as any
+                this.getActionsRowTemplate(config)
             ]
         }));
     }
