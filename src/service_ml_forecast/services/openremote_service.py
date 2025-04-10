@@ -71,8 +71,8 @@ class OpenRemoteService:
         )
 
         if datapoints is None:
-            logger.error(
-                f"Failed to retrieve target datapoints for {config.target.asset_id} "
+            logger.warning(
+                f"Unable to retrieve target datapoints for {config.target.asset_id} "
                 f"{config.target.attribute_name} - skipping"
             )
             return None
@@ -95,8 +95,8 @@ class OpenRemoteService:
                 )
 
                 if regressor_datapoints is None:
-                    logger.error(
-                        f"Failed to retrieve regressor datapoints for {regressor.asset_id} "
+                    logger.warning(
+                        f"Unable to retrieve regressor datapoints for {regressor.asset_id} "
                         f"{regressor.attribute_name} - skipping"
                     )
                     continue
@@ -137,8 +137,9 @@ class OpenRemoteService:
                 )
 
                 if regressor_datapoints is None:
-                    logger.error(
-                        f"No predicted datapoints found for {regressor.asset_id} {regressor.attribute_name} - skipping"
+                    logger.warning(
+                        f"Unable to retrieve predicted datapoints for {regressor.asset_id} "
+                        f"{regressor.attribute_name} - skipping"
                     )
                     continue
 
@@ -154,18 +155,29 @@ class OpenRemoteService:
         )
 
         return forecast_feature_set
-    
 
+    def get_assets_with_historical_datapoints(self, realm: str) -> list[Asset]:
+        """Get all assets from OpenRemote with historical datapoints.
 
-    def get_assets(self, realm: str) -> list[Asset]:
+        Returns:
+            A list of all assets from OpenRemote with historical datapoints.
+        """
+        assets = self.client.retrieve_assets_with_historical_datapoints(realm)
+        if assets is None:
+            logger.warning(f"Unable to retrieve assets for realm {realm}")
+            return []
+
+        return assets
+
+    def get_assets_by_ids(self, asset_ids: list[str], realm: str) -> list[Asset]:
         """Get all assets from OpenRemote.
 
         Returns:
             A list of all assets from OpenRemote.
         """
-        assets = self.client.retrieve_assets(realm)
+        assets = self.client.retrieve_assets_by_ids(asset_ids, realm)
         if assets is None:
-            logger.error(f"Failed to retrieve assets for realm {realm}")
+            logger.warning(f"Unable to retrieve assets for realm {realm}")
             return []
-        return assets
 
+        return assets

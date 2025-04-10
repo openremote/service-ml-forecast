@@ -136,31 +136,6 @@ class OpenRemoteClient:
                 self.logger.error(f"OpenRemote API is not healthy: {e}")
                 return False
 
-    def retrieve_assets(self, realm: str) -> list[Asset] | None:
-        """Retrieve all assets for a given realm.
-
-        Args:
-            realm: The realm to retrieve assets from.
-
-        Returns:
-            list[Asset] | None: List of assets or None
-        """
-
-        url = f"{self.openremote_url}/api/master/asset/query"
-        asset_query = {"recursive": True, "realm": {"name": realm}}
-
-        request = self.__build_request("POST", url, data=asset_query)
-
-        with httpx.Client() as client:
-            try:
-                response = client.send(request)
-                response.raise_for_status()
-                assets = response.json()
-                return [Asset(**asset) for asset in assets]
-            except (httpx.HTTPStatusError, httpx.ConnectError) as e:
-                self.logger.error(f"Error retrieving assets: {e}")
-                return None
-
     def retrieve_asset_datapoint_period(self, asset_id: str, attribute_name: str) -> AssetDatapointPeriod | None:
         """Retrieve the datapoints timestamp period of a given asset attribute.
 
@@ -290,4 +265,57 @@ class OpenRemoteClient:
                 return [AssetDatapoint(**datapoint) for datapoint in datapoints]
             except (httpx.HTTPStatusError, httpx.ConnectError) as e:
                 self.logger.error(f"Error retrieving predicted datapoints: {e}")
+                return None
+
+    def retrieve_assets_with_historical_datapoints(self, realm: str) -> list[Asset] | None:
+        """Retrieve all assets for a given realm with historical datapoints.
+
+        ()
+
+        Args:
+            realm: The realm to retrieve assets from.
+
+        Returns:
+            list[Asset] | None: List of assets or None
+        """
+
+        url = f"{self.openremote_url}/api/master/asset/query"
+        asset_query = {"recursive": True, "realm": {"name": realm}}
+
+        request = self.__build_request("POST", url, data=asset_query)
+
+        with httpx.Client() as client:
+            try:
+                response = client.send(request)
+                response.raise_for_status()
+                assets = response.json()
+                return [Asset(**asset) for asset in assets]
+            except (httpx.HTTPStatusError, httpx.ConnectError) as e:
+                self.logger.error(f"Error retrieving assets: {e}")
+                return None
+
+    def retrieve_assets_by_ids(self, asset_ids: list[str], realm: str) -> list[Asset] | None:
+        """Retrieve assets by their IDs.
+
+        Args:
+            asset_ids: The IDs of the assets to retrieve.
+            realm: The realm to retrieve assets from.
+
+        Returns:
+            list[Asset] | None: List of assets or None
+        """
+
+        url = f"{self.openremote_url}/api/master/asset/query"
+        asset_query = {"recursive": True, "realm": {"name": realm}, "ids": asset_ids}
+
+        request = self.__build_request("POST", url, data=asset_query)
+
+        with httpx.Client() as client:
+            try:
+                response = client.send(request)
+                response.raise_for_status()
+                assets = response.json()
+                return [Asset(**asset) for asset in assets]
+            except (httpx.HTTPStatusError, httpx.ConnectError) as e:
+                self.logger.error(f"Error retrieving assets: {e}")
                 return None

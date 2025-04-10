@@ -24,13 +24,12 @@ from fastapi.concurrency import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 
 from service_ml_forecast import __app_info__
-from service_ml_forecast.api import model_config_route
+from service_ml_forecast.api import model_config_route, openremote_route
 from service_ml_forecast.api.route_exception_handlers import register_exception_handlers
-from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 from service_ml_forecast.config import ENV
+from service_ml_forecast.dependencies import get_openremote_service
 from service_ml_forecast.logging_config import LOGGING_CONFIG
 from service_ml_forecast.services.model_scheduler import ModelScheduler
-from service_ml_forecast.services.openremote_service import OpenRemoteService
 
 # Load the logging configuration
 logging.config.dictConfig(LOGGING_CONFIG)
@@ -71,23 +70,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(model_config_route.router)
 
-# Register additional exception handlers for FastAPI routes
+# --- Include Routers ---
+app.include_router(model_config_route.router)
+app.include_router(openremote_route.router)
+
+
+# --- Exception Handlers ---
 register_exception_handlers(app)
 
 
 def initialize_background_services() -> None:
     """Initialize background services, these run in the background and are not part of the FastAPI lifecycle"""
     # Setup the ML Model Scheduler
-    openremote_client = OpenRemoteClient(
-        openremote_url=ENV.ML_OR_URL,
-        keycloak_url=ENV.ML_OR_KEYCLOAK_URL,
-        service_user=ENV.ML_OR_SERVICE_USER,
-        service_user_secret=ENV.ML_OR_SERVICE_USER_SECRET,
-    )
-    or_service = OpenRemoteService(openremote_client)
-    model_scheduler = ModelScheduler(or_service)
+    model_scheduler = ModelScheduler(get_openremote_service())
     model_scheduler.start()
 
 

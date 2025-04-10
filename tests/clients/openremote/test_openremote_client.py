@@ -13,7 +13,7 @@ def test_retrieve_assets(openremote_client: OpenRemoteClient) -> None:
     - The client can successfully connect to and retrieve assets from OpenRemote
     - The response contains at least one valid asset
     """
-    assets: list[Asset] | None = openremote_client.retrieve_assets("master")
+    assets: list[Asset] | None = openremote_client.retrieve_assets_with_historical_datapoints("master")
     assert assets is not None
     assert len(assets) > 0
 
@@ -25,7 +25,7 @@ def test_retrieve_assets_invalid_realm(openremote_client: OpenRemoteClient) -> N
     - The client properly handles errors when an invalid realm is specified
     - The method returns None for non-existent realms
     """
-    assets: list[Asset] | None = openremote_client.retrieve_assets("invalid_realm_name")
+    assets: list[Asset] | None = openremote_client.retrieve_assets_with_historical_datapoints("invalid_realm_name")
     assert assets is None
 
 

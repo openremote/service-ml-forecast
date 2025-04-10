@@ -18,27 +18,14 @@
 from http.client import CONFLICT, NOT_FOUND, OK
 from uuid import UUID
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 
+from service_ml_forecast.dependencies import get_config_service
 from service_ml_forecast.models.model_config import ModelConfig
 from service_ml_forecast.services.model_config_service import ModelConfigService
 
 router = APIRouter(prefix="/model/config", tags=["Model Configs"])
-
-
-config_service = ModelConfigService()
-
-# TODO: Permissions and realm access control
-# User realm will be extracted from the token
-# But that doesnt always work if we have a super user with access to all realms
-
-# TODO: Asset name for get all configs (DTO?)
-# The list returned should also contain the asset name, so we retrieve that on the service layer
-# (we can query via openremote api)
-# So will need a response model for only returning the necessary data for the table with the asset name
-# We can also add a proxy route and let the frontend call a seperate api to  get a list of assets with their names
-# We need the proxy route anyways for filling up the dropdowns for assets and attributes with valid meta configs
 
 
 @router.post(
@@ -49,7 +36,9 @@ config_service = ModelConfigService()
         CONFLICT: {"description": "Model config already exists"},
     },
 )
-async def create_model_config(model_config: ModelConfig) -> ModelConfig:
+async def create_model_config(
+    model_config: ModelConfig, config_service: ModelConfigService = Depends(get_config_service)
+) -> ModelConfig:
     return config_service.create(model_config)
 
 
@@ -61,7 +50,7 @@ async def create_model_config(model_config: ModelConfig) -> ModelConfig:
         NOT_FOUND: {"description": "Model config not found"},
     },
 )
-async def get_model_config(id: UUID) -> ModelConfig:
+async def get_model_config(id: UUID, config_service: ModelConfigService = Depends(get_config_service)) -> ModelConfig:
     return config_service.get(id)
 
 
@@ -72,7 +61,9 @@ async def get_model_config(id: UUID) -> ModelConfig:
         OK: {"description": "List of model configs has been retrieved"},
     },
 )
-async def get_model_configs(realm: str | None = None) -> list[ModelConfig]:
+async def get_model_configs(
+    realm: str | None = None, config_service: ModelConfigService = Depends(get_config_service)
+) -> list[ModelConfig]:
     return config_service.get_all(realm)
 
 
@@ -84,7 +75,9 @@ async def get_model_configs(realm: str | None = None) -> list[ModelConfig]:
         NOT_FOUND: {"description": "Model config not found"},
     },
 )
-async def update_model_config(model_config: ModelConfig) -> ModelConfig:
+async def update_model_config(
+    model_config: ModelConfig, config_service: ModelConfigService = Depends(get_config_service)
+) -> ModelConfig:
     return config_service.update(model_config)
 
 
@@ -96,6 +89,8 @@ async def update_model_config(model_config: ModelConfig) -> ModelConfig:
         NOT_FOUND: {"description": "Model config not found"},
     },
 )
-async def delete_model_config(id: UUID) -> JSONResponse:
+async def delete_model_config(
+    id: UUID, config_service: ModelConfigService = Depends(get_config_service)
+) -> JSONResponse:
     config_service.delete(id)
     return JSONResponse(status_code=OK, content={"message": "Model config deleted successfully"})

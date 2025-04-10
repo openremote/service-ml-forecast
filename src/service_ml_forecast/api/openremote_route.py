@@ -15,8 +15,26 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+
+from service_ml_forecast.clients.openremote.models import Asset
+from service_ml_forecast.dependencies import get_openremote_service
+from service_ml_forecast.services.openremote_service import OpenRemoteService
 
 router = APIRouter(prefix="/openremote", tags=["OpenRemote"])
 
 
+# e.g. /openremote/assets?realm=master
+@router.get("/assets")
+async def get_assets(
+    realm: str, openremote_service: OpenRemoteService = Depends(get_openremote_service)
+) -> list[Asset]:
+    return openremote_service.get_assets_with_historical_datapoints(realm)
+
+
+# e.g. /openremote/assets?ids=123,456,789&realm=master
+@router.get("/assets")
+async def get_assets_by_ids(
+    ids: list[str], realm: str, openremote_service: OpenRemoteService = Depends(get_openremote_service)
+) -> list[Asset]:
+    return openremote_service.get_assets_by_ids(ids, realm)
