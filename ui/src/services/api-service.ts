@@ -11,6 +11,9 @@ export class ApiService {
         const response = await fetch(`${this.baseUrl}/model/config/` + (realm ? `?realm=${realm}` : ''), {
             method: "GET",
         });
+        if (!response.ok) {
+            throw new Error(`Failed to get model configs: ${response.statusText}`);
+        }
         return response.json();
     }
 
@@ -19,6 +22,9 @@ export class ApiService {
         const response = await fetch(`${this.baseUrl}/openremote/assets/ids` + (realm ? `?realm=${realm}&ids=${ids.join(',')}` : ''), {
             method: "GET",
         });
+        if (!response.ok) {
+            throw new Error(`Failed to get assets: ${response.statusText}`);
+        }
         return response.json();
     }
 
@@ -26,6 +32,9 @@ export class ApiService {
         const response = await fetch(`${this.baseUrl}/model/config/${id}`, {
             method: "GET",
         });
+        if (!response.ok) {
+            throw new Error(`Failed to get model config ${id}: ${response.statusText}`);
+        }
         return response.json();
     }
 
@@ -33,10 +42,12 @@ export class ApiService {
         const response = await fetch(`${this.baseUrl}/model/config/${id}`, {
             method: "DELETE",
         });
-        return response.json();
+        if (!response.ok) {
+            throw new Error(`Failed to delete model config ${id}: ${response.statusText}`);
+        }
     }
 
-    async updateModelConfig(modelConfig: ModelConfig) : Promise<void> {
+    async updateModelConfig(modelConfig: ModelConfig) : Promise<ModelConfig> {
         const response = await fetch(`${this.baseUrl}/model/config`, {
             method: "PUT",
             body: JSON.stringify(modelConfig),
@@ -44,10 +55,13 @@ export class ApiService {
                 "Content-Type": "application/json",
             },
         });
+        if (!response.ok) {
+            throw new Error(`Failed to update model config: ${response.statusText}`);
+        }
         return response.json();
     }
 
-    async createModelConfig(modelConfig: ModelConfig) : Promise<void> {
+    async createModelConfig(modelConfig: ModelConfig) : Promise<ModelConfig> {
         const response = await fetch(`${this.baseUrl}/model/config`, {
             method: "POST",
             body: JSON.stringify(modelConfig),
@@ -55,6 +69,9 @@ export class ApiService {
                 "Content-Type": "application/json",
             },
         });
+        if (!response.ok) {
+            throw new Error(`Failed to create model config: ${response.statusText}`);
+        }
         return response.json();
     }
 
@@ -62,6 +79,9 @@ export class ApiService {
         const response = await fetch(`${this.baseUrl}/openremote/realm/config/${realm}`, {
             method: "GET",
         });
+        if (!response.ok) {
+            throw new Error(`Failed to get realm config ${realm}: ${response.statusText}`);
+        }
         return response.json();
     }
     

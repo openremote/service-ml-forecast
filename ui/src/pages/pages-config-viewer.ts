@@ -3,12 +3,12 @@ import { customElement, property, state } from "lit/decorators.js";
 import { ModelTypeEnum, ProphetSeasonalityModeEnum } from "../services/models";
 import type { ProphetModelConfig } from "../services/models";
 import { ApiService } from "../services/api-service";
-import { RouterLocation } from "@vaadin/router";
+import { Router, RouterLocation } from "@vaadin/router";
 import "@openremote/or-icon";
 import "@openremote/or-panel";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import "../components/loading-spinner";
-
+import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 enum TimeDurationUnit {
     MINUTE = "M",
     HOUR = "H",
@@ -135,15 +135,21 @@ export class PageConfigViewer extends LitElement {
     @state()
     private isValid: boolean = false;
 
+    @state()
+    private modified: boolean = false;
+
     private readonly apiService: ApiService = new ApiService();
 
     onAfterEnter(location: RouterLocation) {
         this.configId = location.params.id as string;
-        return this.loadConfig();
+        return this.refreshConfig();
     }
 
 
-    private async loadConfig() {
+    private async refreshConfig() {
+        this.loading = true;
+        this.isValid = false;
+
         if (!this.configId) {
             this.loading = false;
             return;
@@ -155,6 +161,7 @@ export class PageConfigViewer extends LitElement {
             return;
         } catch (err) {
             this.loading = false;
+            console.error(err);
         }
     }
 
@@ -162,10 +169,7 @@ export class PageConfigViewer extends LitElement {
         let value: string | boolean | number | undefined = ev.detail?.value;
         const target = ev.target as HTMLInputElement;
 
-        if (!target) {
-            return;
-        }
-        if (value === undefined) {
+        if (!target || value === undefined) {
             return;
         }
         const name = target.name;
@@ -186,20 +190,55 @@ export class PageConfigViewer extends LitElement {
         };
     }
 
-    // TODO: Better error handling
+    onTargetInput(ev: OrInputChangedEvent) {
+        let value: string | number | undefined = ev.detail?.value;
+        const target = ev.target as HTMLInputElement;
+
+        if (!target || value === undefined) {
+            return;
+        }
+
+        // Extract the actual key (e.g., 'asset_id' from 'target.asset_id')
+        const key = target.name.split('.')[1];
+        if (!key) {
+            console.error("Invalid target input name:", target.name);
+            return;
+        }
+
+        this.formData = {
+            ...this.formData,
+            target: {
+                ...this.formData.target,
+                [key]: value
+            }
+        };
+    }
+
     async onSave() {
         let isExistingConfig = this.modelConfig !== null;
 
-        // Update the config
+        // Handle update
         if (isExistingConfig) {
-            await this.apiService.updateModelConfig(this.formData);
-        } 
-        // Create a new config
+            try {
+                await this.apiService.updateModelConfig(this.formData);
+                await this.refreshConfig();
+            } catch (error) {
+                console.error(error);
+                showSnackbar(undefined, "Failed to save the config");
+            }
+        }
+        // Handle create
         else {
-            await this.apiService.createModelConfig(this.formData);
+            try {
+                await this.apiService.createModelConfig(this.formData);
+                await this.refreshConfig();
+            } catch (error) {
+                console.error(error);
+                showSnackbar(undefined, "Failed to save the config");
+            }
         }
     }
-    
+
     isFormValid() {
         const inputs = this.shadowRoot?.querySelectorAll('or-mwc-input') as NodeListOf<HTMLInputElement>;
         // Iterate over all inputs and check if they are valid via HTML5 validation
@@ -208,9 +247,14 @@ export class PageConfigViewer extends LitElement {
         }
         return false;
     }
-    
+
+    isFormModified() {
+        return JSON.stringify(this.formData) !== JSON.stringify(this.modelConfig);
+    }
+
     updated(_changedProperties: PropertyValues) {
         this.isValid = this.isFormValid();
+        this.modified = this.isFormModified();
     }
 
 
@@ -242,10 +286,10 @@ export class PageConfigViewer extends LitElement {
 
                     <!-- Note: I know this is odd, but the disable state would not update properly via the disabled/.disabled/?disabled attribute -->
                     <div class="config-header-controls">
-                        ${this.isValid ? 
-                        html`<or-mwc-input type="${InputType.BUTTON}" id="save-btn" label="save" raised @click="${this.onSave}"></or-mwc-input>` 
-                        : 
-                        html`<or-mwc-input type="${InputType.BUTTON}" id="save-btn" label="save" raised disabled></or-mwc-input>`}
+                        ${this.isValid && this.modified ?
+                html`<or-mwc-input type="${InputType.BUTTON}" id="save-btn" label="save" raised @click="${this.onSave}"></or-mwc-input>`
+                :
+                html`<or-mwc-input type="${InputType.BUTTON}" id="save-btn" label="save" raised disabled></or-mwc-input>`}
                     </div>
                 </div>
 
@@ -288,14 +332,16 @@ export class PageConfigViewer extends LitElement {
                     <div class="column">
                         <div class="row">
                             <or-mwc-input type="${InputType.TEXT}" name="target.asset_id"
-                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onInput(e)}"
-                                label="Asset" .value="${this.formData.target.asset_id}" required></or-mwc-input>
+                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onTargetInput(e)}"
+                                label="Asset" .value="${this.formData.target.asset_id}" minlength="22" maxlength="22" required></or-mwc-input>
                     
                             <or-mwc-input type="${InputType.TEXT}" name="target.attribute_name"
-                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onInput(e)}"
+                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onTargetInput(e)}"
                             label="Attribute" .value="${this.formData.target.attribute_name}" required></or-mwc-input>
                      
-                            <or-mwc-input type="${InputType.NUMBER}" name="target.cutoff_timestamp" label="Use datapoints since" .value="${this.formData.target.cutoff_timestamp}" required></or-mwc-input>
+                            <or-mwc-input type="${InputType.NUMBER}" name="target.cutoff_timestamp" 
+                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onTargetInput(e)}"
+                                label="Use datapoints since" .value="${this.formData.target.cutoff_timestamp}" required></or-mwc-input>
                         </div>
                     </div>
                 </or-panel>
