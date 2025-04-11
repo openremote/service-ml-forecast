@@ -103,10 +103,11 @@ class ModelConfigService:
 
         return self._parse(file_content)
 
-    def update(self, config: ModelConfig) -> ModelConfig:
+    def update(self, config_id: UUID, config: ModelConfig) -> ModelConfig:
         """Update the ML model configuration.
 
         Args:
+            config_id: The ID of the model config to update.
             config: The model config to update.
 
         Returns:
@@ -115,13 +116,13 @@ class ModelConfigService:
         Raises:
             ResourceNotFoundError: Model config was not found.
         """
-        path = self._get_config_file_path(config.id)
+        path = self._get_config_file_path(config_id)
 
         try:
             FsUtil.update_file(path, config.model_dump_json())
         except FileNotFoundError as e:
-            logger.error(f"Cannot update config: {config.id} - does not exist: {e}")
-            raise ResourceNotFoundError(f"Cannot update config: {config.id} - does not exist") from e
+            logger.error(f"Cannot update config: {config_id} - does not exist: {e}")
+            raise ResourceNotFoundError(f"Cannot update config: {config_id} - does not exist") from e
 
         return config
 

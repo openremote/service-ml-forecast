@@ -8,7 +8,7 @@ export class ApiService {
 
     async getModelConfigs() : Promise<ModelConfig[]> {
         const realm = getRealm();
-        const response = await fetch(`${this.baseUrl}/model/config/` + (realm ? `?realm=${realm}` : ''), {
+        const response = await fetch(`${this.baseUrl}/model/configs` + (realm ? `?realm=${realm}` : ''), {
             method: "GET",
         });
         if (!response.ok) {
@@ -29,7 +29,7 @@ export class ApiService {
     }
 
     async getModelConfig(id: string) : Promise<ModelConfig> {
-        const response = await fetch(`${this.baseUrl}/model/config/${id}`, {
+        const response = await fetch(`${this.baseUrl}/model/configs/${id}`, {
             method: "GET",
         });
         if (!response.ok) {
@@ -39,7 +39,7 @@ export class ApiService {
     }
 
     async deleteModelConfig(id: string) : Promise<void> {
-        const response = await fetch(`${this.baseUrl}/model/config/${id}`, {
+        const response = await fetch(`${this.baseUrl}/model/configs/${id}`, {
             method: "DELETE",
         });
         if (!response.ok) {
@@ -48,7 +48,7 @@ export class ApiService {
     }
 
     async updateModelConfig(modelConfig: ModelConfig) : Promise<ModelConfig> {
-        const response = await fetch(`${this.baseUrl}/model/config`, {
+        const response = await fetch(`${this.baseUrl}/model/configs/${modelConfig.id}`, {
             method: "PUT",
             body: JSON.stringify(modelConfig),
             headers: {
@@ -62,7 +62,7 @@ export class ApiService {
     }
 
     async createModelConfig(modelConfig: ModelConfig) : Promise<ModelConfig> {
-        const response = await fetch(`${this.baseUrl}/model/config`, {
+        const response = await fetch(`${this.baseUrl}/model/configs`, {
             method: "POST",
             body: JSON.stringify(modelConfig),
             headers: {

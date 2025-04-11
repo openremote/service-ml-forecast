@@ -103,7 +103,7 @@ def test_scheduler_job_management(
 
     # Disable the config and check that the jobs are removed
     prophet_basic_config.enabled = False
-    assert config_service.update(prophet_basic_config)
+    assert config_service.update(prophet_basic_config.id, prophet_basic_config)
     model_scheduler._poll_configs()
     assert model_scheduler.scheduler.get_job(f"{TRAINING_JOB_ID_PREFIX}:{prophet_basic_config.id}") is None
     assert model_scheduler.scheduler.get_job(f"{FORECAST_JOB_ID_PREFIX}:{prophet_basic_config.id}") is None

@@ -25,11 +25,11 @@ from service_ml_forecast.dependencies import get_config_service
 from service_ml_forecast.models.model_config import ModelConfig
 from service_ml_forecast.services.model_config_service import ModelConfigService
 
-router = APIRouter(prefix="/model/config", tags=["Model Configs"])
+router = APIRouter(prefix="/model/configs", tags=["Model Configs"])
 
 
 @router.post(
-    "/",
+    "",
     summary="Create a new model config",
     responses={
         OK: {"description": "Model config has been created"},
@@ -44,7 +44,7 @@ async def create_model_config(
 
 @router.get(
     "/{id}",
-    summary="Retrieve a model config by ID",
+    summary="Retrieve a model config",
     responses={
         OK: {"description": "Model config has been retrieved"},
         NOT_FOUND: {"description": "Model config not found"},
@@ -55,20 +55,20 @@ async def get_model_config(id: UUID, config_service: ModelConfigService = Depend
 
 
 @router.get(
-    "/",
-    summary="Retrieve all model configs with optional realm filter",
+    "",
+    summary="Retrieve all model configs for a realm",
     responses={
         OK: {"description": "List of model configs has been retrieved"},
     },
 )
 async def get_model_configs(
-    realm: str | None = None, config_service: ModelConfigService = Depends(get_config_service)
+    realm: str, config_service: ModelConfigService = Depends(get_config_service)
 ) -> list[ModelConfig]:
     return config_service.get_all(realm)
 
 
 @router.put(
-    "/",
+    "/{id}",
     summary="Update a model config",
     responses={
         OK: {"description": "Model config has been updated"},
@@ -76,14 +76,14 @@ async def get_model_configs(
     },
 )
 async def update_model_config(
-    model_config: ModelConfig, config_service: ModelConfigService = Depends(get_config_service)
+    id: UUID, model_config: ModelConfig, config_service: ModelConfigService = Depends(get_config_service)
 ) -> ModelConfig:
-    return config_service.update(model_config)
+    return config_service.update(id, model_config)
 
 
 @router.delete(
     "/{id}",
-    summary="Delete a model config by ID",
+    summary="Delete a model config",
     responses={
         OK: {"description": "Model config has been deleted"},
         NOT_FOUND: {"description": "Model config not found"},

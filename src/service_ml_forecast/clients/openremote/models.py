@@ -26,6 +26,7 @@ class AssetAttribute(BaseModel):
     name: str
     value: Any | None
     timestamp: int
+    meta: dict[str, Any] | None = None
 
 
 class Asset(BaseModel):

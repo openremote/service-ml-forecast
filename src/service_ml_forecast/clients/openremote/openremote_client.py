@@ -269,9 +269,7 @@ class OpenRemoteClient:
                 return None
 
     def retrieve_assets_with_historical_datapoints(self, realm: str) -> list[Asset] | None:
-        """Retrieve all assets for a given realm with historical datapoints.
-
-        ()
+        """Retrieve all assets for a given realm that store historical datapoints.
 
         Args:
             realm: The realm to retrieve assets from.
@@ -281,7 +279,33 @@ class OpenRemoteClient:
         """
 
         url = f"{self.openremote_url}/api/master/asset/query"
-        asset_query = {"recursive": True, "realm": {"name": realm}}
+
+        # OR Asset Query to retrieve only assets that have attributes with "meta": {"storeDataPoints": true}
+        asset_query = {
+            "realm": {"name": realm},
+            "attributes": {
+                "operator": "AND",
+                "items": [
+                    {
+                        "meta": [
+                            {
+                                "name": {
+                                    "predicateType": "string",
+                                    "match": "EXACT",
+                                    "caseSensitive": True,
+                                    "value": "storeDataPoints",
+                                },
+                                "value": {
+                                    "predicateType": "boolean",
+                                    "match": "EXACT",
+                                    "value": True,
+                                },
+                            }
+                        ]
+                    }
+                ],
+            },
+        }
 
         request = self.__build_request("POST", url, data=asset_query)
 
@@ -289,8 +313,20 @@ class OpenRemoteClient:
             try:
                 response = client.send(request)
                 response.raise_for_status()
-                assets = response.json()
-                return [Asset(**asset) for asset in assets]
+                assets_data = response.json()
+
+                # Additional filtering to remove attributes that do not have "meta": {"storeDataPoints": true}
+                def _filter_asset_attributes(asset_obj: Asset) -> Asset:
+                    if hasattr(asset_obj, "attributes") and isinstance(asset_obj.attributes, dict):
+                        asset_obj.attributes = {
+                            k: v
+                            for k, v in asset_obj.attributes.items()
+                            if hasattr(v, "meta") and isinstance(v.meta, dict) and v.meta.get("storeDataPoints") is True
+                        }
+                    return asset_obj
+
+                parsed_assets = [_filter_asset_attributes(Asset(**asset_data)) for asset_data in assets_data]
+                return parsed_assets
             except (httpx.HTTPStatusError, httpx.ConnectError) as e:
                 self.logger.error(f"Error retrieving assets: {e}")
                 return None

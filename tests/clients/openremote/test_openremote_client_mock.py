@@ -14,13 +14,14 @@ from tests.conftest import (
 )
 
 
-def test_retrieve_assets(mock_openremote_client: OpenRemoteClient) -> None:
+def test_retrieve_assets_with_historical_datapoints(mock_openremote_client: OpenRemoteClient) -> None:
     """Test retrieval of assets from OpenRemote using a mocked client.
 
     Verifies that:
     - The client can successfully retrieve assets from a specific realm
     - The returned assets have the expected ID
     - The response is properly parsed into Asset objects
+    - The assets are filtered to only include attributes with storeDataPoints=True in meta
     """
     mock_power_value = 100
 
@@ -41,6 +42,12 @@ def test_retrieve_assets(mock_openremote_client: OpenRemoteClient) -> None:
                                 "name": TEST_ATTRIBUTE_NAME,
                                 "value": mock_power_value,
                                 "timestamp": timestamp,
+                                "meta": {"storeDataPoints": True},
+                            },
+                            "other_attribute": {
+                                "name": "other_attribute",
+                                "value": "other_value",
+                                "timestamp": timestamp,
                             },
                         },
                     },
@@ -51,6 +58,8 @@ def test_retrieve_assets(mock_openremote_client: OpenRemoteClient) -> None:
         assert assets is not None
         assert len(assets) > 0
         assert assets[0].id == TEST_ASSET_ID
+        assert TEST_ATTRIBUTE_NAME in assets[0].attributes
+        assert "other_attribute" not in assets[0].attributes
 
 
 def test_retrieve_assets_invalid_realm(mock_openremote_client: OpenRemoteClient) -> None:

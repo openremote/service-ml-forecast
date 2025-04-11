@@ -85,7 +85,7 @@ def test_update_config(config_service: ModelConfigService, prophet_basic_config:
     assert config_service.create(prophet_basic_config) is not None
 
     prophet_basic_config.name = "Updated Config"
-    assert config_service.update(prophet_basic_config)
+    assert config_service.update(prophet_basic_config.id, prophet_basic_config)
 
     config = config_service.get(prophet_basic_config.id)
     assert config is not None
