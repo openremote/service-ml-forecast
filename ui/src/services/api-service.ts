@@ -17,9 +17,22 @@ export class ApiService {
         return response.json();
     }
 
-    async getAssets(ids: string[]) : Promise<Asset[]> {
+
+
+    async getAssets() : Promise<Asset[]> {
         const realm = getRealm();
-        const response = await fetch(`${this.baseUrl}/openremote/assets/ids` + (realm ? `?realm=${realm}&ids=${ids.join(',')}` : ''), {
+        const response = await fetch(`${this.baseUrl}/openremote/assets` + (realm ? `?realm=${realm}` : ''), {
+            method: "GET",
+        });
+        if (!response.ok) {
+            throw new Error(`Failed to get assets: ${response.statusText}`);
+        }
+        return response.json();
+    }
+
+    async getAssetsByIds(ids: string[]) : Promise<Asset[]> {
+        const realm = getRealm();
+        const response = await fetch(`${this.baseUrl}/openremote/assets/ids?realm=${realm}&ids=${ids.join(',')}`, {
             method: "GET",
         });
         if (!response.ok) {
@@ -75,12 +88,13 @@ export class ApiService {
         return response.json();
     }
 
-    async getRealmConfig(realm: string) : Promise<RealmConfig> {
+    async getRealmConfig() : Promise<RealmConfig> {
+        const realm = getRealm();
         const response = await fetch(`${this.baseUrl}/openremote/realm/config/${realm}`, {
             method: "GET",
         });
         if (!response.ok) {
-            throw new Error(`Failed to get realm config ${realm}: ${response.statusText}`);
+            throw new Error(`Failed to get realm config: ${response.statusText}`);
         }
         return response.json();
     }

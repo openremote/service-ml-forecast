@@ -158,7 +158,7 @@ export class ConfigsTable extends OrMwcTable {
     }
 
     private handleAddConfig() {
-        const realm = getRealm(window.location.pathname);
+        const realm = getRealm();
         Router.go(`/${realm}/configs/new`);
     }
 

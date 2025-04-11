@@ -69,7 +69,7 @@ export class PageConfigList extends LitElement {
     async loadModelConfigs() {
         try {
             this.modelConfigs = await this.apiService.getModelConfigs();
-            this.configAssets = await this.apiService.getAssets(this.modelConfigs.map(c => c.target.asset_id));
+            this.configAssets = await this.apiService.getAssetsByIds(this.modelConfigs.map(c => c.target.asset_id));
             this.loading = false;
         } catch (error) {
             console.error("PageConfigList: Failed to fetch model configs:", error);
@@ -81,7 +81,7 @@ export class PageConfigList extends LitElement {
 
     private handleEditConfig(e: CustomEvent<ModelConfig>) {
         const config = e.detail;
-        const realm = getRealm(window.location.pathname);
+        const realm = getRealm();
         Router.go(`/${realm}/configs/${config.id}`);
     }
 
@@ -105,7 +105,7 @@ export class PageConfigList extends LitElement {
     }
 
     private handleAddConfig() {
-        const realm = getRealm(window.location.pathname);
+        const realm = getRealm();
         Router.go(`/${realm}/configs/new`);
     }
 

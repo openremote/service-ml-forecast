@@ -79,7 +79,7 @@ export async function setRealmTheme() {
     };
 
     try {
-        const config = await apiService.getRealmConfig(getRealm());
+        const config = await apiService.getRealmConfig();
         if (config && config.styles) {
             const cssString = config.styles;
             const colorRegex = /--or-app-color(\d+):\s*(#[0-9a-fA-F]{6})/g;
