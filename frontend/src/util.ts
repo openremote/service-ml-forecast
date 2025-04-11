@@ -55,6 +55,9 @@ export interface ThemeSettings {
     color6: string
 }
 
+/**
+ * Set the realm theme based on realm config from the service backend
+ */
 export async function setRealmTheme() {
     const apiService = new ApiService()
 

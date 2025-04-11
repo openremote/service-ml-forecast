@@ -116,7 +116,7 @@ export class PageConfigViewer extends LitElement {
         target: {
             asset_id: '',
             attribute_name: '',
-            cutoff_timestamp: 0
+            cutoff_timestamp: new Date().getTime()
         },
         forecast_interval: 'PT1H',
         forecast_periods: 48,
@@ -440,11 +440,12 @@ export class PageConfigViewer extends LitElement {
                             ></or-mwc-input>
 
                             <or-mwc-input
-                                type="${InputType.NUMBER}"
+                                type="${InputType.DATETIME}"
                                 name="target.cutoff_timestamp"
                                 @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onTargetInput(e)}"
                                 label="Use datapoints since"
                                 .value="${this.formData.target.cutoff_timestamp}"
+                                required
                             ></or-mwc-input>
                         </div>
                     </div>
