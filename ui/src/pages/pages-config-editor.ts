@@ -96,6 +96,17 @@ export class PageConfigViewer extends LitElement {
     private assetSearchSize: number = 10;
 
     @state()
+    private loading: boolean = true;
+
+    @state()
+    private isValid: boolean = false;
+
+    @state()
+    private modified: boolean = false;
+
+    private readonly apiService: ApiService = new ApiService();
+
+    @state()
     private formData: ProphetModelConfig = {
         type: ModelTypeEnum.PROPHET,
         realm: getRealm(),
@@ -113,6 +124,53 @@ export class PageConfigViewer extends LitElement {
         changepoint_range: 0.8,
         changepoint_prior_scale: 0.05,
         seasonality_mode: ProphetSeasonalityModeEnum.ADDITIVE,
+    }
+
+    // Update lifecycle
+    updated(_changedProperties: PropertyValues) {
+        this.isValid = this.isFormValid();
+        this.modified = this.isFormModified();
+    }
+
+    // Set up all the data for the editor
+    private async setupEditor() {
+        await this.loadAssets();
+        await this.loadConfig();
+    }
+
+
+    // Loads valid assets and their attributes from the API
+    private async loadAssets() {
+        this.assetSelectList.clear();
+        const assets = await this.apiService.getAssets();
+        assets.forEach(asset => {
+            this.assetSelectList.set(asset.id, asset.name);
+
+            // attributes: { [key: string]: AssetAttribute };
+            this.attributeSelectList.set(asset.id, 
+                new Map(Object.entries(asset.attributes).map(([key, value]) => [key, value.name])));
+        });
+    }
+
+    // Try to load the config from the API
+    private async loadConfig() {
+        this.loading = true;
+        this.isValid = false;
+
+        if (!this.configId) {
+            this.loading = false;
+            return;
+        }
+        try {
+            this.modelConfig = await this.apiService.getModelConfig(this.configId);
+            // Update the form data with the loaded config
+            this.formData = this.modelConfig;
+            this.loading = false;
+            return;
+        } catch (err) {
+            this.loading = false;
+            console.error(err);
+        }
     }
 
     // Extract the number from the ISO 8601 Duration string
@@ -139,60 +197,14 @@ export class PageConfigViewer extends LitElement {
         return match ? match[2] : null;
     }
 
-    @state()
-    private loading: boolean = true;
-
-    @state()
-    private isValid: boolean = false;
-
-    @state()
-    private modified: boolean = false;
-
-    private readonly apiService: ApiService = new ApiService();
-
+    // Handle the Vaadin Router location change event
     onAfterEnter(location: RouterLocation) {
         this.configId = location.params.id as string;
         return this.setupEditor();
     }
 
 
-    private async setupEditor() {
-        await this.loadAssets();
-        await this.loadConfig();
-    }
-
-
-    private async loadAssets() {
-        this.assetSelectList.clear();
-        const assets = await this.apiService.getAssets();
-        assets.forEach(asset => {
-            this.assetSelectList.set(asset.id, asset.name);
-
-            // attributes: { [key: string]: AssetAttribute };
-            this.attributeSelectList.set(asset.id, 
-                new Map(Object.entries(asset.attributes).map(([key, value]) => [key, value.name])));
-        });
-    }
-
-    private async loadConfig() {
-        this.loading = true;
-        this.isValid = false;
-
-        if (!this.configId) {
-            this.loading = false;
-            return;
-        }
-        try {
-            this.modelConfig = await this.apiService.getModelConfig(this.configId);
-            this.formData = this.modelConfig;
-            this.loading = false;
-            return;
-        } catch (err) {
-            this.loading = false;
-            console.error(err);
-        }
-    }
-
+    // Generic input handler
     onInput(ev: OrInputChangedEvent) {
         let value: string | boolean | number | undefined = ev.detail?.value;
         const target = ev.target as HTMLInputElement;
@@ -208,6 +220,7 @@ export class PageConfigViewer extends LitElement {
         };
     }
 
+    // Handle checkbox inputs
     onCheckboxInput(ev: OrInputChangedEvent) {
         let value: boolean = ev.detail?.value;
         const target = ev.target as HTMLInputElement;
@@ -218,6 +231,7 @@ export class PageConfigViewer extends LitElement {
         };
     }
 
+    // Handle target input (nested property)
     onTargetInput(ev: OrInputChangedEvent, isAssetIdChange: boolean = false) {
         let value: string | number | undefined = ev.detail?.value;
         const target = ev.target as HTMLInputElement;
@@ -246,6 +260,7 @@ export class PageConfigViewer extends LitElement {
         };
     }
 
+    // Handle the save button click
     async onSave() {
         let isExistingConfig = this.modelConfig !== null;
 
@@ -267,31 +282,27 @@ export class PageConfigViewer extends LitElement {
         }
     }
 
+    // Check form for validity
     isFormValid() {
         const inputs = this.shadowRoot?.querySelectorAll('or-mwc-input') as NodeListOf<HTMLInputElement>;
-        // Iterate over all inputs and check if they are valid via HTML5 validation
         if (inputs) {
             return Array.from(inputs).every(input => input.checkValidity());
         }
         return false;
     }
 
+    // Check if the form has been modified
     isFormModified() {
         return JSON.stringify(this.formData) !== JSON.stringify(this.modelConfig);
     }
 
-    // Handle updates
-    updated(_changedProperties: PropertyValues) {
-        this.isValid = this.isFormValid();
-        this.modified = this.isFormModified();
-    }
-
-
+    // Handle adding a regressor
     handleAddRegressor() {
         // TODO: Implement this
         console.log("add regressor");
     }
 
+    // Search provider for the asset select list
     protected async searchAssets(search?: string): Promise<[any, string][]> {
         const options = [...this.assetSelectList.entries()];
         if (!search) {
@@ -302,6 +313,7 @@ export class PageConfigViewer extends LitElement {
             .slice(0, this.assetSearchSize);
     }
 
+    // Render the editor
     protected render() {
         if (this.loading) {
             return html`<loading-spinner></loading-spinner>`;
