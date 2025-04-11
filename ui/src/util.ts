@@ -13,10 +13,8 @@ import { ApiService } from "./services/api-service";
  * @param path - The path to get the realm from
  * @returns The realm
  */
-export function getRealm(path: string): string {
-    // TODO: We need to eventually move this to actually check the realm from the backend
-    // ApiService.getRealm() should be used instead of this function
-    return path.split("/")[1]; // Realm is always the first part of the path
+export function getRealm(): string {
+    return window.location.pathname.split("/")[1]; // Realm is always the first part of the path
 }
 
 /**
@@ -81,7 +79,7 @@ export async function setRealmTheme() {
     };
 
     try {
-        const config = await apiService.getRealmConfig(getRealm(window.location.pathname));
+        const config = await apiService.getRealmConfig(getRealm());
         if (config && config.styles) {
             const cssString = config.styles;
             const colorRegex = /--or-app-color(\d+):\s*(#[0-9a-fA-F]{6})/g;

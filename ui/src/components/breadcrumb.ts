@@ -53,7 +53,7 @@ export class BreadcrumbNav extends LitElement {
     private parts: BreadcrumbPart[] = [];
 
     @state()
-    private readonly realm: string = getRealm(window.location.pathname);
+    private readonly realm: string = getRealm();
 
     private readonly HOME_LINK = {
         path: `/${this.realm}/configs`,

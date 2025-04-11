@@ -7,7 +7,7 @@ export class ApiService {
     private readonly baseUrl: string = "http://localhost:8000"
 
     async getModelConfigs() : Promise<ModelConfig[]> {
-        const realm = getRealm(window.location.pathname);
+        const realm = getRealm();
         const response = await fetch(`${this.baseUrl}/model/config/` + (realm ? `?realm=${realm}` : ''), {
             method: "GET",
         });
@@ -18,7 +18,7 @@ export class ApiService {
     }
 
     async getAssets(ids: string[]) : Promise<Asset[]> {
-        const realm = getRealm(window.location.pathname);
+        const realm = getRealm();
         const response = await fetch(`${this.baseUrl}/openremote/assets/ids` + (realm ? `?realm=${realm}&ids=${ids.join(',')}` : ''), {
             method: "GET",
         });

@@ -9,6 +9,7 @@ import "@openremote/or-panel";
 import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 import "../components/loading-spinner";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
+import { getRealm } from "../util";
 enum TimeDurationUnit {
     MINUTE = "M",
     HOUR = "H",
@@ -88,7 +89,7 @@ export class PageConfigViewer extends LitElement {
     @state()
     private formData: ProphetModelConfig = {
         type: ModelTypeEnum.PROPHET,
-        realm: "",
+        realm: getRealm(),
         name: "",
         enabled: true,
         target: {
@@ -142,11 +143,11 @@ export class PageConfigViewer extends LitElement {
 
     onAfterEnter(location: RouterLocation) {
         this.configId = location.params.id as string;
-        return this.refreshConfig();
+        return this.loadConfig();
     }
 
 
-    private async refreshConfig() {
+    private async loadConfig() {
         this.loading = true;
         this.isValid = false;
 
@@ -217,25 +218,21 @@ export class PageConfigViewer extends LitElement {
     async onSave() {
         let isExistingConfig = this.modelConfig !== null;
 
-        // Handle update
-        if (isExistingConfig) {
-            try {
-                await this.apiService.updateModelConfig(this.formData);
-                await this.refreshConfig();
-            } catch (error) {
-                console.error(error);
-                showSnackbar(undefined, "Failed to save the config");
+        // Switch between update and create -- based on whether the config
+        const saveRequest = isExistingConfig ?
+            this.apiService.updateModelConfig(this.formData) : this.apiService.createModelConfig(this.formData);
+
+        try {
+            const modelConfig = await saveRequest;
+            if (isExistingConfig) {
+                await this.loadConfig();
+            } else {
+                Router.go(`${modelConfig.realm}/configs/${modelConfig.id}`);
             }
-        }
-        // Handle create
-        else {
-            try {
-                await this.apiService.createModelConfig(this.formData);
-                await this.refreshConfig();
-            } catch (error) {
-                console.error(error);
-                showSnackbar(undefined, "Failed to save the config");
-            }
+
+        } catch (error) {
+            console.error(error);
+            showSnackbar(undefined, "Failed to save the config");
         }
     }
 
