@@ -1,26 +1,20 @@
-import { OrMwcTable, TableColumn, TableRow, TableConfig } from "@openremote/or-mwc-components/or-mwc-table";
-import { css, html, TemplateResult } from "lit";
-import { customElement, property } from "lit/decorators.js";
-import { CustomAsset, ModelConfig } from "../services/models";
-import "@openremote/or-mwc-components/or-mwc-input";
-import { getRealm } from "../util";
-import { Router } from "@vaadin/router";
-import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
+import { OrMwcTable, TableColumn, TableConfig, TableRow } from '@openremote/or-mwc-components/or-mwc-table'
+import { css, html, TemplateResult } from 'lit'
+import { customElement, property } from 'lit/decorators.js'
+import { CustomAsset, ModelConfig } from '../services/models'
+import '@openremote/or-mwc-components/or-mwc-input'
+import { getRealm } from '../util'
+import { Router } from '@vaadin/router'
+import { InputType } from '@openremote/or-mwc-components/or-mwc-input'
 
-
-@customElement("configs-table")
+@customElement('configs-table')
 export class ConfigsTable extends OrMwcTable {
-
     static get styles() {
         return [
             super.styles,
             css`
                 .mdc-data-table__row:not(.mdc-data-table__row--selected):hover {
-                    background-color: transparent !important; 
-                }
-
-                .mdc-data-table {
-       
+                    background-color: transparent !important;
                 }
 
                 .table-container {
@@ -48,19 +42,16 @@ export class ConfigsTable extends OrMwcTable {
                     padding: 8px 12px;
                     border-radius: 30px;
                     font-weight: 600;
-                
                 }
 
                 td:has(> .state-label.disabled) {
                     width: 100px;
                 }
 
-            
                 .state-label.enabled {
                     border: 1px solid var(--or-app-color3);
                     color: var(--or-app-color3);
                 }
-
 
                 .state-label.disabled {
                     border: 1px solid var(--or-app-color3);
@@ -74,66 +65,91 @@ export class ConfigsTable extends OrMwcTable {
                     align-items: center;
                     gap: 5px;
                 }
-
-  
             `
-        ] as any; // Cast to bypass strict type check by OrMwcTable extension
+        ] as any // Cast to bypass strict type check by OrMwcTable extension
     }
 
     @property({ type: Array })
-    public modelConfigs: ModelConfig[] = [];
+    public modelConfigs: ModelConfig[] = []
 
     @property({ type: Array })
-    public configAssets: CustomAsset[] = [];
+    public configAssets: CustomAsset[] = []
 
     public columns: TableColumn[] = [
-        { title: "State", isSortable: true },
-        { title: "Name", isSortable: true },
-        { title: "Type", isSortable: true },
-        { title: "Asset", isSortable: true },
-        { title: "Attribute", isSortable: true },
-        { title: "Actions", isSortable: false }
-    ];
+        { title: 'State', isSortable: true },
+        { title: 'Name', isSortable: true },
+        { title: 'Type', isSortable: true },
+        { title: 'Asset', isSortable: true },
+        { title: 'Attribute', isSortable: true },
+        { title: 'Actions', isSortable: false }
+    ]
 
     protected config: TableConfig = {
-        stickyFirstColumn: false,
-    };
-
-    private getStateRowTemplate(config: ModelConfig): TemplateResult {
-        return html`<span class="state-label ${config.enabled ? 'enabled' : 'disabled'}">${config.enabled ? 'Enabled' : 'Disabled'}</span>`;
+        stickyFirstColumn: false
     }
 
+    // Construct the state row template
+    private getStateRowTemplate(config: ModelConfig): TemplateResult {
+        return html` <span class="state-label ${config.enabled ? 'enabled' : 'disabled'}">
+            ${config.enabled ? 'Enabled' : 'Disabled'}
+        </span>`
+    }
+
+    // Construct the actions row template
     private getActionsRowTemplate(config: ModelConfig): TemplateResult {
         const handleEdit = (e: Event) => {
-            e.stopPropagation();
-            this.dispatchEvent(new CustomEvent('edit-config', { detail: config, bubbles: true, composed: true }));
-        };
+            e.stopPropagation()
+            this.dispatchEvent(
+                new CustomEvent('edit-config', {
+                    detail: config,
+                    bubbles: true,
+                    composed: true
+                })
+            )
+        }
 
         const handleDelete = (e: Event) => {
-            e.stopPropagation();
-            this.dispatchEvent(new CustomEvent('delete-config', { detail: config, bubbles: true, composed: true }));
-        };
+            e.stopPropagation()
+            this.dispatchEvent(
+                new CustomEvent('delete-config', {
+                    detail: config,
+                    bubbles: true,
+                    composed: true
+                })
+            )
+        }
 
         return html`
             <div class="actions-container">
                 <or-mwc-input type="${InputType.BUTTON}" outlined icon="pencil" label="Edit" @click="${handleEdit}"></or-mwc-input>
-                <or-mwc-input type="${InputType.BUTTON}" outlined icon="delete" style="margin-left: 10px;" label="Delete" @click="${handleDelete}"></or-mwc-input>
+                <or-mwc-input
+                    type="${InputType.BUTTON}"
+                    outlined
+                    icon="delete"
+                    style="margin-left: 10px;"
+                    label="Delete"
+                    @click="${handleDelete}"
+                ></or-mwc-input>
             </div>
-        `;
+        `
     }
 
+    // Construct the asset name template
     private getAssetNameTemplate(assetId: string): TemplateResult {
-        const asset = this.configAssets.find(a => a.id === assetId);
+        const asset = this.configAssets.find((a) => a.id === assetId)
 
         if (!asset) {
-            return html`<span title="Asset ID: ${assetId} could not be found" class="warning"><or-icon icon="alert-box-outline"></or-icon> Not found</span>`;
+            return html`<span title="Asset ID: ${assetId} could not be found" class="warning"
+                ><or-icon icon="alert-box-outline"></or-icon> Not found</span
+            >`
         }
 
-        return html`<span title="Asset ID: ${assetId}">${asset.name}</span>`;
+        return html`<span title="Asset ID: ${assetId}">${asset.name}</span>`
     }
 
+    // Construct the table rows
     protected getTableRows(configs: ModelConfig[]): TableRow[] {
-        return configs.map(config => ({
+        return configs.map((config) => ({
             content: [
                 this.getStateRowTemplate(config) as any,
                 config.name,
@@ -142,41 +158,43 @@ export class ConfigsTable extends OrMwcTable {
                 config.target.attribute_name,
                 this.getActionsRowTemplate(config)
             ]
-        }));
+        }))
     }
 
+    // Construct the no data section template
     protected getNoDataSectionTemplate(): TemplateResult {
         if (this.modelConfigs.length === 0) {
-            return html`
-            <div class="no-data-section">
+            return html` <div class="no-data-section">
                 <div>No forecast configurations found.</div>
-                <or-mwc-input type="${InputType.BUTTON}" outlined icon="plus" label="Configure new forecast" @click="${this.handleAddConfig}"></or-mwc-input>
-            </div>`;
+                <or-mwc-input
+                    type="${InputType.BUTTON}"
+                    outlined
+                    icon="plus"
+                    label="Configure new forecast"
+                    @click="${this.handleAddConfig}"
+                ></or-mwc-input>
+            </div>`
         }
 
-        return html``;
+        return html``
     }
 
+    // Handle the add config click
     private handleAddConfig() {
-        const realm = getRealm();
-        Router.go(`/${realm}/configs/new`);
+        const realm = getRealm()
+        Router.go(`/${realm}/configs/new`)
     }
 
-    render() {
-        return html`
-            <div class="table-container">
-                ${super.render()}
-                ${this.getNoDataSectionTemplate()}
-            </div>
-        `;
+    // Render the table
+    protected render() {
+        return html`<div class="table-container">${super.render()} ${this.getNoDataSectionTemplate()}</div>`
     }
 
+    // Update the table rows when the model configs change
     protected willUpdate(changedProperties: Map<string, any>): void {
         if (changedProperties.has('modelConfigs')) {
-            this.rows = this.getTableRows(this.modelConfigs);
+            this.rows = this.getTableRows(this.modelConfigs)
         }
-        super.willUpdate(changedProperties);
+        super.willUpdate(changedProperties)
     }
-
-
 }

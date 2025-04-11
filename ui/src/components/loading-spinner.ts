@@ -1,9 +1,8 @@
-import { css, html, LitElement } from "lit";
-import { customElement } from "lit/decorators.js";
+import { css, html, LitElement } from 'lit'
+import { customElement } from 'lit/decorators.js'
 
-@customElement("loading-spinner")
+@customElement('loading-spinner')
 export class LoadingSpinner extends LitElement {
-
     static get styles() {
         return css`
             :host {
@@ -26,22 +25,32 @@ export class LoadingSpinner extends LitElement {
             }
 
             @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
+                0% {
+                    transform: rotate(0deg);
+                }
+                100% {
+                    transform: rotate(360deg);
+                }
             }
 
             @keyframes fade {
-                0% { opacity: 0; }
-                100% { opacity: 1; }
+                0% {
+                    opacity: 0;
+                }
+                100% {
+                    opacity: 1;
+                }
             }
 
             img {
-                animation: spin 1s linear infinite, fade 0.5s ease-in-out;
+                animation:
+                    spin 1s linear infinite,
+                    fade 0.5s ease-in-out;
             }
-        `;
+        `
     }
 
     render() {
-        return html`<span class="loading-spinner"><img src="/static/images/logo.svg" alt="" /></span>`;
+        return html`<span class="loading-spinner"><img src="/static/images/logo.svg" alt="" /></span>`
     }
 }

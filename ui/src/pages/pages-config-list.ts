@@ -1,23 +1,20 @@
-import { html, LitElement, css } from "lit";
-import { customElement, state } from "lit/decorators.js";
-import { CustomAsset, ModelConfig } from "../services/models";
-import { Router } from '@vaadin/router';
-import "../components/configs-table";
-import "@openremote/or-panel";
-import { getRealm } from "../util";
-import { ApiService } from "../services/api-service";
-import "../components/loading-spinner";
-import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
-import { showOkCancelDialog } from "@openremote/or-mwc-components/or-mwc-dialog";
+import { css, html, LitElement } from 'lit'
+import { customElement, state } from 'lit/decorators.js'
+import { CustomAsset, ModelConfig } from '../services/models'
+import { Router } from '@vaadin/router'
+import '../components/configs-table'
+import '@openremote/or-panel'
+import { getRealm } from '../util'
+import { ApiService } from '../services/api-service'
+import '../components/loading-spinner'
+import { InputType } from '@openremote/or-mwc-components/or-mwc-input'
+import { showOkCancelDialog } from '@openremote/or-mwc-components/or-mwc-dialog'
+import { showSnackbar } from '@openremote/or-mwc-components/or-mwc-snackbar'
 
-
-@customElement("page-config-list")
+@customElement('page-config-list')
 export class PageConfigList extends LitElement {
-
-
     static get styles() {
         return css`
-
             :host {
                 display: block;
                 --or-panel-background-color: #fff;
@@ -46,73 +43,79 @@ export class PageConfigList extends LitElement {
                 align-items: center;
                 color: var(--or-app-color3);
             }
-        `;
+        `
     }
 
-
-    private readonly apiService: ApiService = new ApiService();
-
-    @state()
-    private modelConfigs?: ModelConfig[] = [];
+    private readonly apiService: ApiService = new ApiService()
 
     @state()
-    private configAssets?: CustomAsset[] = [];
+    private modelConfigs?: ModelConfig[] = []
 
     @state()
-    private loading: boolean = true;
+    private configAssets?: CustomAsset[] = []
 
+    @state()
+    private loading: boolean = true
+
+    // Lifecycle, when component is connected to the DOM
     connectedCallback() {
-        super.connectedCallback();
-        this.loadModelConfigs();
+        super.connectedCallback()
+        this.loadModelConfigs()
     }
 
+    // Load the model configs from the API
     async loadModelConfigs() {
         try {
-            this.modelConfigs = await this.apiService.getModelConfigs();
-            this.configAssets = await this.apiService.getAssetsByIds(this.modelConfigs.map(c => c.target.asset_id));
-            this.loading = false;
+            this.modelConfigs = await this.apiService.getModelConfigs()
+            this.configAssets = await this.apiService.getAssetsByIds(this.modelConfigs.map((c) => c.target.asset_id))
+            this.loading = false
         } catch (error) {
-            console.error("PageConfigList: Failed to fetch model configs:", error);
-            this.modelConfigs = [];
-            this.configAssets = [];
-            this.loading = false;
+            console.error('PageConfigList: Failed to fetch model configs:', error)
+            this.modelConfigs = []
+            this.configAssets = []
+            this.loading = false
         }
     }
 
+    // Handle the `edit-config` event
     private handleEditConfig(e: CustomEvent<ModelConfig>) {
-        const config = e.detail;
-        const realm = getRealm();
-        Router.go(`/${realm}/configs/${config.id}`);
+        const config = e.detail
+        const realm = getRealm()
+        Router.go(`/${realm}/configs/${config.id}`)
     }
 
+    // Handle the `delete-config` event
     private async handleDeleteConfig(e: CustomEvent<ModelConfig>) {
-        const config = e.detail;
+        const config = e.detail
         if (!config.id) {
-            console.error("PageConfigList: Config ID is required");
-            return;
+            console.error('PageConfigList: Config ID is required')
+            return
         }
 
-        const result = await showOkCancelDialog("Delete config", `Are you sure you want to delete the config: ${config.name}?`, "Delete")
+        // Show a confirmation dialog
+        const result = await showOkCancelDialog('Delete config', `Are you sure you want to delete the config: ${config.name}?`, 'Delete')
 
         if (result) {
             try {
-                await this.apiService.deleteModelConfig(config.id);
-                this.modelConfigs = this.modelConfigs?.filter(c => c.id !== config.id);
+                await this.apiService.deleteModelConfig(config.id)
+                this.modelConfigs = this.modelConfigs?.filter((c) => c.id !== config.id)
             } catch (error) {
-                console.error("PageConfigList: Failed to delete config:", error);
+                showSnackbar(undefined, `Failed to delete config: ${error}`)
+                console.error('PageConfigList: Failed to delete config:', error)
             }
         }
     }
 
+    // Handle the `add-config` event
     private handleAddConfig() {
-        const realm = getRealm();
-        Router.go(`/${realm}/configs/new`);
+        const realm = getRealm()
+        Router.go(`/${realm}/configs/new`)
     }
 
+    // Construct the configs table template
     private getConfigsTableTemplate() {
-
         if (this.loading) {
-            return html`<loading-spinner></loading-spinner>`;
+            return html`<loading-spinner></loading-spinner>`
         }
 
         return html`<configs-table
@@ -120,22 +123,27 @@ export class PageConfigList extends LitElement {
             @delete-config="${this.handleDeleteConfig}"
             .modelConfigs="${this.modelConfigs}"
             .configAssets="${this.configAssets}"
-        >`;
+        ></configs-table>`
     }
 
+    // Render the page
     protected render() {
         return html`
             <or-panel heading="">
                 <div class="config-header">
                     <div class="title-container">
                         <or-icon icon="chart-bell-curve"></or-icon>
-                    <span class="title">Forecast Configurations</span>
+                        <span class="title">Forecast Configurations</span>
+                    </div>
+                    <or-mwc-input
+                        type="${InputType.BUTTON}"
+                        icon="plus"
+                        label="configure new forecast"
+                        @click="${this.handleAddConfig}"
+                    ></or-mwc-input>
                 </div>
-                <or-mwc-input type="${InputType.BUTTON}" icon="plus" label="configure new forecast" @click="${this.handleAddConfig}"></or-mwc-input>
-            </div>
-            ${this.getConfigsTableTemplate()}
-            </configs-table>
+                ${this.getConfigsTableTemplate()}
             </or-panel>
-        `;
+        `
     }
 }

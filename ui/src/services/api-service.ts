@@ -1,103 +1,98 @@
-import { getRealm } from "../util";
-import { CustomAsset, ModelConfig, RealmConfig } from "./models";
+import { getRealm } from '../util'
+import { CustomAsset, ModelConfig, RealmConfig } from './models'
 
 export class ApiService {
-
     // TODO: Make this configurable via environment variable
-    private readonly baseUrl: string = "http://localhost:8000"
+    private readonly baseUrl: string = 'http://localhost:8000'
 
-    async getModelConfigs() : Promise<ModelConfig[]> {
-        const realm = getRealm();
+    async getModelConfigs(): Promise<ModelConfig[]> {
+        const realm = getRealm()
         const response = await fetch(`${this.baseUrl}/model/configs` + (realm ? `?realm=${realm}` : ''), {
-            method: "GET",
-        });
+            method: 'GET'
+        })
         if (!response.ok) {
-            throw new Error(`Failed to get model configs: ${response.statusText}`);
+            throw new Error(`Failed to get model configs: ${response.statusText}`)
         }
-        return response.json();
+        return response.json()
     }
 
-
-
-    async getAssets() : Promise<CustomAsset[]> {
-        const realm = getRealm();
+    async getAssets(): Promise<CustomAsset[]> {
+        const realm = getRealm()
         const response = await fetch(`${this.baseUrl}/openremote/assets` + (realm ? `?realm=${realm}` : ''), {
-            method: "GET",
-        });
+            method: 'GET'
+        })
         if (!response.ok) {
-            throw new Error(`Failed to get assets: ${response.statusText}`);
+            throw new Error(`Failed to get assets: ${response.statusText}`)
         }
-        return response.json();
+        return response.json()
     }
 
-    async getAssetsByIds(ids: string[]) : Promise<CustomAsset[]> {
-        const realm = getRealm();
+    async getAssetsByIds(ids: string[]): Promise<CustomAsset[]> {
+        const realm = getRealm()
         const response = await fetch(`${this.baseUrl}/openremote/assets/ids?realm=${realm}&ids=${ids.join(',')}`, {
-            method: "GET",
-        });
+            method: 'GET'
+        })
         if (!response.ok) {
-            throw new Error(`Failed to get assets: ${response.statusText}`);
+            throw new Error(`Failed to get assets: ${response.statusText}`)
         }
-        return response.json();
+        return response.json()
     }
 
-    async getModelConfig(id: string) : Promise<ModelConfig> {
+    async getModelConfig(id: string): Promise<ModelConfig> {
         const response = await fetch(`${this.baseUrl}/model/configs/${id}`, {
-            method: "GET",
-        });
+            method: 'GET'
+        })
         if (!response.ok) {
-            throw new Error(`Failed to get model config ${id}: ${response.statusText}`);
+            throw new Error(`Failed to get model config ${id}: ${response.statusText}`)
         }
-        return response.json();
+        return response.json()
     }
 
-    async deleteModelConfig(id: string) : Promise<void> {
+    async deleteModelConfig(id: string): Promise<void> {
         const response = await fetch(`${this.baseUrl}/model/configs/${id}`, {
-            method: "DELETE",
-        });
+            method: 'DELETE'
+        })
         if (!response.ok) {
-            throw new Error(`Failed to delete model config ${id}: ${response.statusText}`);
+            throw new Error(`Failed to delete model config ${id}: ${response.statusText}`)
         }
     }
 
-    async updateModelConfig(modelConfig: ModelConfig) : Promise<ModelConfig> {
+    async updateModelConfig(modelConfig: ModelConfig): Promise<ModelConfig> {
         const response = await fetch(`${this.baseUrl}/model/configs/${modelConfig.id}`, {
-            method: "PUT",
+            method: 'PUT',
             body: JSON.stringify(modelConfig),
             headers: {
-                "Content-Type": "application/json",
-            },
-        });
+                'Content-Type': 'application/json'
+            }
+        })
         if (!response.ok) {
-            throw new Error(`Failed to update model config: ${response.statusText}`);
+            throw new Error(`Failed to update model config: ${response.statusText}`)
         }
-        return response.json();
+        return response.json()
     }
 
-    async createModelConfig(modelConfig: ModelConfig) : Promise<ModelConfig> {
+    async createModelConfig(modelConfig: ModelConfig): Promise<ModelConfig> {
         const response = await fetch(`${this.baseUrl}/model/configs`, {
-            method: "POST",
+            method: 'POST',
             body: JSON.stringify(modelConfig),
             headers: {
-                "Content-Type": "application/json",
-            },
-        });
+                'Content-Type': 'application/json'
+            }
+        })
         if (!response.ok) {
-            throw new Error(`Failed to create model config: ${response.statusText}`);
+            throw new Error(`Failed to create model config: ${response.statusText}`)
         }
-        return response.json();
+        return response.json()
     }
 
-    async getRealmConfig() : Promise<RealmConfig> {
-        const realm = getRealm();
+    async getRealmConfig(): Promise<RealmConfig> {
+        const realm = getRealm()
         const response = await fetch(`${this.baseUrl}/openremote/realm/config/${realm}`, {
-            method: "GET",
-        });
+            method: 'GET'
+        })
         if (!response.ok) {
-            throw new Error(`Failed to get realm config: ${response.statusText}`);
+            throw new Error(`Failed to get realm config: ${response.statusText}`)
         }
-        return response.json();
+        return response.json()
     }
-    
-    
 }
