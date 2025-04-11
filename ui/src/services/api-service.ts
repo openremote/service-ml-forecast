@@ -1,5 +1,5 @@
 import { getRealm } from "../util";
-import { Asset, ModelConfig, RealmConfig } from "./models";
+import { CustomAsset, ModelConfig, RealmConfig } from "./models";
 
 export class ApiService {
 
@@ -19,7 +19,7 @@ export class ApiService {
 
 
 
-    async getAssets() : Promise<Asset[]> {
+    async getAssets() : Promise<CustomAsset[]> {
         const realm = getRealm();
         const response = await fetch(`${this.baseUrl}/openremote/assets` + (realm ? `?realm=${realm}` : ''), {
             method: "GET",
@@ -30,7 +30,7 @@ export class ApiService {
         return response.json();
     }
 
-    async getAssetsByIds(ids: string[]) : Promise<Asset[]> {
+    async getAssetsByIds(ids: string[]) : Promise<CustomAsset[]> {
         const realm = getRealm();
         const response = await fetch(`${this.baseUrl}/openremote/assets/ids?realm=${realm}&ids=${ids.join(',')}`, {
             method: "GET",

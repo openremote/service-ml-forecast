@@ -1,6 +1,6 @@
 import { Router } from '@vaadin/router';
 import "./pages/pages-config-list";
-import "./pages/pages-config-viewer";
+import "./pages/pages-config-editor";
 import "./components/breadcrumb";
 import "./pages/pages-not-found";
 

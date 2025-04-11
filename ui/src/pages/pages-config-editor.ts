@@ -10,6 +10,7 @@ import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or
 import "../components/loading-spinner";
 import { showSnackbar } from "@openremote/or-mwc-components/or-mwc-snackbar";
 import { getRealm } from "../util";
+
 enum TimeDurationUnit {
     MINUTE = "M",
     HOUR = "H",
@@ -22,8 +23,6 @@ enum PandasTimeUnit {
 
 @customElement("page-config-viewer")
 export class PageConfigViewer extends LitElement {
-
-
     static get styles() {
         return css`
             :host {
@@ -86,6 +85,16 @@ export class PageConfigViewer extends LitElement {
     @state()
     private modelConfig: ProphetModelConfig | null = null;
 
+    // <assetId, assetName>
+    @state()
+    private assetSelectList: Map<string, string> = new Map();
+
+    // assetId -> <attributeName, attributeName>
+    @state()
+    private attributeSelectList: Map<string, Map<string, string>> = new Map();
+
+    private assetSearchSize: number = 10;
+
     @state()
     private formData: ProphetModelConfig = {
         type: ModelTypeEnum.PROPHET,
@@ -143,9 +152,27 @@ export class PageConfigViewer extends LitElement {
 
     onAfterEnter(location: RouterLocation) {
         this.configId = location.params.id as string;
-        return this.loadConfig();
+        return this.setupEditor();
     }
 
+
+    private async setupEditor() {
+        await this.loadAssets();
+        await this.loadConfig();
+    }
+
+
+    private async loadAssets() {
+        this.assetSelectList.clear();
+        const assets = await this.apiService.getAssets();
+        assets.forEach(asset => {
+            this.assetSelectList.set(asset.id, asset.name);
+
+            // attributes: { [key: string]: AssetAttribute };
+            this.attributeSelectList.set(asset.id, 
+                new Map(Object.entries(asset.attributes).map(([key, value]) => [key, value.name])));
+        });
+    }
 
     private async loadConfig() {
         this.loading = true;
@@ -191,7 +218,7 @@ export class PageConfigViewer extends LitElement {
         };
     }
 
-    onTargetInput(ev: OrInputChangedEvent) {
+    onTargetInput(ev: OrInputChangedEvent, isAssetIdChange: boolean = false) {
         let value: string | number | undefined = ev.detail?.value;
         const target = ev.target as HTMLInputElement;
 
@@ -199,11 +226,15 @@ export class PageConfigViewer extends LitElement {
             return;
         }
 
-        // Extract the actual key (e.g., 'asset_id' from 'target.asset_id')
         const key = target.name.split('.')[1];
         if (!key) {
             console.error("Invalid target input name:", target.name);
             return;
+        }
+
+        if (isAssetIdChange) {
+            // set attribute to first attribute
+            this.formData.target.attribute_name = (this.attributeSelectList.get(value as string)?.values().next().value ?? '');
         }
 
         this.formData = {
@@ -249,6 +280,7 @@ export class PageConfigViewer extends LitElement {
         return JSON.stringify(this.formData) !== JSON.stringify(this.modelConfig);
     }
 
+    // Handle updates
     updated(_changedProperties: PropertyValues) {
         this.isValid = this.isFormValid();
         this.modified = this.isFormModified();
@@ -258,6 +290,16 @@ export class PageConfigViewer extends LitElement {
     handleAddRegressor() {
         // TODO: Implement this
         console.log("add regressor");
+    }
+
+    protected async searchAssets(search?: string): Promise<[any, string][]> {
+        const options = [...this.assetSelectList.entries()];
+        if (!search) {
+            return options.slice(0, this.assetSearchSize);
+        }
+        const searchTerm = search.toLowerCase();
+        return options.filter(([_value, label]) => label.toLowerCase().includes(searchTerm))
+            .slice(0, this.assetSearchSize);
     }
 
     protected render() {
@@ -328,17 +370,20 @@ export class PageConfigViewer extends LitElement {
                 <or-panel heading="FORECAST TARGET">
                     <div class="column">
                         <div class="row">
-                            <or-mwc-input type="${InputType.TEXT}" name="target.asset_id"
-                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onTargetInput(e)}"
-                                label="Asset" .value="${this.formData.target.asset_id}" minlength="22" maxlength="22" required></or-mwc-input>
+                            <or-mwc-input type="${InputType.SELECT}" name="target.asset_id"
+                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onTargetInput(e, true)}"
+                                label="Asset" .value="${this.formData.target.asset_id}"
+                                .options="${[...this.assetSelectList.entries()].slice(0, this.assetSearchSize)}"
+                                .searchProvider="${this.searchAssets.bind(this)}"></or-mwc-input>
                     
-                            <or-mwc-input type="${InputType.TEXT}" name="target.attribute_name"
+                            <or-mwc-input type="${InputType.SELECT}" name="target.attribute_name"
                                 @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onTargetInput(e)}"
-                            label="Attribute" .value="${this.formData.target.attribute_name}" required></or-mwc-input>
+                                label="Attribute" .value="${this.formData.target.attribute_name}"
+                                .options="${[...(this.attributeSelectList.get(this.formData.target.asset_id) ?? new Map())]}"></or-mwc-input>
                      
                             <or-mwc-input type="${InputType.NUMBER}" name="target.cutoff_timestamp" 
                                 @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onTargetInput(e)}"
-                                label="Use datapoints since" .value="${this.formData.target.cutoff_timestamp}" required></or-mwc-input>
+                                label="Use datapoints since" .value="${this.formData.target.cutoff_timestamp}"></or-mwc-input>
                         </div>
                     </div>
                 </or-panel>
@@ -396,8 +441,7 @@ export class PageConfigViewer extends LitElement {
                         </div>
                     </div>
                 </or-panel>
-            </form>
-                
+            </form>    
         `;
     }
 }

@@ -1,6 +1,6 @@
 import { html, LitElement, css } from "lit";
 import { customElement, state } from "lit/decorators.js";
-import { Asset, ModelConfig } from "../services/models";
+import { CustomAsset, ModelConfig } from "../services/models";
 import { Router } from '@vaadin/router';
 import "../components/configs-table";
 import "@openremote/or-panel";
@@ -56,7 +56,7 @@ export class PageConfigList extends LitElement {
     private modelConfigs?: ModelConfig[] = [];
 
     @state()
-    private configAssets?: Asset[] = [];
+    private configAssets?: CustomAsset[] = [];
 
     @state()
     private loading: boolean = true;

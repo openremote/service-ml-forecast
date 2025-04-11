@@ -33,7 +33,7 @@ export interface AssetAttributeFeature {
  * Represents an asset attribute from OpenRemote.
  * Corresponds to Python class service_ml_forecast.clients.openremote.models.AssetAttribute.
  */
-export interface AssetAttribute {
+export interface CustomAttribute {
   /**
    * Name of the attribute.
    */
@@ -46,13 +46,17 @@ export interface AssetAttribute {
    * Timestamp of the attribute value in milliseconds since epoch.
    */
   timestamp: number;
+  /**
+   * Meta data of the attribute.
+   */
+  meta: { [key: string]: any };
 }
 
 /**
  * Represents a minimal asset from OpenRemote.
  * Corresponds to Python class service_ml_forecast.clients.openremote.models.Asset.
  */
-export interface Asset {
+export interface CustomAsset {
   /**
    * ID of the asset.
    */
@@ -73,7 +77,7 @@ export interface Asset {
   /**
    * Dictionary mapping attribute names to their corresponding AssetAttribute objects.
    */
-  attributes: { [key: string]: AssetAttribute };
+  attributes: { [key: string]: CustomAttribute };
 }
 
 /**

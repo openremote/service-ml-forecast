@@ -1,7 +1,7 @@
 import { OrMwcTable, TableColumn, TableRow, TableConfig } from "@openremote/or-mwc-components/or-mwc-table";
 import { css, html, TemplateResult } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { Asset, ModelConfig } from "../services/models";
+import { CustomAsset, ModelConfig } from "../services/models";
 import "@openremote/or-mwc-components/or-mwc-input";
 import { getRealm } from "../util";
 import { Router } from "@vaadin/router";
@@ -84,7 +84,7 @@ export class ConfigsTable extends OrMwcTable {
     public modelConfigs: ModelConfig[] = [];
 
     @property({ type: Array })
-    public configAssets: Asset[] = [];
+    public configAssets: CustomAsset[] = [];
 
     public columns: TableColumn[] = [
         { title: "State", isSortable: true },
