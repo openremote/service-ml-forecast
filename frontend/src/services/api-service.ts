@@ -5,6 +5,19 @@ export class ApiService {
     // TODO: Make this configurable via environment variable
     private readonly baseUrl: string = 'http://localhost:8000'
 
+    // TODO: Replace with actual health check endpoint
+    async isServiceAvailable(): Promise<boolean> {
+        try {
+            const response = await fetch(`${this.baseUrl}/docs`, {
+                method: 'GET'
+            })
+            return response.ok
+        } catch (error) {
+            console.error('Error checking service availability:', error)
+            return false
+        }
+    }
+
     async getModelConfigs(): Promise<ModelConfig[]> {
         const realm = getRealm()
         const response = await fetch(`${this.baseUrl}/model/configs` + (realm ? `?realm=${realm}` : ''), {

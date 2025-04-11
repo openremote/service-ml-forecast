@@ -1,13 +1,16 @@
 import path from 'path'
 import rspack from '@rspack/core'
 import { fileURLToPath } from 'url'
+import process from 'process'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
+const isProduction = process.env.NODE_ENV === 'production'
+
 export default {
-    mode: 'development',
-    devtool: 'eval-source-map',
+    mode: isProduction ? 'production' : 'development',
+    devtool: isProduction ? 'source-map' : 'eval-source-map',
     entry: {
         main: './src/index.ts'
     },
@@ -58,6 +61,7 @@ export default {
         port: 8001,
         historyApiFallback: true,
         hot: true,
-        watchFiles: ['/**/*']
+        watchFiles: ['/**/*'],
+        compress: true
     }
 }

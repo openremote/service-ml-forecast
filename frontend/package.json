@@ -6,6 +6,7 @@
     "scripts": {
         "dev": "rspack serve",
         "build": "rspack build --mode production",
+        "build:analyze": "rspack build --mode production --analyze",
         "preview": "rspack preview",
         "lint": "eslint . --ext .ts",
         "format": "prettier . --write"
