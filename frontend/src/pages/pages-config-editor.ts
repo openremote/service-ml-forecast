@@ -111,7 +111,7 @@ export class PageConfigViewer extends LitElement {
     private formData: ProphetModelConfig = {
         type: ModelTypeEnum.PROPHET,
         realm: getRealm(),
-        name: '',
+        name: 'New Model Config',
         enabled: true,
         target: {
             asset_id: '',
@@ -287,6 +287,12 @@ export class PageConfigViewer extends LitElement {
     // Check form for validity
     isFormValid() {
         const inputs = this.shadowRoot?.querySelectorAll('or-mwc-input') as NodeListOf<HTMLInputElement>
+
+        // Check target asset_id and attribute explicitly (required doesn't work for some reason)
+        if (!this.formData.target.asset_id || !this.formData.target.attribute_name) {
+            return false
+        }
+
         if (inputs) {
             return Array.from(inputs).every((input) => input.checkValidity())
         }
@@ -427,7 +433,7 @@ export class PageConfigViewer extends LitElement {
                                 label="Asset"
                                 .value="${this.formData.target.asset_id}"
                                 .options="${[...this.assetSelectList.entries()].slice(0, this.assetSearchSize)}"
-                                .searchProvider="${this.searchAssets.bind(this)}"
+                                .searchProvider="${this.assetSelectList.size > 0 ? this.searchAssets.bind(this) : null}"
                             ></or-mwc-input>
 
                             <or-mwc-input
