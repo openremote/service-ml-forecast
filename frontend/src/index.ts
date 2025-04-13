@@ -13,10 +13,8 @@ const outlet = document.querySelector('#outlet') as HTMLElement
 const router = new Router(outlet)
 
 async function init() {
-    // Setup the MDI icons
     setupORIcons()
 
-    // Check if the service backend is available
     const backendIsAvailable = await apiService.isServiceAvailable()
     if (!backendIsAvailable) {
         render(html`<page-service-unavailable></page-service-unavailable>`, outlet)
@@ -26,7 +24,13 @@ async function init() {
     // Load realm theme
     await setRealmTheme()
 
-    // Define the routes
+    // Render breadcrumb component
+    render(html`<breadcrumb-nav></breadcrumb-nav>`, outlet)
+
+    initRouter()
+}
+
+function initRouter() {
     const routes = [
         {
             path: '/:realm/configs',
@@ -45,12 +49,8 @@ async function init() {
             component: 'page-not-found'
         }
     ]
-
-    // Render breadcrumb component
-    render(html`<breadcrumb-nav></breadcrumb-nav>`, outlet)
-
-    // Set the routes and start rendering route components
     router.setRoutes(routes)
 }
 
-init()
+// Entry point
+await init()
