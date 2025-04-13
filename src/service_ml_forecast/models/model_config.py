@@ -24,7 +24,6 @@ from pydantic import BaseModel, Field
 from service_ml_forecast.models.model_type import ModelTypeEnum
 
 
-
 class RegressorFeature(BaseModel):
     """Regressor feature with the asset id, attribute name and the cutoff timestamp."""
 
@@ -43,6 +42,7 @@ class RegressorFeature(BaseModel):
         """Get the feature name for the regressor feature."""
         return f"{self.asset_id}.{self.attribute_name}"
 
+
 class TargetFeature(BaseModel):
     """Target feature with the asset id, attribute name and the cutoff timestamp."""
 
@@ -55,6 +55,7 @@ class TargetFeature(BaseModel):
         description="Timestamp in milliseconds since epoch, all data after this timestamp will be used.",
         gt=0,
     )
+
 
 class BaseModelConfig(BaseModel):
     """Base configuration for all ML models."""

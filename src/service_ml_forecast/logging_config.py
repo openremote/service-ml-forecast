@@ -48,11 +48,7 @@ LOGGING_CONFIG = {
             "propagate": True,
         },
         # Uvicorn web server logs
-        "uvicorn": {
-            "handlers": [],
-            "level": ENV.ML_LOG_LEVEL,
-            "propagate": True
-        },
+        "uvicorn": {"handlers": [], "level": ENV.ML_LOG_LEVEL, "propagate": True},
         "uvicorn.error": {
             "handlers": [],
             "level": ENV.ML_LOG_LEVEL,
