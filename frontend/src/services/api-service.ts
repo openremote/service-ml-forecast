@@ -23,7 +23,7 @@ export class ApiService {
     }
 
     /**
-     * Get all model configs
+     * Get all model configs for the current realm
      * @returns The list of model configs
      */
     async getModelConfigs(): Promise<ModelConfig[]> {
@@ -38,7 +38,7 @@ export class ApiService {
     }
 
     /**
-     * Get all assets
+     * Get all assets for the current realm with attributesthat store datapoints
      * @returns The list of assets
      */
     async getAssets(): Promise<CustomAsset[]> {
@@ -53,7 +53,7 @@ export class ApiService {
     }
 
     /**
-     * Get assets by ids
+     * Get assets by ids for the current realm
      * @param ids The list of asset ids
      * @returns The list of assets
      */
@@ -135,7 +135,7 @@ export class ApiService {
     }
 
     /**
-     * Get the realm config
+     * Get the realm config for the current realm (for styling purposes)
      * @returns The realm config
      */
     async getRealmConfig(): Promise<RealmConfig> {

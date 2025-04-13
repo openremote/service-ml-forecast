@@ -58,7 +58,7 @@ class TimeUtil:
 
         Args:
             periods: The number of periods.
-            frequency: The frequency. (Pandas offset string)
+            frequency: The frequency. (Pandas frequency string)
 
         Returns:
             The future timestamp in milliseconds.

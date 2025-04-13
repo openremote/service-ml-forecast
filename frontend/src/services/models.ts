@@ -130,7 +130,7 @@ interface BaseModelConfig {
      */
     forecast_periods: number
     /**
-     * The frequency of each forecasted datapoint. Expects a pandas offset string.
+     * The frequency of each forecasted datapoint. Expects a pandas frequency string.
      * E.g. '30min' or '1h'.
      * Generated forecast datapoints are rounded to the nearest frequency.
      * Example: 15:30 -> 16:00 -> 16:30 etc.

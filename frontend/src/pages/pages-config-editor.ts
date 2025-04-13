@@ -11,16 +11,8 @@ import { InputType, OrInputChangedEvent } from '@openremote/or-mwc-components/or
 import '../components/loading-spinner'
 import { showSnackbar } from '@openremote/or-mwc-components/or-mwc-snackbar'
 import { getRealm } from '../util'
-
-enum TimeDurationUnit {
-    MINUTE = 'M',
-    HOUR = 'H'
-}
-
-enum PandasTimeUnit {
-    MINUTE = 'min',
-    HOUR = 'h'
-}
+import '../components/custom-duration-input'
+import { DurationInputType } from '../components/custom-duration-input'
 
 @customElement('page-config-viewer')
 export class PageConfigViewer extends LitElement {
@@ -57,7 +49,7 @@ export class PageConfigViewer extends LitElement {
 
             or-mwc-input {
                 flex: 1;
-                max-width: 300px;
+                max-width: 350px;
             }
 
             or-mwc-input[type='checkbox'] {
@@ -172,30 +164,6 @@ export class PageConfigViewer extends LitElement {
         }
     }
 
-    // Extract the number from the ISO 8601 Duration string
-    getNumberFromDuration(duration: string): number | null {
-        const match = /PT(\d+)([HM])/.exec(duration)
-        return match ? parseInt(match[1], 10) : null
-    }
-
-    // Extract the unit from the ISO 8601 Duration string
-    getUnitFromDuration(duration: string): string | null {
-        const match = /PT(\d+)([HM])/.exec(duration)
-        return match ? match[2] : null
-    }
-
-    // Extract the number from the Pandas Offset string
-    getNumberFromPandasOffset(offset: string): number | null {
-        const match = /(\d+)(min|h)/.exec(offset)
-        return match ? parseInt(match[1], 10) : null
-    }
-
-    // Extract the unit from the Pandas Offset string
-    getUnitFromPandasOffset(offset: string): string | null {
-        const match = /(\d+)(min|h)/.exec(offset)
-        return match ? match[2] : null
-    }
-
     // Handle the Vaadin Router location change event
     onAfterEnter(location: RouterLocation) {
         this.configId = location.params.id as string
@@ -204,6 +172,7 @@ export class PageConfigViewer extends LitElement {
 
     // Generic input handler
     onInput(ev: OrInputChangedEvent) {
+        console.log('onInput', ev)
         const value: string | boolean | number | undefined = ev.detail?.value
         const target = ev.target as HTMLInputElement
 
@@ -389,14 +358,14 @@ export class PageConfigViewer extends LitElement {
                 <or-panel heading="FORECAST GENERATION">
                     <div class="column">
                         <div class="row">
-                            <or-mwc-input
-                                type="${InputType.TEXT}"
+                            <!-- forecast_interval (ISO 8601) -->
+                            <custom-duration-input
                                 name="forecast_interval"
-                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onInput(e)}"
+                                .type="${DurationInputType.ISO_8601}"
+                                @value-changed="${(e: CustomEvent<{ value: string }>) => this.onInput(e)}"
                                 label="Generate new forecast every"
                                 .value="${this.formData.forecast_interval}"
-                                required
-                            ></or-mwc-input>
+                            ></custom-duration-input>
                         </div>
 
                         <div class="row">
@@ -410,14 +379,14 @@ export class PageConfigViewer extends LitElement {
                                 required
                             ></or-mwc-input>
 
-                            <or-mwc-input
-                                type="${InputType.TEXT}"
+                            <!-- forecast_frequency (pandas frequency) -->
+                            <custom-duration-input
                                 name="forecast_frequency"
-                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onInput(e)}"
+                                .type="${DurationInputType.PANDAS_FREQ}"
+                                @value-changed="${(e: CustomEvent<{ value: string }>) => this.onInput(e)}"
                                 label="Time between datapoints"
                                 .value="${this.formData.forecast_frequency}"
-                                required
-                            ></or-mwc-input>
+                            ></custom-duration-input>
                         </div>
                     </div>
                 </or-panel>
@@ -461,14 +430,14 @@ export class PageConfigViewer extends LitElement {
                 <or-panel heading="MODEL TRAINING">
                     <div class="column">
                         <div class="row">
-                            <or-mwc-input
-                                type="${InputType.TEXT}"
+                            <!-- Training interval (ISO 8601) -->
+                            <custom-duration-input
                                 name="training_interval"
-                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onInput(e)}"
-                                label="Training interval"
+                                .type="${DurationInputType.ISO_8601}"
+                                @value-changed="${(e: CustomEvent<{ value: string }>) => this.onInput(e)}"
+                                label="Train model every"
                                 .value="${this.formData.training_interval}"
-                                required
-                            ></or-mwc-input>
+                            ></custom-duration-input>
                         </div>
                     </div>
                 </or-panel>
