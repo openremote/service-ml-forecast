@@ -78,7 +78,7 @@ class OpenRemoteService:
             return None
 
         target_feature_datapoints = FeatureDatapoints(
-            attribute_name=config.target.attribute_name,
+            feature_name=config.target.attribute_name,
             datapoints=datapoints,
         )
 
@@ -97,13 +97,13 @@ class OpenRemoteService:
                 if regressor_datapoints is None:
                     logger.warning(
                         f"Unable to retrieve regressor datapoints for {regressor.asset_id} "
-                        f"{regressor.attribute_name} - skipping"
+                        f"{regressor.get_feature_name()} - skipping"
                     )
                     continue
 
                 regressors.append(
                     FeatureDatapoints(
-                        attribute_name=regressor.attribute_name,
+                        feature_name=regressor.get_feature_name(),
                         datapoints=regressor_datapoints,
                     ),
                 )
@@ -139,13 +139,13 @@ class OpenRemoteService:
                 if regressor_datapoints is None:
                     logger.warning(
                         f"Unable to retrieve predicted datapoints for {regressor.asset_id} "
-                        f"{regressor.attribute_name} - skipping"
+                        f"{regressor.get_feature_name()} - skipping"
                     )
                     continue
 
                 regressors.append(
                     FeatureDatapoints(
-                        attribute_name=regressor.attribute_name,
+                        feature_name=regressor.get_feature_name(),
                         datapoints=regressor_datapoints,
                     ),
                 )

@@ -24,8 +24,9 @@ from pydantic import BaseModel, Field
 from service_ml_forecast.models.model_type import ModelTypeEnum
 
 
-class AssetAttributeFeature(BaseModel):
-    """Asset attribute feature with the asset id, attribute name and the cutoff timestamp."""
+
+class RegressorFeature(BaseModel):
+    """Regressor feature with the asset id, attribute name and the cutoff timestamp."""
 
     asset_id: str = Field(description="ID of the asset from OpenRemote.", min_length=22, max_length=22)
     attribute_name: str = Field(
@@ -37,6 +38,23 @@ class AssetAttributeFeature(BaseModel):
         gt=0,
     )
 
+    # Used for model training and forecasting -- requiring unique feature name
+    def get_feature_name(self) -> str:
+        """Get the feature name for the regressor feature."""
+        return f"{self.asset_id}.{self.attribute_name}"
+
+class TargetFeature(BaseModel):
+    """Target feature with the asset id, attribute name and the cutoff timestamp."""
+
+    asset_id: str = Field(description="ID of the asset from OpenRemote.", min_length=22, max_length=22)
+    attribute_name: str = Field(
+        description="Name of the attribute of the asset.",
+        min_length=3,
+    )
+    cutoff_timestamp: int = Field(
+        description="Timestamp in milliseconds since epoch, all data after this timestamp will be used.",
+        gt=0,
+    )
 
 class BaseModelConfig(BaseModel):
     """Base configuration for all ML models."""
@@ -52,11 +70,11 @@ class BaseModelConfig(BaseModel):
         description="Whether the model is enabled and will be scheduled for training and forecasting.",
     )
     type: ModelTypeEnum = Field(description="Which machine learning model to use.")
-    target: AssetAttributeFeature = Field(
+    target: TargetFeature = Field(
         description="The asset attribute to generate datapoints for. "
         "There must be historical data available for training.",
     )
-    regressors: list[AssetAttributeFeature] | None = Field(
+    regressors: list[RegressorFeature] | None = Field(
         default=None,
         description="List of asset attributes that will be used as regressors. "
         "There must be historical data available for training.",

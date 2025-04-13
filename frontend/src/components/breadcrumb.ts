@@ -17,6 +17,7 @@ export class BreadcrumbNav extends LitElement {
                 align-items: center;
                 gap: 8px;
                 margin-bottom: 16px;
+                width: fit-content;
             }
 
             a {

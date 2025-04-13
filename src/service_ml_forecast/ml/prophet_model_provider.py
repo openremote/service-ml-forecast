@@ -62,9 +62,9 @@ class ProphetModelProvider(ModelProvider[Prophet]):
 
         # Add regressors to the model if provided
         if training_dataset.regressors is not None:
-            logger.info(f"Adding {len(training_dataset.regressors)} regressor(s) -- {self.config.id}")
+            logger.info(f"Training with {len(training_dataset.regressors)} regressor(s) -- {self.config.id}")
             for regressor in training_dataset.regressors:
-                model.add_regressor(regressor.attribute_name)
+                model.add_regressor(regressor.feature_name)
 
         # Train the model
         model.fit(dataframe)
@@ -93,15 +93,16 @@ class ProphetModelProvider(ModelProvider[Prophet]):
         future["ds"] = future["ds"].dt.round(self.config.forecast_frequency)
 
         if forecast_feature_set is not None:
+            logger.info(f"Forecasting with {len(forecast_feature_set.regressors)} regressor(s) -- {self.config.id}")
             for regressor in forecast_feature_set.regressors:
                 regressor_dataframe = _convert_datapoints_to_dataframe(
                     regressor.datapoints,
-                    rename_y=regressor.attribute_name,
+                    rename_y=regressor.feature_name,
                 )
 
                 future = pd.merge_asof(
                     future,
-                    regressor_dataframe[["ds", regressor.attribute_name]],
+                    regressor_dataframe[["ds", regressor.feature_name]],
                     on="ds",
                     direction="nearest",
                 )
@@ -154,13 +155,13 @@ def _prepare_training_dataframe(training_dataset: TrainingFeatureSet) -> pd.Data
         for regressor in regressors:
             regressor_dataframe = _convert_datapoints_to_dataframe(
                 regressor.datapoints,
-                rename_y=regressor.attribute_name,
+                rename_y=regressor.feature_name,
             )
 
             # Interpolate the regressor values to the target data point timestamps
             dataframe = pd.merge_asof(
                 dataframe,
-                regressor_dataframe[["ds", regressor.attribute_name]],
+                regressor_dataframe[["ds", regressor.feature_name]],
                 on="ds",
                 direction="nearest",
             )

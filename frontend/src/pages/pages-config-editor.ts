@@ -75,10 +75,6 @@ export class PageConfigViewer extends LitElement {
                 width: 100%;
                 gap: 20px;
             }
-
-            form {
-                width: fit-content;
-            }
         `
     }
 

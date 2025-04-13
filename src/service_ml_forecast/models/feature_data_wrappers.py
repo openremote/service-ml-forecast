@@ -21,9 +21,10 @@ from service_ml_forecast.clients.openremote.models import AssetDatapoint
 
 
 class FeatureDatapoints(BaseModel):
-    """Feature with the attribute name and the datapoints."""
-
-    attribute_name: str
+    """Feature with the feature name and the datapoints."""
+    
+    # (Combined asset id and attribute name e.g. "asset_id.attribute_name")
+    feature_name: str 
     datapoints: list[AssetDatapoint]
 
 

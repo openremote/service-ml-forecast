@@ -21,7 +21,7 @@ def test_train_and_predict(
     model = model_provider.train_model(
         TrainingFeatureSet(
             target=FeatureDatapoints(
-                attribute_name=prophet_basic_config.target.attribute_name,
+                feature_name=prophet_basic_config.target.attribute_name,
                 datapoints=windspeed_mock_datapoints,
             ),
         ),
@@ -57,7 +57,7 @@ def test_train_and_predict_with_regressor(
     # Create the windspeed model
     windspeed_provider = ModelProviderFactory.create_provider(prophet_basic_config)
     windspeed_target_datapoints = FeatureDatapoints(
-        attribute_name=prophet_basic_config.target.attribute_name,
+        feature_name=prophet_basic_config.target.attribute_name,
         datapoints=windspeed_mock_datapoints,
     )
 
@@ -79,7 +79,7 @@ def test_train_and_predict_with_regressor(
     # Create the tariff model
     tarrif_provider = ModelProviderFactory.create_provider(prophet_multi_variable_config)
     tariff_target_datapoints = FeatureDatapoints(
-        attribute_name=prophet_multi_variable_config.target.attribute_name,
+        feature_name=prophet_multi_variable_config.target.attribute_name,
         datapoints=tariff_mock_datapoints,
     )
 
@@ -89,7 +89,7 @@ def test_train_and_predict_with_regressor(
 
     # Train the tariff model
     regressor_feature_datapoints = [
-        FeatureDatapoints(attribute_name=regressor.attribute_name, datapoints=windspeed_mock_datapoints)
+        FeatureDatapoints(feature_name=regressor.attribute_name, datapoints=windspeed_mock_datapoints)
         for regressor in prophet_multi_variable_config.regressors
     ]
 
@@ -104,7 +104,7 @@ def test_train_and_predict_with_regressor(
 
     # Generate the forecast including the regressor forecast datapoints
     windspeed_regressor_datapoints = FeatureDatapoints(
-        attribute_name=prophet_basic_config.target.attribute_name,
+        feature_name=prophet_basic_config.target.attribute_name,
         datapoints=windspeed_forecast.datapoints,
     )
     forecast_featureset = ForecastFeatureSet(regressors=[windspeed_regressor_datapoints])

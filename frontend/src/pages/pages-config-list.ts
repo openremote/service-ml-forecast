@@ -18,7 +18,6 @@ export class PageConfigList extends LitElement {
             :host {
                 display: block;
                 --or-panel-background-color: #fff;
-                width: fit-content;
             }
 
             .config-header {

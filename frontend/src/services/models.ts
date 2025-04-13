@@ -11,7 +11,7 @@ export enum ModelTypeEnum {
  * Represents an asset attribute feature used in model configuration.
  * Corresponds to Python class AssetAttributeFeature.
  */
-export interface AssetAttributeFeature {
+export interface TargetFeature {
     /**
      * ID of the asset from OpenRemote.
      * Constraints: min_length=22, max_length=22
@@ -30,7 +30,29 @@ export interface AssetAttributeFeature {
 }
 
 /**
- * Represents an asset attribute from OpenRemote.
+ * Represents a regressor feature used in model configuration.
+ * Corresponds to Python class RegressorFeature.
+ */
+export interface RegressorFeature {
+    /**
+     * ID of the asset from OpenRemote.
+     * Constraints: min_length=22, max_length=22
+     */
+    asset_id: string
+    /**
+     * Name of the attribute of the asset.
+     * Constraints: min_length=3
+     */
+    attribute_name: string
+    /**
+     * Timestamp in milliseconds since epoch. All data after this timestamp will be used for forecasting.
+     * Constraints: gt=0
+     */
+    cutoff_timestamp: number
+}
+
+/**
+ * Represents an attribute of an asset.
  * Corresponds to Python class service_ml_forecast.clients.openremote.models.AssetAttribute.
  */
 export interface CustomAttribute {
@@ -110,13 +132,13 @@ interface BaseModelConfig {
      * The asset attribute to generate datapoints for.
      * There must be historical data available for training.
      */
-    target: AssetAttributeFeature
+    target: TargetFeature
     /**
      * List of asset attributes that will be used as regressors.
      * There must be historical data available for training.
      * @default null
      */
-    regressors?: AssetAttributeFeature[] | null // Optional as it has a default
+    regressors?: RegressorFeature[] | null // Optional as it has a default
     /**
      * Forecast generation interval. Expects ISO 8601 duration strings.
      */
