@@ -5,6 +5,10 @@ import { customElement } from 'lit/decorators.js'
 export class PageServiceUnavailable extends LitElement {
     static get styles() {
         return css`
+            :host {
+                width: fit-content;
+            }
+
             .container {
                 text-align: center;
                 display: flex;

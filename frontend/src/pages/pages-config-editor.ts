@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { css, html, LitElement, PropertyValues } from 'lit'
 import { customElement, property, state } from 'lit/decorators.js'
 import { ModelTypeEnum, ProphetSeasonalityModeEnum } from '../services/models'
@@ -23,6 +22,13 @@ export class PageConfigViewer extends LitElement {
                 --or-panel-heading-text-transform: uppercase;
                 --or-panel-heading-color: var(--or-app-color3);
                 --or-panel-heading-font-size: 14px;
+            }
+
+            hr {
+                border: 0;
+                height: 1px;
+                background-color: var(--or-app-color5);
+                margin: 5px 0;
             }
 
             .config-viewer {
@@ -69,6 +75,10 @@ export class PageConfigViewer extends LitElement {
                 width: 100%;
                 gap: 20px;
             }
+
+            form {
+                width: fit-content;
+            }
         `
     }
 
@@ -78,11 +88,9 @@ export class PageConfigViewer extends LitElement {
     @state()
     private modelConfig: ProphetModelConfig | null = null
 
-    // <assetId, assetName>
     @state()
     private assetSelectList: Map<string, string> = new Map()
 
-    // assetId -> <attributeName, attributeName>
     @state()
     private attributeSelectList: Map<string, Map<string, string>> = new Map()
 
@@ -110,8 +118,9 @@ export class PageConfigViewer extends LitElement {
             attribute_name: '',
             cutoff_timestamp: new Date().getTime()
         },
+        regressors: null,
         forecast_interval: 'PT1H',
-        forecast_periods: 48,
+        forecast_periods: 24,
         forecast_frequency: '1h',
         training_interval: 'PT24H',
         changepoint_range: 0.8,
@@ -119,8 +128,82 @@ export class PageConfigViewer extends LitElement {
         seasonality_mode: ProphetSeasonalityModeEnum.ADDITIVE
     }
 
+    // Handle basic form field updates
+    private handleBasicInput(ev: OrInputChangedEvent | CustomEvent<{ value: string }>) {
+        const value = 'detail' in ev ? ev.detail?.value : undefined
+        const target = ev.target as HTMLInputElement
+
+        if (!target || value === undefined) {
+            return
+        }
+
+        this.formData = {
+            ...this.formData,
+            [target.name]: value
+        }
+    }
+
+    // Handle target-specific updates
+    private handleTargetInput(ev: OrInputChangedEvent) {
+        const value = ev.detail?.value
+        const target = ev.target as HTMLInputElement
+
+        if (!target || value === undefined) {
+            return
+        }
+
+        const [, field] = target.name.split('.')
+        if (!field) {
+            console.error('Invalid target input name:', target.name)
+            return
+        }
+
+        // Auto-select first attribute when asset changes
+        if (field === 'asset_id') {
+            this.formData.target.attribute_name =
+                this.attributeSelectList
+                    .get(value as string)
+                    ?.values()
+                    .next().value ?? ''
+        }
+
+        this.formData = {
+            ...this.formData,
+            target: {
+                ...this.formData.target,
+                [field]: value
+            }
+        }
+    }
+
+    // Handle regressor-specific updates
+    private handleRegressorInput(ev: OrInputChangedEvent, index: number) {
+        const value = ev.detail?.value
+        const target = ev.target as HTMLInputElement
+
+        if (!target || value === undefined || !this.formData.regressors) {
+            return
+        }
+
+        // Auto-select first attribute when asset changes
+        if (target.name === 'asset_id') {
+            this.formData.regressors[index].attribute_name =
+                this.attributeSelectList
+                    .get(value as string)
+                    ?.values()
+                    .next().value ?? ''
+        }
+
+        this.formData.regressors[index] = {
+            ...this.formData.regressors[index],
+            [target.name]: value
+        }
+        this.requestUpdate()
+    }
+
     // Update lifecycle
-    updated(_changedProperties: PropertyValues) {
+    updated(_changedProperties: PropertyValues): void {
+        void _changedProperties // Explicitly acknowledge unused parameter
         this.isValid = this.isFormValid()
         this.modified = this.isFormModified()
     }
@@ -137,8 +220,6 @@ export class PageConfigViewer extends LitElement {
         const assets = await this.apiService.getAssets()
         assets.forEach((asset) => {
             this.assetSelectList.set(asset.id, asset.name)
-
-            // attributes: { [key: string]: AssetAttribute };
             this.attributeSelectList.set(asset.id, new Map(Object.entries(asset.attributes).map(([key, value]) => [key, value.name])))
         })
     }
@@ -154,8 +235,8 @@ export class PageConfigViewer extends LitElement {
         }
         try {
             this.modelConfig = await this.apiService.getModelConfig(this.configId)
-            // Update the form data with the loaded config
-            this.formData = this.modelConfig
+            // Create a deep copy of the model config for the form data
+            this.formData = JSON.parse(JSON.stringify(this.modelConfig))
             this.loading = false
             return
         } catch (err) {
@@ -168,67 +249,6 @@ export class PageConfigViewer extends LitElement {
     onAfterEnter(location: RouterLocation) {
         this.configId = location.params.id as string
         return this.setupEditor()
-    }
-
-    // Generic input handler
-    onInput(ev: OrInputChangedEvent) {
-        console.log('onInput', ev)
-        const value: string | boolean | number | undefined = ev.detail?.value
-        const target = ev.target as HTMLInputElement
-
-        if (!target || value === undefined) {
-            return
-        }
-        const name = target.name
-
-        this.formData = {
-            ...this.formData,
-            [name]: value
-        }
-    }
-
-    // Handle checkbox inputs
-    onCheckboxInput(ev: OrInputChangedEvent) {
-        const value: boolean = ev.detail?.value
-        const target = ev.target as HTMLInputElement
-
-        this.formData = {
-            ...this.formData,
-            [target.name]: value
-        }
-    }
-
-    // Handle target input (nested property)
-    onTargetInput(ev: OrInputChangedEvent, isAssetIdChange: boolean = false) {
-        const value: string | number | undefined = ev.detail?.value
-        const target = ev.target as HTMLInputElement
-
-        if (!target || value === undefined) {
-            return
-        }
-
-        const key = target.name.split('.')[1]
-        if (!key) {
-            console.error('Invalid target input name:', target.name)
-            return
-        }
-
-        if (isAssetIdChange) {
-            // set attribute to first attribute
-            this.formData.target.attribute_name =
-                this.attributeSelectList
-                    .get(value as string)
-                    ?.values()
-                    .next().value ?? ''
-        }
-
-        this.formData = {
-            ...this.formData,
-            target: {
-                ...this.formData.target,
-                [key]: value
-            }
-        }
     }
 
     // Handle the save button click
@@ -255,13 +275,22 @@ export class PageConfigViewer extends LitElement {
 
     // Check form for validity
     isFormValid() {
-        const inputs = this.shadowRoot?.querySelectorAll('or-mwc-input') as NodeListOf<HTMLInputElement>
-
-        // Check target asset_id and attribute explicitly (required doesn't work for some reason)
+        // check target properties
         if (!this.formData.target.asset_id || !this.formData.target.attribute_name) {
             return false
         }
 
+        // check all regressors
+        if (this.formData.regressors) {
+            for (const regressor of this.formData.regressors) {
+                if (!regressor.asset_id || !regressor.attribute_name) {
+                    return false
+                }
+            }
+        }
+
+        // Check other inputs
+        const inputs = this.shadowRoot?.querySelectorAll('or-mwc-input') as NodeListOf<HTMLInputElement>
         if (inputs) {
             return Array.from(inputs).every((input) => input.checkValidity())
         }
@@ -275,8 +304,90 @@ export class PageConfigViewer extends LitElement {
 
     // Handle adding a regressor
     handleAddRegressor() {
-        // TODO: Implement this
-        console.log('add regressor')
+        this.formData.regressors = this.formData.regressors ?? []
+
+        this.formData.regressors.push({
+            asset_id: '',
+            attribute_name: '',
+            cutoff_timestamp: new Date().getTime()
+        })
+        this.requestUpdate()
+    }
+
+    // Handle deleting a regressor
+    handleDeleteRegressor(index: number) {
+        this.formData.regressors.splice(index, 1)
+
+        // Clean up regressors if all are deleted
+        if (this.formData.regressors?.length === 0) {
+            this.formData.regressors = null
+        }
+
+        this.requestUpdate()
+    }
+
+    // Get the regressor template
+    getRegressorTemplate(index: number) {
+        const regressor = this.formData.regressors[index]
+        return html`
+            <or-panel heading="REGRESSOR ${index + 1}">
+                <div class="column">
+                    <div class="row">
+                        <or-mwc-input
+                            type="${InputType.SELECT}"
+                            name="asset_id"
+                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.handleRegressorInput(e, index)}"
+                            label="Asset"
+                            .value="${regressor.asset_id}"
+                            .options="${[...this.assetSelectList.entries()].slice(0, this.assetSearchSize)}"
+                            .searchProvider="${this.assetSelectList.size > 0 ? this.searchAssets.bind(this) : null}"
+                        ></or-mwc-input>
+
+                        <or-mwc-input
+                            type="${InputType.SELECT}"
+                            name="attribute_name"
+                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.handleRegressorInput(e, index)}"
+                            label="Attribute"
+                            .value="${regressor.attribute_name}"
+                            .options="${[...(this.attributeSelectList.get(regressor.asset_id) ?? new Map())]}"
+                        ></or-mwc-input>
+
+                        <or-mwc-input
+                            type="${InputType.DATETIME}"
+                            name="cutoff_timestamp"
+                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.handleRegressorInput(e, index)}"
+                            label="Use datapoints since"
+                            .value="${regressor.cutoff_timestamp}"
+                            required
+                        ></or-mwc-input>
+
+                        <or-mwc-input
+                            type="${InputType.BUTTON}"
+                            icon="delete"
+                            @click="${() => this.handleDeleteRegressor(index)}"
+                        ></or-mwc-input>
+                    </div>
+                </div>
+            </or-panel>
+        `
+    }
+
+    // Get the add regressor template
+    getAddRegressorTemplate() {
+        return html`
+            <or-panel>
+                <div class="column">
+                    <div class="row">
+                        <or-mwc-input
+                            type="${InputType.BUTTON}"
+                            icon="plus"
+                            label="add regressor"
+                            @click="${this.handleAddRegressor}"
+                        ></or-mwc-input>
+                    </div>
+                </div>
+            </or-panel>
+        `
     }
 
     // Search provider for the asset select list
@@ -286,7 +397,7 @@ export class PageConfigViewer extends LitElement {
             return options.slice(0, this.assetSearchSize)
         }
         const searchTerm = search.toLowerCase()
-        return options.filter(([_value, label]) => label.toLowerCase().includes(searchTerm)).slice(0, this.assetSearchSize)
+        return options.filter(([, label]) => label.toLowerCase().includes(searchTerm)).slice(0, this.assetSearchSize)
     }
 
     // Render the editor
@@ -305,7 +416,7 @@ export class PageConfigViewer extends LitElement {
                             outlined
                             type="${InputType.TEXT}"
                             label="Model Name"
-                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onInput(e)}"
+                            @or-mwc-input-changed="${this.handleBasicInput}"
                             .value="${this.formData.name}"
                             required
                             minlength="1"
@@ -315,7 +426,7 @@ export class PageConfigViewer extends LitElement {
                         <or-mwc-input
                             type="${InputType.CHECKBOX}"
                             name="enabled"
-                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onCheckboxInput(e)}"
+                            @or-mwc-input-changed="${this.handleBasicInput}"
                             label="Enabled"
                             .value="${this.formData.enabled}"
                         ></or-mwc-input>
@@ -343,7 +454,7 @@ export class PageConfigViewer extends LitElement {
                                 class="header-item"
                                 name="type"
                                 required
-                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onInput(e)}"
+                                @or-mwc-input-changed="${this.handleBasicInput}"
                                 label="Model Type"
                                 type="${InputType.SELECT}"
                                 .options="${[['prophet', 'Prophet']]}"
@@ -362,7 +473,7 @@ export class PageConfigViewer extends LitElement {
                             <custom-duration-input
                                 name="forecast_interval"
                                 .type="${DurationInputType.ISO_8601}"
-                                @value-changed="${(e: CustomEvent<{ value: string }>) => this.onInput(e)}"
+                                @value-changed="${this.handleBasicInput}"
                                 label="Generate new forecast every"
                                 .value="${this.formData.forecast_interval}"
                             ></custom-duration-input>
@@ -373,7 +484,7 @@ export class PageConfigViewer extends LitElement {
                             <or-mwc-input
                                 type="${InputType.NUMBER}"
                                 name="forecast_periods"
-                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onInput(e)}"
+                                @or-mwc-input-changed="${this.handleBasicInput}"
                                 label="Forecasted datapoints"
                                 .value="${this.formData.forecast_periods}"
                                 required
@@ -383,7 +494,7 @@ export class PageConfigViewer extends LitElement {
                             <custom-duration-input
                                 name="forecast_frequency"
                                 .type="${DurationInputType.PANDAS_FREQ}"
-                                @value-changed="${(e: CustomEvent<{ value: string }>) => this.onInput(e)}"
+                                @value-changed="${this.handleBasicInput}"
                                 label="Time between datapoints"
                                 .value="${this.formData.forecast_frequency}"
                             ></custom-duration-input>
@@ -398,7 +509,7 @@ export class PageConfigViewer extends LitElement {
                             <or-mwc-input
                                 type="${InputType.SELECT}"
                                 name="target.asset_id"
-                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onTargetInput(e, true)}"
+                                @or-mwc-input-changed="${this.handleTargetInput}"
                                 label="Asset"
                                 .value="${this.formData.target.asset_id}"
                                 .options="${[...this.assetSelectList.entries()].slice(0, this.assetSearchSize)}"
@@ -408,7 +519,7 @@ export class PageConfigViewer extends LitElement {
                             <or-mwc-input
                                 type="${InputType.SELECT}"
                                 name="target.attribute_name"
-                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onTargetInput(e)}"
+                                @or-mwc-input-changed="${this.handleTargetInput}"
                                 label="Attribute"
                                 .value="${this.formData.target.attribute_name}"
                                 .options="${[...(this.attributeSelectList.get(this.formData.target.asset_id) ?? new Map())]}"
@@ -417,7 +528,7 @@ export class PageConfigViewer extends LitElement {
                             <or-mwc-input
                                 type="${InputType.DATETIME}"
                                 name="target.cutoff_timestamp"
-                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onTargetInput(e)}"
+                                @or-mwc-input-changed="${this.handleTargetInput}"
                                 label="Use datapoints since"
                                 .value="${this.formData.target.cutoff_timestamp}"
                                 required
@@ -434,7 +545,7 @@ export class PageConfigViewer extends LitElement {
                             <custom-duration-input
                                 name="training_interval"
                                 .type="${DurationInputType.ISO_8601}"
-                                @value-changed="${(e: CustomEvent<{ value: string }>) => this.onInput(e)}"
+                                @value-changed="${this.handleBasicInput}"
                                 label="Train model every"
                                 .value="${this.formData.training_interval}"
                             ></custom-duration-input>
@@ -450,7 +561,7 @@ export class PageConfigViewer extends LitElement {
                             <or-mwc-input
                                 type="${InputType.NUMBER}"
                                 name="changepoint_range"
-                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onInput(e)}"
+                                @or-mwc-input-changed="${this.handleBasicInput}"
                                 label="Changepoint range"
                                 .value="${this.formData.changepoint_range}"
                                 max="1.0"
@@ -462,7 +573,7 @@ export class PageConfigViewer extends LitElement {
                             <or-mwc-input
                                 type="${InputType.NUMBER}"
                                 name="changepoint_prior_scale"
-                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onInput(e)}"
+                                @or-mwc-input-changed="${this.handleBasicInput}"
                                 label="Changepoint prior scale"
                                 .value="${this.formData.changepoint_prior_scale}"
                                 max="1.0"
@@ -480,7 +591,7 @@ export class PageConfigViewer extends LitElement {
                                     [ProphetSeasonalityModeEnum.MULTIPLICATIVE, 'Multiplicative']
                                 ]}"
                                 name="seasonality_mode"
-                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onInput(e)}"
+                                @or-mwc-input-changed="${this.handleBasicInput}"
                                 label="Seasonality mode"
                                 .value="${this.formData.seasonality_mode}"
                                 required
@@ -489,7 +600,7 @@ export class PageConfigViewer extends LitElement {
                             <or-mwc-input
                                 type="${InputType.CHECKBOX}"
                                 name="daily_seasonality"
-                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onCheckboxInput(e)}"
+                                @or-mwc-input-changed="${this.handleBasicInput}"
                                 label="Daily seasonality"
                                 .value="${this.formData.daily_seasonality}"
                             ></or-mwc-input>
@@ -497,7 +608,7 @@ export class PageConfigViewer extends LitElement {
                             <or-mwc-input
                                 type="${InputType.CHECKBOX}"
                                 name="weekly_seasonality"
-                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onCheckboxInput(e)}"
+                                @or-mwc-input-changed="${this.handleBasicInput}"
                                 label="Weekly seasonality"
                                 .value="${this.formData.weekly_seasonality}"
                             ></or-mwc-input>
@@ -505,27 +616,17 @@ export class PageConfigViewer extends LitElement {
                             <or-mwc-input
                                 type="${InputType.CHECKBOX}"
                                 name="yearly_seasonality"
-                                @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.onCheckboxInput(e)}"
+                                @or-mwc-input-changed="${this.handleBasicInput}"
                                 label="Yearly seasonality"
                                 .value="${this.formData.yearly_seasonality}"
                             ></or-mwc-input>
                         </div>
                     </div>
                 </or-panel>
-
-                <!-- Regressors, these will be dynamic based on the model type -->
-                <or-panel heading="REGRESSOR">
-                    <div class="column">
-                        <div class="row">
-                            <or-mwc-input
-                                type="${InputType.BUTTON}"
-                                icon="plus"
-                                label="add regressor"
-                                @click="${this.handleAddRegressor}"
-                            ></or-mwc-input>
-                        </div>
-                    </div>
-                </or-panel>
+                <hr />
+                <!-- Regressors -->
+                ${this.formData.regressors ? this.formData.regressors.map((_regressor, index) => this.getRegressorTemplate(index)) : html``}
+                ${this.getAddRegressorTemplate()}
             </form>
         `
     }

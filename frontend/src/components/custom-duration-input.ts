@@ -139,7 +139,7 @@ export class CustomDurationInput extends LitElement {
                     name="unit"
                     label="Unit"
                     .value=${this.unit}
-                    @OrInputChangedEvent=${this.onInput}
+                    @or-mwc-input-changed=${this.onInput}
                     .options="${this.type === DurationInputType.ISO_8601
                         ? [
                               [TimeDurationUnit.MINUTE, 'Minutes'],

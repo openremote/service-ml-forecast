@@ -10,7 +10,7 @@ export default tseslint.config(
     eslintJs.configs.recommended,
     ...tseslint.configs.recommended,
     eslintConfigPrettier,
-    { 
+    {
         files: ['src/**/*.ts'],
         languageOptions: {
             globals: {
