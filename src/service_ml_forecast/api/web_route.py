@@ -56,7 +56,7 @@ async def serve_index() -> FileResponse:
 
     index_path = DIRS.ML_WEB_DIST_DIR / "index.html"
     if not index_path.exists():
-        raise HTTPException(status_code=404, detail="index.html not found")
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="index.html not found")
     return FileResponse(index_path)
 
 
@@ -80,5 +80,5 @@ async def serve_spa(path: str) -> FileResponse:
     # Return index.html for client-side routing
     index_path = DIRS.ML_WEB_DIST_DIR / "index.html"
     if not index_path.exists():
-        raise HTTPException(status_code=404, detail="index.html not found")
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="index.html not found")
     return FileResponse(index_path)
