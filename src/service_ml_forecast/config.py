@@ -47,6 +47,10 @@ class AppEnvironment(BaseSettings):
     # FastAPI Settings
     ML_PUBLISH_DOCS: bool = True  # whether to make the docs available
 
+    # Uvicorn Settings
+    ML_SERVICE_HOST: str = "0.0.0.0"
+    ML_SERVICE_PORT: int = 8000
+
     # OpenRemote Settings
     ML_OR_URL: str = "http://localhost:8080"
     ML_OR_KEYCLOAK_URL: str = "http://localhost:8081"

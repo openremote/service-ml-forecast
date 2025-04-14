@@ -11,6 +11,7 @@ import shlex
 import subprocess
 import sys
 from pathlib import Path
+import shutil
 
 
 def find_project_root(start_path: Path = Path(__file__)) -> Path:
@@ -32,11 +33,11 @@ FRONTEND_DIR: Path = Path(f"{_PROJECT_ROOT}/frontend")
 
 # Deployment directory
 DEPLOYMENT_DIR: Path = Path(f"{_PROJECT_ROOT}/deployment")
-DEPLOYMENT_WEB_DIR: Path = Path(f"{DEPLOYMENT_DIR}/web")
+DEPLOYMENT_WEB_DIR: Path = Path(f"{DEPLOYMENT_DIR}/web/")
 
 
 
-def step(cmd: str, description: str = "", dir: Path | None = None) -> None:
+def step(cmd: str, description: str = "", dir: Path | None = _PROJECT_ROOT) -> None:
     """Run a command with proper error handling."""
 
     if description:
@@ -68,46 +69,54 @@ def help() -> None:
 
 def start() -> None:
     """Start the backend."""
-    step("uv run -m service_ml_forecast.main", "service-ml-forecast", _PROJECT_ROOT)
+    step("uv run -m service_ml_forecast.main", "service-ml-forecast")
 
 
 def lint() -> None:
     """Run linting on the backend src."""
 
-    step(f"uv run ruff check {SRC_DIR} {TEST_DIR}", "ruff checks", _PROJECT_ROOT)
-    step(f"uv run mypy --cache-fine-grained {SRC_DIR} {TEST_DIR}", "mypy checks", _PROJECT_ROOT)
+    step(f"uv run ruff check {SRC_DIR} {TEST_DIR}", "ruff checks")
+    step(f"uv run mypy --cache-fine-grained {SRC_DIR} {TEST_DIR}", "mypy checks")
 
 def format() -> None:
     """Format the backend src."""
 
-    step(f"uv run ruff format {SRC_DIR} {TEST_DIR}", "ruff formatting", _PROJECT_ROOT)
-    step(f"uv run ruff check --fix {SRC_DIR} {TEST_DIR}", "ruff check and fix", _PROJECT_ROOT)
+    step(f"uv run ruff format {SRC_DIR} {TEST_DIR}", "ruff formatting")
+    step(f"uv run ruff check --fix {SRC_DIR} {TEST_DIR}", "ruff check and fix")
 
 
 def test() -> None:
     """Run pytest."""
 
-    step(f"uv run pytest {TEST_DIR} -vv --cache-clear", "pytest", _PROJECT_ROOT)
+    step(f"uv run pytest {TEST_DIR} -vv --cache-clear", "pytest")
 
 
 def test_coverage() -> None:
     """Run tests with coverage."""
 
-    step(f"uv run pytest {TEST_DIR} -vv --cache-clear --cov {SRC_DIR}", "pytest with coverage", _PROJECT_ROOT)
+    step(f"uv run pytest {TEST_DIR} -vv --cache-clear --cov {SRC_DIR}", "pytest with coverage")
 
 
 def build() -> None:
     """Build backend."""
 
     # Build the backend
-    step("uv build", "Building backend", _PROJECT_ROOT)
+    step("uv build", "Building backend")
 
 
 def build_frontend() -> None:
     """Build the frontend bundle."""
 
     step(f"npm run build", "Building frontend in frontend directory", FRONTEND_DIR)
-    step(f"cp -r {FRONTEND_DIR}/dist {DEPLOYMENT_WEB_DIR}", "Copying dist to deployment", _PROJECT_ROOT)
+
+    DEPLOYMENT_WEB_DIR.mkdir(parents=True, exist_ok=True)
+    
+    if DEPLOYMENT_WEB_DIR.exists():
+        shutil.rmtree(DEPLOYMENT_WEB_DIR)
+
+    shutil.copytree(FRONTEND_DIR / "dist", DEPLOYMENT_WEB_DIR / "dist")
+    
+    print(f"Frontend dist copied to {DEPLOYMENT_WEB_DIR}")
 
 
 def build_all() -> None:

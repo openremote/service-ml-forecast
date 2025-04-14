@@ -13,7 +13,6 @@ router = APIRouter(include_in_schema=False)
 
 web_dist_dir = Path(ENV.ML_WEB_DIST_DIR)
 
-
 if web_dist_dir.exists():
     router.mount("/static", StaticFiles(directory=str(web_dist_dir)), name="static")
 else:

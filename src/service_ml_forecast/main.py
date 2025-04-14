@@ -22,6 +22,7 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.concurrency import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 
 from service_ml_forecast import __app_info__
 from service_ml_forecast.api import model_config_route, openremote_route, web_route
@@ -70,13 +71,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Compress responses >= 1KB
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+
 
 # --- Include Routers ---
 app.include_router(model_config_route.router)
 app.include_router(openremote_route.router)
 
-# Serves the frontend dist bundle on the root path
-# Requires bundle to be present in ENV.DEPLOYMENT_WEB_DIR
+# Serves the frontend dist bundle (from the ENV.ML_WEB_DIST_DIR)
 app.include_router(web_route.router)
 
 # --- Exception Handlers ---
@@ -95,4 +98,4 @@ if __name__ == "__main__":
 
     initialize_background_services()
     reload = ENV.is_development()
-    uvicorn.run("service_ml_forecast.main:app", host="0.0.0.0", port=8000, reload=reload)
+    uvicorn.run("service_ml_forecast.main:app", host=ENV.ML_SERVICE_HOST, port=ENV.ML_SERVICE_PORT, reload=reload)
