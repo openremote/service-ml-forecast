@@ -218,4 +218,4 @@ def test_create_asset_dependencies_missing(test_client: TestClient) -> None:
     """
     config = create_test_config()
     response = test_client.post("/api/model/configs", json=config)
-    assert response.status_code == HTTPStatus.BAD_REQUEST 
+    assert response.status_code == HTTPStatus.BAD_REQUEST

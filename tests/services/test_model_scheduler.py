@@ -203,7 +203,7 @@ def test_forecast_execution_with_regressor(
     trained_basic_model: ProphetModelConfig,
 ) -> None:
     """Test forecast execution with a multi-variable model using regressors.
-    
+
     Verifies that:
     - Forecast is generated using regressor data
     - Regressor predictions are properly retrieved
