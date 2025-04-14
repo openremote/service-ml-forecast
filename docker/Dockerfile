@@ -8,7 +8,12 @@ COPY frontend/package*.json ./
 RUN npm install
 
 COPY frontend/ ./
-RUN npm run build
+
+# Embed the ML_SERVICE_URL into the front-end
+# If not provided, then front-end will make relative calls
+# e.g. localhost:8000/api/configs/
+ARG ML_SERVICE_URL
+RUN npx cross-env ML_SERVICE_URL=${ML_SERVICE_URL} npm run build
 
 # --- Python Build Phase ---
 # Python builder stage

@@ -55,6 +55,9 @@ export default {
         }),
         new rspack.CopyRspackPlugin({
             patterns: [{ from: 'static', to: 'static' }]
+        }),
+        new rspack.DefinePlugin({
+            'process.env.ML_SERVICE_URL': JSON.stringify(process.env.ML_SERVICE_URL || '')
         })
     ],
     devServer: {

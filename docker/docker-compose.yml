@@ -5,6 +5,8 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile
+      args:
+        ML_SERVICE_URL: ${ML_SERVICE_URL} # Will be embedded into the front-end, if not set it will make relative calls
     container_name: service-ml-forecast
     ports:
       - "8000:8000"

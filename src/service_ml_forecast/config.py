@@ -63,7 +63,7 @@ class AppEnvironment(BaseSettings):
     ML_OR_SERVICE_USER: str = "serviceuser"
     ML_OR_SERVICE_USER_SECRET: str = "secret"
 
-    model_config = SettingsConfigDict(case_sensitive=True, env_file=".env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(case_sensitive=True, env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     def is_production(self) -> bool:
         """Check if the environment is production."""

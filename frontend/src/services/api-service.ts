@@ -2,8 +2,8 @@ import { getRealm } from '../util'
 import { CustomAsset, ModelConfig, RealmConfig } from './models'
 
 export class ApiService {
-    // TODO: Make this configurable via environment variable
-    private readonly baseUrl: string = 'http://localhost:8000'
+    // Use env variable, else fallback to relative URL (e.g. front-end on the same host as the ML service)
+    private readonly baseUrl: string = (process.env.ML_SERVICE_URL || '').replace(/\/$/, '')
 
     /**
      * Check if the service is available
