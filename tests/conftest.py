@@ -2,19 +2,19 @@ import json
 import logging.config
 import shutil
 import tempfile
-import threading
-import time
+import types
 from collections.abc import Generator
 from http import HTTPStatus
 from pathlib import Path
 
 import pytest
 import respx
-import uvicorn
+from fastapi.testclient import TestClient
 
 from service_ml_forecast.clients.openremote.models import AssetDatapoint
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 from service_ml_forecast.config import ENV
+from service_ml_forecast.dependencies import get_config_service
 from service_ml_forecast.logging_config import LOGGING_CONFIG
 from service_ml_forecast.main import app
 from service_ml_forecast.models.model_config import ProphetModelConfig
@@ -54,25 +54,6 @@ ENV.ML_CONFIGS_DIR = TEST_TMP_DIR / "configs"
 def cleanup_test_tmp_dir() -> Generator[None]:
     yield
     shutil.rmtree(TEST_TMP_DIR, ignore_errors=True)
-
-
-# Create an instance of our FastAPI server for use in E2E tests
-@pytest.fixture(scope="session")
-def fastapi_server() -> Generator[None]:
-    """Run the fastapi server via uvicorn in a separate thread."""
-    config = uvicorn.Config(app=app, host=FASTAPI_TEST_HOST, port=FASTAPI_TEST_PORT, log_level="error")
-    server = uvicorn.Server(config)
-    thread = threading.Thread(target=server.run)
-    thread.daemon = True
-    thread.start()
-
-    # Wait for the server to start
-    time.sleep(1)
-
-    yield
-
-    # Allow the server to shut down gracefully
-    server.should_exit = True
 
 
 @pytest.fixture
@@ -122,8 +103,8 @@ def mock_openremote_client() -> OpenRemoteClient | None:
 
 
 @pytest.fixture
-def config_service() -> ModelConfigService:
-    return ModelConfigService()
+def config_service(mock_openremote_service: OpenRemoteService) -> ModelConfigService:
+    return ModelConfigService(mock_openremote_service)
 
 
 @pytest.fixture
@@ -168,4 +149,32 @@ def openremote_service(openremote_client: OpenRemoteClient) -> OpenRemoteService
 
 @pytest.fixture
 def mock_openremote_service(mock_openremote_client: OpenRemoteClient) -> OpenRemoteService:
-    return OpenRemoteService(mock_openremote_client)
+    service = OpenRemoteService(mock_openremote_client)
+
+    # Mock get assets by ids, allows external validation to go through
+    def mock_get_assets_by_ids(self: OpenRemoteService, asset_ids: list[str], realm: str) -> list[dict[str, str]]:
+        return [{"id": asset_id, "realm": realm} for asset_id in asset_ids]
+
+    service.get_assets_by_ids = types.MethodType(mock_get_assets_by_ids, service)  # type: ignore[method-assign]
+    return service
+
+
+# Create a TestClient instance for use in tests
+@pytest.fixture
+def mock_test_client(config_service: ModelConfigService) -> TestClient:
+    """Create a FastAPI TestClient instance with mocked services."""
+
+    # Mock dependencies
+    app.dependency_overrides[get_config_service] = lambda: config_service
+
+    return TestClient(app)
+
+
+@pytest.fixture
+def test_client() -> TestClient:
+    """FastAPI TestClient instance for integration tests. with no mocks."""
+
+    # Clear the dependency overrides
+    app.dependency_overrides = {}
+
+    return TestClient(app)

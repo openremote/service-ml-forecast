@@ -15,7 +15,13 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-from http.client import CONFLICT, NOT_FOUND, OK
+"""
+Model config API routes.
+
+These routes are used to create, retrieve, update and delete model configs.
+"""
+
+from http import HTTPStatus
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
@@ -32,8 +38,8 @@ router = APIRouter(prefix="/api/model/configs", tags=["Model Configs"])
     "",
     summary="Create a new model config",
     responses={
-        OK: {"description": "Model config has been created"},
-        CONFLICT: {"description": "Model config already exists"},
+        HTTPStatus.OK: {"description": "Model config has been created"},
+        HTTPStatus.CONFLICT: {"description": "Model config already exists"},
     },
 )
 async def create_model_config(
@@ -46,8 +52,8 @@ async def create_model_config(
     "/{id}",
     summary="Retrieve a model config",
     responses={
-        OK: {"description": "Model config has been retrieved"},
-        NOT_FOUND: {"description": "Model config not found"},
+        HTTPStatus.OK: {"description": "Model config has been retrieved"},
+        HTTPStatus.NOT_FOUND: {"description": "Model config not found"},
     },
 )
 async def get_model_config(id: UUID, config_service: ModelConfigService = Depends(get_config_service)) -> ModelConfig:
@@ -58,7 +64,7 @@ async def get_model_config(id: UUID, config_service: ModelConfigService = Depend
     "",
     summary="Retrieve all model configs for a realm",
     responses={
-        OK: {"description": "List of model configs has been retrieved"},
+        HTTPStatus.OK: {"description": "List of model configs has been retrieved"},
     },
 )
 async def get_model_configs(
@@ -71,8 +77,8 @@ async def get_model_configs(
     "/{id}",
     summary="Update a model config",
     responses={
-        OK: {"description": "Model config has been updated"},
-        NOT_FOUND: {"description": "Model config not found"},
+        HTTPStatus.OK: {"description": "Model config has been updated"},
+        HTTPStatus.NOT_FOUND: {"description": "Model config not found"},
     },
 )
 async def update_model_config(
@@ -85,12 +91,12 @@ async def update_model_config(
     "/{id}",
     summary="Delete a model config",
     responses={
-        OK: {"description": "Model config has been deleted"},
-        NOT_FOUND: {"description": "Model config not found"},
+        HTTPStatus.OK: {"description": "Model config has been deleted"},
+        HTTPStatus.NOT_FOUND: {"description": "Model config not found"},
     },
 )
 async def delete_model_config(
     id: UUID, config_service: ModelConfigService = Depends(get_config_service)
 ) -> JSONResponse:
     config_service.delete(id)
-    return JSONResponse(status_code=OK, content={"message": "Model config deleted successfully"})
+    return JSONResponse(status_code=HTTPStatus.OK, content={"message": "Model config deleted successfully"})

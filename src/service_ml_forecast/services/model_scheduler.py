@@ -44,7 +44,7 @@ class ModelScheduler(Singleton):
     """Manages the scheduling of ML model training and forecasting jobs."""
 
     def __init__(self, openremote_service: OpenRemoteService) -> None:
-        self.config_storage = ModelConfigService()
+        self.config_storage = ModelConfigService(openremote_service)
         self.openremote_service = openremote_service
 
         executors = {

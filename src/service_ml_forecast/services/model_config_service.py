@@ -21,10 +21,15 @@ from uuid import UUID
 
 from pydantic import TypeAdapter, ValidationError
 
-from service_ml_forecast.common.exceptions import ResourceAlreadyExistsError, ResourceNotFoundError
+from service_ml_forecast.common.exceptions import (
+    ResourceAlreadyExistsError,
+    ResourceDependencyError,
+    ResourceNotFoundError,
+)
 from service_ml_forecast.common.fs_util import FsUtil
 from service_ml_forecast.config import ENV
 from service_ml_forecast.models.model_config import ModelConfig
+from service_ml_forecast.services.openremote_service import OpenRemoteService
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +39,9 @@ class ModelConfigService:
 
     CONFIG_FILE_PREFIX = "config"
     CONFIG_FILE_EXTENSION = "json"
+
+    def __init__(self, openremote_service: OpenRemoteService):
+        self.openremote_service = openremote_service
 
     def create(self, config: ModelConfig) -> ModelConfig:
         """Create a new ML model configuration.
@@ -46,6 +54,7 @@ class ModelConfigService:
 
         Raises:
             ResourceAlreadyExistsError: Model config already exists.
+            ResourceDependencyError: If asset dependencies are invalid.
         """
         path = self._get_config_file_path(config.id)
         try:
@@ -53,6 +62,11 @@ class ModelConfigService:
         except FileExistsError as e:
             logger.error(f"Could not create config: {config.id} - already exists: {e}")
             raise ResourceAlreadyExistsError(f"Could not create config: {config.id} - already exists") from e
+
+        if not self._validate_asset_dependencies(config):
+            raise ResourceDependencyError(
+                f"Invalid model config: {config.id}! - some of the assets do not exist or are not in the correct realm"
+            )
 
         return config
 
@@ -115,6 +129,7 @@ class ModelConfigService:
 
         Raises:
             ResourceNotFoundError: Model config was not found.
+            ResourceDependencyError: If asset dependencies are invalid.
         """
         path = self._get_config_file_path(config_id)
 
@@ -123,6 +138,11 @@ class ModelConfigService:
         except FileNotFoundError as e:
             logger.error(f"Cannot update config: {config_id} - does not exist: {e}")
             raise ResourceNotFoundError(f"Cannot update config: {config_id} - does not exist") from e
+
+        if not self._validate_asset_dependencies(config):
+            raise ResourceDependencyError(
+                f"Invalid model config: {config.id}! - some of the assets do not exist or are not in the correct realm"
+            )
 
         return config
 
@@ -148,6 +168,37 @@ class ModelConfigService:
 
         model_adapter: TypeAdapter[ModelConfig] = TypeAdapter(ModelConfig)
         return model_adapter.validate_json(json)
+
+    def _validate_asset_dependencies(self, config: ModelConfig) -> bool:
+        """Validate the asset dependencies of the model config.
+
+        - Checks whether the target asset and all regressor assets exist
+        - Checks whether the target asset and all regressor assets are in the correct realm
+
+        Args:
+            config: The model config to validate.
+
+        Returns:
+            True if the asset dependencies are valid, False otherwise.
+        """
+        asset_ids_to_check = []
+
+        # Check target asset
+        asset_ids_to_check.append(config.target.asset_id)
+
+        # Check regressor assets if provided
+        if config.regressors:
+            for regressor in config.regressors:
+                asset_ids_to_check.append(regressor.asset_id)
+
+        # Check if all assets exist in the correct realm
+        assets = self.openremote_service.get_assets_by_ids(asset_ids_to_check, config.realm)
+
+        if len(assets) != len(asset_ids_to_check):
+            logger.error(f"Invalid model config: {config.id}! - some assets do not exist in the correct realm")
+            return False
+
+        return True
 
     def _get_config_file_path(self, config_id: UUID) -> Path:
         return Path(f"{ENV.ML_CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config_id}.{self.CONFIG_FILE_EXTENSION}")

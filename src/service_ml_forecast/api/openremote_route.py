@@ -15,7 +15,13 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-from http.client import NOT_FOUND, OK
+"""
+OpenRemote API routes.
+
+These routes are used to retrieve data from OpenRemote. E.g. proxy requests to the OpenRemote API.
+"""
+
+from http import HTTPStatus
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
@@ -30,7 +36,7 @@ router = APIRouter(prefix="/api/openremote", tags=["OpenRemote"])
     "/assets",
     summary="Retrieve assets that have attributes that store historical data",
     responses={
-        OK: {"description": "Assets have been retrieved"},
+        HTTPStatus.OK: {"description": "Assets have been retrieved"},
     },
 )
 async def get_assets(
@@ -43,7 +49,7 @@ async def get_assets(
     "/assets/ids",
     summary="Retrieve assets by a comma-separated list of Asset IDs",
     responses={
-        OK: {"description": "Assets have been retrieved"},
+        HTTPStatus.OK: {"description": "Assets have been retrieved"},
     },
 )
 async def get_assets_by_ids(
@@ -59,8 +65,8 @@ async def get_assets_by_ids(
     "/realm/config/{realm}",
     summary="Retrieve the configuration of a realm",
     responses={
-        OK: {"description": "Realm configuration has been retrieved"},
-        NOT_FOUND: {"description": "Realm configuration not found"},
+        HTTPStatus.OK: {"description": "Realm configuration has been retrieved"},
+        HTTPStatus.NOT_FOUND: {"description": "Realm configuration not found"},
     },
 )
 async def get_realm_config(
@@ -69,6 +75,6 @@ async def get_realm_config(
     config = openremote_service.get_realm_config(realm)
 
     if config is None:
-        raise HTTPException(status_code=404, detail="Realm configuration not found")
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Realm configuration not found")
 
     return config

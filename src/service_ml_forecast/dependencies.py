@@ -34,7 +34,7 @@ __openremote_client = OpenRemoteClient(
 )
 
 __openremote_service = OpenRemoteService(__openremote_client)
-__model_config_service = ModelConfigService()
+__model_config_service = ModelConfigService(__openremote_service)
 
 # --- Dependencies ---
 # These can be monkeypatched for testing purposes

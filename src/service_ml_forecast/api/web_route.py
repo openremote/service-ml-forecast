@@ -1,4 +1,28 @@
+# Copyright 2025, OpenRemote Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+"""
+Web API routes.
+
+These routes are used to serve the web application.
+"""
+
 import logging
+from http import HTTPStatus
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
@@ -19,7 +43,14 @@ else:
     logger.error(f"Web dist directory not found at {web_dist_dir}, bundle cannot be served")
 
 
-@router.get("/", summary="Serve the index.html file from the web dist directory.")
+@router.get(
+    "/",
+    summary="Serve the index.html file from the web dist directory.",
+    responses={
+        HTTPStatus.OK: {"description": "Index.html file has been served"},
+        HTTPStatus.NOT_FOUND: {"description": "Index.html file not found"},
+    },
+)
 async def serve_index() -> FileResponse:
     """Serve the index.html file from the web dist directory."""
 
@@ -29,7 +60,14 @@ async def serve_index() -> FileResponse:
     return FileResponse(index_path)
 
 
-@router.get("/{path:path}", summary="Serve static files or return index.html for SPA routing.")
+@router.get(
+    "/{path:path}",
+    summary="Serve static files or return index.html for SPA routing.",
+    responses={
+        HTTPStatus.OK: {"description": "Static file has been served"},
+        HTTPStatus.NOT_FOUND: {"description": "Static file not found"},
+    },
+)
 async def serve_spa(path: str) -> FileResponse:
     """Serve static files or return index.html for SPA routing."""
 

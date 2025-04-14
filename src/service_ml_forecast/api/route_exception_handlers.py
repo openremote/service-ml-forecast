@@ -17,14 +17,20 @@
 
 """
 Exception handlers for the FastAPI application.
+
+These handlers are used to handle exceptions that were propagated to the API layer.
 """
 
-from http.client import CONFLICT, NOT_FOUND
+from http import HTTPStatus
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from service_ml_forecast.common.exceptions import ResourceAlreadyExistsError, ResourceNotFoundError
+from service_ml_forecast.common.exceptions import (
+    ResourceAlreadyExistsError,
+    ResourceDependencyError,
+    ResourceNotFoundError,
+)
 
 
 async def resource_not_found_handler(request: Request, exc: Exception) -> JSONResponse:
@@ -33,7 +39,7 @@ async def resource_not_found_handler(request: Request, exc: Exception) -> JSONRe
         A JSON response with a 404 status code.
     """
     return JSONResponse(
-        status_code=NOT_FOUND,
+        status_code=HTTPStatus.NOT_FOUND,
         content={"error": str(exc)},
     )
 
@@ -44,7 +50,18 @@ async def resource_already_exists_handler(request: Request, exc: Exception) -> J
         A JSON response with a 409 status code.
     """
     return JSONResponse(
-        status_code=CONFLICT,
+        status_code=HTTPStatus.CONFLICT,
+        content={"error": str(exc)},
+    )
+
+
+async def resource_dependency_error_handler(request: Request, exc: Exception) -> JSONResponse:
+    """Handle ResourceDependencyError exceptions.
+    Returns:
+        A JSON response with a 400 status code.
+    """
+    return JSONResponse(
+        status_code=HTTPStatus.BAD_REQUEST,
         content={"error": str(exc)},
     )
 
@@ -58,3 +75,4 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     app.add_exception_handler(ResourceNotFoundError, resource_not_found_handler)
     app.add_exception_handler(ResourceAlreadyExistsError, resource_already_exists_handler)
+    app.add_exception_handler(ResourceDependencyError, resource_dependency_error_handler)
