@@ -9,12 +9,12 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - ML_LOG_LEVEL=INFO
-      - ML_ENVIRONMENT=production
-      - ML_OR_URL=http://host.docker.internal:8080 # OpenRemote URL
-      - ML_OR_KEYCLOAK_URL=http://host.docker.internal:8081 # Keycloak URL
-      - ML_OR_SERVICE_USER=serviceuser # OpenRemote service user
-      - ML_OR_SERVICE_USER_SECRET=secret # OpenRemote service user secret
+      - ML_LOG_LEVEL=${ML_LOG_LEVEL:-INFO}
+      - ML_ENVIRONMENT=${ML_ENVIRONMENT:-production}
+      - ML_OR_URL=${ML_OR_URL:-http://host.docker.internal:8080}
+      - ML_OR_KEYCLOAK_URL=${ML_OR_KEYCLOAK_URL:-http://host.docker.internal:8081}
+      - ML_OR_SERVICE_USER=${ML_OR_SERVICE_USER:-serviceuser}
+      - ML_OR_SERVICE_USER_SECRET=${ML_OR_SERVICE_USER_SECRET:-secret}
     volumes:
       - ../deployment/data/models:/app/deployment/data/models # Model storage
       - ../deployment/data/configs:/app/deployment/data/configs # Config storage
