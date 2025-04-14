@@ -23,24 +23,24 @@ These routes are used to serve the web application.
 
 import logging
 from http import HTTPStatus
-from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from service_ml_forecast.config import ENV
+from service_ml_forecast.config import DIRS
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(include_in_schema=False)
 
-web_dist_dir = Path(ENV.ML_WEB_DIST_DIR)
+STATIC_DIR = "/static"
+STATIC_DIR_MOUNT_NAME = "static"
 
-if web_dist_dir.exists():
-    router.mount("/static", StaticFiles(directory=str(web_dist_dir)), name="static")
+if DIRS.ML_WEB_DIST_DIR.exists():
+    router.mount(STATIC_DIR, StaticFiles(directory=str(DIRS.ML_WEB_DIST_DIR)), name=STATIC_DIR_MOUNT_NAME)
 else:
-    logger.error(f"Web dist directory not found at {web_dist_dir}, bundle cannot be served")
+    logger.error(f"Web dist directory not found at {DIRS.ML_WEB_DIST_DIR}, bundle cannot be served")
 
 
 @router.get(
@@ -54,7 +54,7 @@ else:
 async def serve_index() -> FileResponse:
     """Serve the index.html file from the web dist directory."""
 
-    index_path = web_dist_dir / "index.html"
+    index_path = DIRS.ML_WEB_DIST_DIR / "index.html"
     if not index_path.exists():
         raise HTTPException(status_code=404, detail="index.html not found")
     return FileResponse(index_path)
@@ -71,14 +71,14 @@ async def serve_index() -> FileResponse:
 async def serve_spa(path: str) -> FileResponse:
     """Serve static files or return index.html for SPA routing."""
 
-    requested_path = web_dist_dir / path
+    requested_path = DIRS.ML_WEB_DIST_DIR / path
 
     # If the exact file exists, serve it (e.g. css, images, etc.)
     if requested_path.is_file():
         return FileResponse(requested_path)
 
     # Return index.html for client-side routing
-    index_path = web_dist_dir / "index.html"
+    index_path = DIRS.ML_WEB_DIST_DIR / "index.html"
     if not index_path.exists():
         raise HTTPException(status_code=404, detail="index.html not found")
     return FileResponse(index_path)

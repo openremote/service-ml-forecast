@@ -13,7 +13,7 @@ from fastapi.testclient import TestClient
 
 from service_ml_forecast.clients.openremote.models import AssetDatapoint
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
-from service_ml_forecast.config import ENV
+from service_ml_forecast.config import DIRS
 from service_ml_forecast.dependencies import get_config_service
 from service_ml_forecast.logging_config import LOGGING_CONFIG
 from service_ml_forecast.main import app
@@ -44,9 +44,10 @@ FASTAPI_TEST_PORT = 8007
 # Create a temporary directory for tests
 TEST_TMP_DIR: Path = Path(tempfile.mkdtemp(prefix="service_ml_forecast_test_"))
 
-ENV.ML_BASE_DIR = TEST_TMP_DIR
-ENV.ML_MODELS_DIR = TEST_TMP_DIR / "models"
-ENV.ML_CONFIGS_DIR = TEST_TMP_DIR / "configs"
+# Override directory constants for tests
+DIRS.ML_BASE_DIR = TEST_TMP_DIR
+DIRS.ML_MODELS_DIR = TEST_TMP_DIR / "models"
+DIRS.ML_CONFIGS_DIR = TEST_TMP_DIR / "configs"
 
 
 # Clean up temporary directory after each test call

@@ -21,7 +21,7 @@ from uuid import UUID
 
 from service_ml_forecast.common.exceptions import ResourceNotFoundError
 from service_ml_forecast.common.fs_util import FsUtil
-from service_ml_forecast.config import ENV
+from service_ml_forecast.config import DIRS
 
 logger = logging.getLogger(__name__)
 
@@ -84,4 +84,4 @@ class ModelStorageService:
             raise ResourceNotFoundError(f"Cannot delete model file: {model_id} - does not exist") from e
 
     def _get_model_file_path(self, model_id: UUID, model_file_extension: str) -> Path:
-        return Path(f"{ENV.ML_MODELS_DIR}/{self.MODEL_FILE_PREFIX}-{model_id}.{model_file_extension}")
+        return Path(f"{DIRS.ML_MODELS_DIR}/{self.MODEL_FILE_PREFIX}-{model_id}.{model_file_extension}")

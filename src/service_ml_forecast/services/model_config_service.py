@@ -27,7 +27,7 @@ from service_ml_forecast.common.exceptions import (
     ResourceNotFoundError,
 )
 from service_ml_forecast.common.fs_util import FsUtil
-from service_ml_forecast.config import ENV
+from service_ml_forecast.config import DIRS
 from service_ml_forecast.models.model_config import ModelConfig
 from service_ml_forecast.services.openremote_service import OpenRemoteService
 
@@ -79,7 +79,7 @@ class ModelConfigService:
         Returns:
             A list of all previously saved model configurations.
         """
-        existing_config_files = FsUtil.get_files_in_dir(ENV.ML_CONFIGS_DIR, self.CONFIG_FILE_EXTENSION)
+        existing_config_files = FsUtil.get_files_in_dir(DIRS.ML_CONFIGS_DIR, self.CONFIG_FILE_EXTENSION)
 
         configs = []
 
@@ -201,4 +201,4 @@ class ModelConfigService:
         return True
 
     def _get_config_file_path(self, config_id: UUID) -> Path:
-        return Path(f"{ENV.ML_CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config_id}.{self.CONFIG_FILE_EXTENSION}")
+        return Path(f"{DIRS.ML_CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config_id}.{self.CONFIG_FILE_EXTENSION}")

@@ -15,6 +15,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
+from dataclasses import dataclass
 from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -22,6 +23,17 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from service_ml_forecast import find_project_root
 
 PROJECT_ROOT = find_project_root()
+
+
+@dataclass
+class DirectoryConstants:
+    """Directory paths constants. Tests can override these constants."""
+
+    ML_BASE_DIR: Path = PROJECT_ROOT
+    ML_MODELS_DIR: Path = ML_BASE_DIR / "deployment/data/models"
+    ML_CONFIGS_DIR: Path = ML_BASE_DIR / "deployment/data/configs"
+    ML_WEB_DIST_DIR: Path = ML_BASE_DIR / "deployment/web/dist"
+    ML_WEB_DIST_DIR_STATIC: Path = ML_WEB_DIST_DIR / "static"
 
 
 class AppEnvironment(BaseSettings):
@@ -37,12 +49,6 @@ class AppEnvironment(BaseSettings):
 
     # Environment
     ML_ENVIRONMENT: str = "development"
-
-    # File paths
-    ML_BASE_DIR: Path = PROJECT_ROOT
-    ML_MODELS_DIR: Path = ML_BASE_DIR / "deployment/data/models"
-    ML_CONFIGS_DIR: Path = ML_BASE_DIR / "deployment/data/configs"
-    ML_WEB_DIST_DIR: Path = ML_BASE_DIR / "deployment/web/dist"
 
     # FastAPI Settings
     ML_PUBLISH_DOCS: bool = True  # whether to make the docs available
@@ -68,4 +74,5 @@ class AppEnvironment(BaseSettings):
         return self.ML_ENVIRONMENT == "development"
 
 
+DIRS = DirectoryConstants()
 ENV = AppEnvironment()
