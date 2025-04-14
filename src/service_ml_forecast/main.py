@@ -24,7 +24,7 @@ from fastapi.concurrency import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 
 from service_ml_forecast import __app_info__
-from service_ml_forecast.api import model_config_route, openremote_route
+from service_ml_forecast.api import model_config_route, openremote_route, web_route
 from service_ml_forecast.api.route_exception_handlers import register_exception_handlers
 from service_ml_forecast.config import ENV
 from service_ml_forecast.dependencies import get_openremote_service
@@ -75,6 +75,9 @@ app.add_middleware(
 app.include_router(model_config_route.router)
 app.include_router(openremote_route.router)
 
+# Serves the frontend dist bundle on the root path
+# Requires bundle to be present in ENV.DEPLOYMENT_WEB_DIR
+app.include_router(web_route.router)
 
 # --- Exception Handlers ---
 register_exception_handlers(app)

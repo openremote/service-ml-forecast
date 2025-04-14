@@ -81,7 +81,7 @@ export class PageConfigList extends LitElement {
     private handleEditConfig(e: CustomEvent<ModelConfig>) {
         const config = e.detail
         const realm = getRealm()
-        Router.go(`/${realm}/configs/${config.id}`)
+        Router.go(`/service/${realm}/configs/${config.id}`)
     }
 
     // Handle the `delete-config` event
@@ -109,7 +109,7 @@ export class PageConfigList extends LitElement {
     // Handle the `add-config` event
     private handleAddConfig() {
         const realm = getRealm()
-        Router.go(`/${realm}/configs/new`)
+        Router.go(`/service/${realm}/configs/new`)
     }
 
     // Construct the configs table template

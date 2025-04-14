@@ -9,7 +9,8 @@ import { ApiService } from './services/api-service'
  * @returns The realm
  */
 export function getRealm(): string {
-    return window.location.pathname.split('/')[1] // Realm is always the first part of the path
+    // e.g. /service/realm/configs -> realm
+    return window.location.pathname.split('/')[2]
 }
 
 /**

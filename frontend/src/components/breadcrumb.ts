@@ -64,7 +64,7 @@ export class BreadcrumbNav extends LitElement {
     private readonly realm: string = getRealm()
 
     private readonly HOME_LINK = {
-        path: `/${this.realm}/configs`,
+        path: `/service/${this.realm}/configs`,
         name: 'ML Forecast Service'
     }
 
@@ -87,9 +87,9 @@ export class BreadcrumbNav extends LitElement {
     private updateBreadcrumbs(location: RouterLocation) {
         const pathParts = location.pathname.split('/').filter(Boolean)
 
-        // slice the first part as it is the realm and not part of the breadcrumb
-        this.parts = pathParts.slice(1).reduce<BreadcrumbPart[]>((parts, part) => {
-            const path = `/${this.realm}/${parts.length ? parts[parts.length - 1].path.slice(1) + '/' : ''}${part}`
+        // slice the first two parts as they are the realm and the service
+        this.parts = pathParts.slice(2).reduce<BreadcrumbPart[]>((parts, part) => {
+            const path = `/service/${this.realm}/${parts.length ? parts[parts.length - 1].path.slice(1) + '/' : ''}${part}`
             const name = this.formatPartName(part)
             return [...parts, { path, name }]
         }, [])

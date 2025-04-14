@@ -23,7 +23,7 @@ from service_ml_forecast.clients.openremote.models import Asset, RealmConfig
 from service_ml_forecast.dependencies import get_openremote_service
 from service_ml_forecast.services.openremote_service import OpenRemoteService
 
-router = APIRouter(prefix="/openremote", tags=["OpenRemote"])
+router = APIRouter(prefix="/api/openremote", tags=["OpenRemote"])
 
 
 @router.get(

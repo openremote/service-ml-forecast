@@ -42,6 +42,7 @@ class AppEnvironment(BaseSettings):
     ML_BASE_DIR: Path = PROJECT_ROOT
     ML_MODELS_DIR: Path = ML_BASE_DIR / "deployment/data/models"
     ML_CONFIGS_DIR: Path = ML_BASE_DIR / "deployment/data/configs"
+    ML_WEB_DIST_DIR: Path = ML_BASE_DIR / "deployment/web/dist"
 
     # FastAPI Settings
     ML_PUBLISH_DOCS: bool = True  # whether to make the docs available

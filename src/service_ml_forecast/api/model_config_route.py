@@ -25,7 +25,7 @@ from service_ml_forecast.dependencies import get_config_service
 from service_ml_forecast.models.model_config import ModelConfig
 from service_ml_forecast.services.model_config_service import ModelConfigService
 
-router = APIRouter(prefix="/model/configs", tags=["Model Configs"])
+router = APIRouter(prefix="/api/model/configs", tags=["Model Configs"])
 
 
 @router.post(

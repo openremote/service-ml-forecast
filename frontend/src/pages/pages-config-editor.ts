@@ -261,7 +261,7 @@ export class PageConfigViewer extends LitElement {
             if (isExistingConfig) {
                 await this.loadConfig()
             } else {
-                Router.go(`${modelConfig.realm}/configs/${modelConfig.id}`)
+                Router.go(`/service/${modelConfig.realm}/configs/${modelConfig.id}`)
             }
         } catch (error) {
             console.error(error)

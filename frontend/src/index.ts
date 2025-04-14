@@ -33,19 +33,23 @@ async function init() {
 function initRouter() {
     const routes = [
         {
-            path: '/:realm/configs',
+            path: `/service/:realm/`,
+            redirect: `/service/:realm/configs`
+        },
+        {
+            path: `/service/:realm/configs`,
             component: 'page-config-list'
         },
         {
-            path: '/:realm/configs/new',
+            path: `/service/:realm/configs/new`,
             component: 'page-config-viewer'
         },
         {
-            path: '/:realm/configs/:id',
+            path: `/service/:realm/configs/:id`,
             component: 'page-config-viewer'
         },
         {
-            path: '(.*)',
+            path: '/service(.*)',
             component: 'page-not-found'
         }
     ]

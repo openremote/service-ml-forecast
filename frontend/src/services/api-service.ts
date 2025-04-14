@@ -28,7 +28,7 @@ export class ApiService {
      */
     async getModelConfigs(): Promise<ModelConfig[]> {
         const realm = getRealm()
-        const response = await fetch(`${this.baseUrl}/model/configs` + (realm ? `?realm=${realm}` : ''), {
+        const response = await fetch(`${this.baseUrl}/api/model/configs` + (realm ? `?realm=${realm}` : ''), {
             method: 'GET'
         })
         if (!response.ok) {
@@ -43,7 +43,7 @@ export class ApiService {
      */
     async getAssets(): Promise<CustomAsset[]> {
         const realm = getRealm()
-        const response = await fetch(`${this.baseUrl}/openremote/assets` + (realm ? `?realm=${realm}` : ''), {
+        const response = await fetch(`${this.baseUrl}/api/openremote/assets` + (realm ? `?realm=${realm}` : ''), {
             method: 'GET'
         })
         if (!response.ok) {
@@ -59,7 +59,7 @@ export class ApiService {
      */
     async getAssetsByIds(ids: string[]): Promise<CustomAsset[]> {
         const realm = getRealm()
-        const response = await fetch(`${this.baseUrl}/openremote/assets/ids?realm=${realm}&ids=${ids.join(',')}`, {
+        const response = await fetch(`${this.baseUrl}/api/openremote/assets/ids?realm=${realm}&ids=${ids.join(',')}`, {
             method: 'GET'
         })
         if (!response.ok) {
@@ -74,7 +74,7 @@ export class ApiService {
      * @returns The model config
      */
     async getModelConfig(id: string): Promise<ModelConfig> {
-        const response = await fetch(`${this.baseUrl}/model/configs/${id}`, {
+        const response = await fetch(`${this.baseUrl}/api/model/configs/${id}`, {
             method: 'GET'
         })
         if (!response.ok) {
@@ -88,7 +88,7 @@ export class ApiService {
      * @param id The id of the model config
      */
     async deleteModelConfig(id: string): Promise<void> {
-        const response = await fetch(`${this.baseUrl}/model/configs/${id}`, {
+        const response = await fetch(`${this.baseUrl}/api/model/configs/${id}`, {
             method: 'DELETE'
         })
         if (!response.ok) {
@@ -102,7 +102,7 @@ export class ApiService {
      * @returns The updated model config
      */
     async updateModelConfig(modelConfig: ModelConfig): Promise<ModelConfig> {
-        const response = await fetch(`${this.baseUrl}/model/configs/${modelConfig.id}`, {
+        const response = await fetch(`${this.baseUrl}/api/model/configs/${modelConfig.id}`, {
             method: 'PUT',
             body: JSON.stringify(modelConfig),
             headers: {
@@ -121,7 +121,7 @@ export class ApiService {
      * @returns The created model config
      */
     async createModelConfig(modelConfig: ModelConfig): Promise<ModelConfig> {
-        const response = await fetch(`${this.baseUrl}/model/configs`, {
+        const response = await fetch(`${this.baseUrl}/api/model/configs`, {
             method: 'POST',
             body: JSON.stringify(modelConfig),
             headers: {
@@ -140,7 +140,7 @@ export class ApiService {
      */
     async getRealmConfig(): Promise<RealmConfig> {
         const realm = getRealm()
-        const response = await fetch(`${this.baseUrl}/openremote/realm/config/${realm}`, {
+        const response = await fetch(`${this.baseUrl}/api/openremote/realm/config/${realm}`, {
             method: 'GET'
         })
         if (!response.ok) {

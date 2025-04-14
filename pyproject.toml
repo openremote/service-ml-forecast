@@ -42,7 +42,7 @@ dev = [
 
 [tool.setuptools]
 packages = ["service_ml_forecast", "scripts"]
-package-dir = {"service_ml_forecast" = "src/service_ml_forecast", "scripts" = "scripts"}
+package-dir = { "service_ml_forecast" = "src/service_ml_forecast", "scripts" = "scripts" }
 
 [tool.ruff]
 line-length = 120
@@ -53,19 +53,19 @@ indent-width = 4
 
 [tool.ruff.lint]
 select = [
-    "E",     # pycodestyle errors
-    "W",     # pycodestyle warnings
-    "F",     # pyflakes
-    "I",     # isort
-    "C4",    # flake8-comprehensions
-    "UP",    # pyupgrade
-    "B",     # flake8-bugbear
-    "C90",   # mccabe complexity
-    "ERA",   # eradicate
-    "PD",    # pandas-vet
-    "PGH",   # pygrep-hooks
-    "PL",    # pylint
-    "RUF",   # ruff-specific rules
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "C90", # mccabe complexity
+    "ERA", # eradicate
+    "PD",  # pandas-vet
+    "PGH", # pygrep-hooks
+    "PL",  # pylint
+    "RUF", # ruff-specific rules
 ]
 ignore = ["PLR0913", "B008"]
 fixable = ["ALL"]
@@ -114,3 +114,6 @@ test = "scripts.tools:test"
 test-coverage = "scripts.tools:test_coverage"
 format = "scripts.tools:format"
 build = "scripts.tools:build"
+build-web = "scripts.tools:build_web"
+build-all = "scripts.tools:build_all"
+help = "scripts.tools:help"
