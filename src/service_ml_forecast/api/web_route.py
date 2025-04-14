@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
@@ -6,18 +7,17 @@ from fastapi.staticfiles import StaticFiles
 
 from service_ml_forecast.config import ENV
 
-# spa router takes care of the prefix
-# don't include in the docs as its not an API endpoint
+logger = logging.getLogger(__name__)
+
 router = APIRouter(include_in_schema=False)
 
-# Get the web dist directory path from environment
 web_dist_dir = Path(ENV.ML_WEB_DIST_DIR)
 
-if not web_dist_dir.exists():
-    raise RuntimeError(f"Web dist directory not found at {web_dist_dir}")
 
-# Mount static files
-router.mount("/static", StaticFiles(directory=str(web_dist_dir)), name="static")
+if web_dist_dir.exists():
+    router.mount("/static", StaticFiles(directory=str(web_dist_dir)), name="static")
+else:
+    logger.error(f"Web dist directory not found at {web_dist_dir}, bundle cannot be served")
 
 
 @router.get("/", summary="Serve the index.html file from the web dist directory.")
