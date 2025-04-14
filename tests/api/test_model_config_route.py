@@ -41,7 +41,13 @@ def create_invalid_test_config() -> dict[str, object]:
 
 
 def test_create_model_config(mock_test_client: TestClient) -> None:
-    """Test creating a new model config."""
+    """Test creating a new model config.
+
+    Verifies that:
+    - The model config is created successfully
+    - The model config is returned in the response
+    - The model config is stored
+    """
     config = create_test_config()
     response = mock_test_client.post("/api/model/configs", json=config)
     assert response.status_code == HTTPStatus.OK
@@ -55,14 +61,27 @@ def test_create_model_config(mock_test_client: TestClient) -> None:
 
 
 def test_create_invalid_model_config(mock_test_client: TestClient) -> None:
-    """Test creating an invalid model config."""
+    """Test creating an invalid model config.
+
+    Verifies that:
+    - The model config is not created
+    - The model config is not returned in the response
+    - The model config is not stored
+    """
     config = create_invalid_test_config()
     response = mock_test_client.post("/api/model/configs", json=config)
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
 
 
 def test_get_model_config(mock_test_client: TestClient) -> None:
-    """Test getting a model config by ID."""
+    """Test getting a model config by ID.
+
+    Verifies that:
+    - The model config is retrieved successfully
+    - The model config is returned in the response
+    - The response status code is 200
+    - The model config is stored
+    """
     # First create a config
     config = create_test_config()
     mock_test_client.post("/api/model/configs", json=config)
@@ -76,14 +95,27 @@ def test_get_model_config(mock_test_client: TestClient) -> None:
 
 
 def test_get_model_config_not_found(mock_test_client: TestClient) -> None:
-    """Test getting a non-existent model config."""
+    """Test getting a non-existent model config.
+
+    Verifies that:
+    - The model config is not retrieved
+    - The model config is not returned in the response
+    - The response status code is 404
+    """
     non_existent_id = uuid4()
     response = mock_test_client.get(f"/api/model/configs/{non_existent_id}")
     assert response.status_code == HTTPStatus.NOT_FOUND
 
 
 def test_get_all_model_configs(mock_test_client: TestClient) -> None:
-    """Test getting all model configs with realm filter."""
+    """Test getting all model configs with realm filter.
+
+    Verifies that:
+    - The model configs are retrieved successfully
+    - The model configs are returned in the response
+    - The model configs are filtered by realm
+    - The response status code is 200
+    """
     # First create a config
     config = create_test_config()
     mock_test_client.post("/api/model/configs", json=config)
@@ -102,7 +134,13 @@ def test_get_all_model_configs(mock_test_client: TestClient) -> None:
 
 
 def test_update_model_config(mock_test_client: TestClient) -> None:
-    """Test updating a model config."""
+    """Test updating a model config.
+
+    Verifies that:
+    - The model config is updated successfully
+    - The model config is returned in the response
+    - The response status code is 200
+    """
     # Create a config
     config = create_test_config()
     mock_test_client.post("/api/model/configs", json=config)
@@ -120,7 +158,13 @@ def test_update_model_config(mock_test_client: TestClient) -> None:
 
 
 def test_update_model_config_not_found(mock_test_client: TestClient) -> None:
-    """Test updating a non-existent model config."""
+    """Test updating a non-existent model config.
+
+    Verifies that:
+    - The model config is not updated
+    - The model config is not returned in the response
+    - The response status code is 404
+    """
     config = create_test_config()
     id = str(uuid4())
     response = mock_test_client.put(f"/api/model/configs/{id}", json=config)
@@ -128,7 +172,13 @@ def test_update_model_config_not_found(mock_test_client: TestClient) -> None:
 
 
 def test_delete_model_config(mock_test_client: TestClient) -> None:
-    """Test deleting a model config."""
+    """Test deleting a model config.
+
+    Verifies that:
+    - The model config is deleted successfully
+    - The model config is not returned in the response
+    - The response status code is 200
+    """
     # First create a config
     config = create_test_config()
     mock_test_client.post("/api/model/configs", json=config)
@@ -143,14 +193,29 @@ def test_delete_model_config(mock_test_client: TestClient) -> None:
 
 
 def test_delete_model_config_not_found(mock_test_client: TestClient) -> None:
-    """Test deleting a non-existent model config."""
+    """Test deleting a non-existent model config.
+
+    Verifies that:
+    - The model config is not deleted
+    - The model config is not returned in the response
+    - The response status code is 404
+    """
     non_existent_id = uuid4()
     response = mock_test_client.delete(f"/api/model/configs/{non_existent_id}")
     assert response.status_code == HTTPStatus.NOT_FOUND
 
 
 def test_create_asset_dependencies_missing(test_client: TestClient) -> None:
-    """Test creating a model config with missing asset dependencies."""
+    """Test creating a model config with missing asset dependencies.
+
+    The provided target asset does not exist, so the model config should not be created.
+
+    Verifies that:
+    - The model config asset ids are validated, e.g. they exist in the openremote service response
+    - The model config is not created
+    - The model config is not returned in the response
+    - The response status code is 400
+    """
     config = create_test_config()
     response = test_client.post("/api/model/configs", json=config)
-    assert response.status_code == HTTPStatus.BAD_REQUEST  # Bad Request
+    assert response.status_code == HTTPStatus.BAD_REQUEST 

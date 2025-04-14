@@ -180,6 +180,7 @@ def test_forecast_execution(
     trained_basic_model: ProphetModelConfig,
 ) -> None:
     """Test basic forecast execution with a single-variable model.
+
     Verifies that:
     - Forecast is generated successfully
     - Predicted datapoints are written to OpenRemote
@@ -202,6 +203,7 @@ def test_forecast_execution_with_regressor(
     trained_basic_model: ProphetModelConfig,
 ) -> None:
     """Test forecast execution with a multi-variable model using regressors.
+    
     Verifies that:
     - Forecast is generated using regressor data
     - Regressor predictions are properly retrieved
@@ -248,6 +250,7 @@ def test_forecast_execution_with_no_model(
     prophet_basic_config: ProphetModelConfig,
 ) -> None:
     """Test forecast behavior when no trained model is available.
+
     Verifies that:
     - System handles missing model gracefully
     - No predictions are written when model is missing
