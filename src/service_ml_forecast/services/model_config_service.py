@@ -69,6 +69,8 @@ class ModelConfigService:
             logger.error(f"Could not create config: {config.id} - already exists: {e}")
             raise ResourceAlreadyExistsError(f"Could not create config: {config.id} - already exists") from e
 
+
+
         return config
 
     def get_all(self, realm: str | None = None) -> list[ModelConfig]:

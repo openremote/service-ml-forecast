@@ -280,6 +280,7 @@ class OpenRemoteClient:
 
         url = f"{self.openremote_url}/api/master/asset/query"
 
+
         self.logger.info(f"Retrieving assets with storeDataPoints: {realm}")
 
         # OR Asset Query to retrieve only assets that have attributes with "meta": {"storeDataPoints": true}

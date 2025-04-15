@@ -19,7 +19,7 @@ import logging.config
 from collections.abc import AsyncGenerator
 
 import uvicorn
-from fastapi import APIRouter, FastAPI
+from fastapi import FastAPI, APIRouter
 from fastapi.concurrency import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
@@ -36,7 +36,6 @@ from service_ml_forecast.services.model_scheduler import ModelScheduler
 logging.config.dictConfig(LOGGING_CONFIG)
 
 logger = logging.getLogger(__name__)
-
 
 # FastAPI Lifecycle, handles startup and shutdown tasks
 @asynccontextmanager

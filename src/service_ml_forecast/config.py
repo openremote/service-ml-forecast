@@ -29,10 +29,10 @@ PROJECT_ROOT = find_project_root()
 class DirectoryConstants:
     """Directory paths constants. Tests can override these constants."""
 
-    ML_BASE_DIR: Path = PROJECT_ROOT  # base directory for the service
-    ML_MODELS_DIR: Path = ML_BASE_DIR / "deployment/data/models"  # directory for the models
-    ML_CONFIGS_DIR: Path = ML_BASE_DIR / "deployment/data/configs"  # directory for the configs
-    ML_WEB_DIST_DIR: Path = ML_BASE_DIR / "deployment/web/dist"  # directory for the web dist
+    ML_BASE_DIR: Path = PROJECT_ROOT                                    # base directory for the service
+    ML_MODELS_DIR: Path = ML_BASE_DIR / "deployment/data/models"        # directory for the models
+    ML_CONFIGS_DIR: Path = ML_BASE_DIR / "deployment/data/configs"      # directory for the configs
+    ML_WEB_DIST_DIR: Path = ML_BASE_DIR / "deployment/web/dist"         # directory for the web dist
 
 
 class AppEnvironment(BaseSettings):
@@ -44,22 +44,22 @@ class AppEnvironment(BaseSettings):
     """
 
     # Logging
-    ML_LOG_LEVEL: str = "INFO"  # log level to use
-    ML_ENVIRONMENT: str = "development"  # environment to run the service in
+    ML_LOG_LEVEL: str = "INFO"                              # log level to use
+    ML_ENVIRONMENT: str = "development"                     # environment to run the service in
 
     # FastAPI Settings
-    ML_PUBLISH_DOCS: bool = True  # whether to make the docs available
+    ML_PUBLISH_DOCS: bool = True                            # whether to make the docs available
 
     # Uvicorn Settings
-    ML_SERVICE_HOST: str = "0.0.0.0"  # host to bind the service to
-    ML_SERVICE_PORT: int = 8000  # port to bind the service to
-    ML_ROOT_PATH: str = "/services/ml-forecast"  # when running behind a reverse proxy, the root path of the service
+    ML_SERVICE_HOST: str = "0.0.0.0"                        # host to bind the service to
+    ML_SERVICE_PORT: int = 8000                             # port to bind the service to
+    ML_ROOT_PATH: str = "/services/ml-forecast"             # when running behind a reverse proxy, the root path of the service
 
     # OpenRemote Settings
-    ML_OR_URL: str = "http://localhost:8080"  # OpenRemote URL
-    ML_OR_KEYCLOAK_URL: str = "http://localhost:8081"  # OpenRemote Keycloak URL
-    ML_OR_SERVICE_USER: str = "serviceuser"  # OpenRemote service user
-    ML_OR_SERVICE_USER_SECRET: str = "secret"  # OpenRemote service user secret
+    ML_OR_URL: str = "http://localhost:8080"            # OpenRemote URL
+    ML_OR_KEYCLOAK_URL: str = "http://localhost:8081"   # OpenRemote Keycloak URL
+    ML_OR_SERVICE_USER: str = "serviceuser"             # OpenRemote service user
+    ML_OR_SERVICE_USER_SECRET: str = "secret"           # OpenRemote service user secret
 
     model_config = SettingsConfigDict(case_sensitive=True, env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
