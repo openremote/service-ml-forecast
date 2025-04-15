@@ -2,19 +2,24 @@ import { css, html, LitElement, PropertyValues } from 'lit'
 import { customElement, property, state } from 'lit/decorators.js'
 import { ModelTypeEnum, ProphetSeasonalityModeEnum } from '../services/models'
 import type { ProphetModelConfig } from '../services/models'
-import { ApiService } from '../services/api-service'
+import { APIService } from '../services/api-service'
 import { Router, RouterLocation } from '@vaadin/router'
 import '@openremote/or-icon'
 import '@openremote/or-panel'
 import { InputType, OrInputChangedEvent } from '@openremote/or-mwc-components/or-mwc-input'
 import '../components/loading-spinner'
 import { showSnackbar } from '@openremote/or-mwc-components/or-mwc-snackbar'
-import { getRealm } from '../util'
+import { getRootPath } from '../util'
 import '../components/custom-duration-input'
 import { DurationInputType } from '../components/custom-duration-input'
+import { consume } from '@lit/context'
+import { realmContext } from './app-layout'
 
-@customElement('page-config-viewer')
-export class PageConfigViewer extends LitElement {
+@customElement('page-config-editor')
+export class PageConfigEditor extends LitElement {
+    @consume({ context: realmContext })
+    realm = ''
+
     static get styles() {
         return css`
             :host {
@@ -31,7 +36,7 @@ export class PageConfigViewer extends LitElement {
                 margin: 5px 0;
             }
 
-            .config-viewer {
+            .config-editor {
                 display: flex;
                 flex-direction: column;
                 gap: 16px;
@@ -101,12 +106,12 @@ export class PageConfigViewer extends LitElement {
     @state()
     private modified: boolean = false
 
-    private readonly apiService: ApiService = new ApiService()
+    private readonly rootPath = getRootPath()
 
     @state()
     private formData: ProphetModelConfig = {
         type: ModelTypeEnum.PROPHET,
-        realm: getRealm(),
+        realm: null, // Set during setup
         name: 'New Model Config',
         enabled: true,
         target: {
@@ -206,6 +211,9 @@ export class PageConfigViewer extends LitElement {
 
     // Set up all the data for the editor
     private async setupEditor() {
+        // Set the realm from the context provider
+        this.formData.realm = this.realm
+
         await this.loadAssets()
         await this.loadConfig()
     }
@@ -213,7 +221,7 @@ export class PageConfigViewer extends LitElement {
     // Loads valid assets and their attributes from the API
     private async loadAssets() {
         this.assetSelectList.clear()
-        const assets = await this.apiService.getAssets()
+        const assets = await APIService.getAssets(this.realm)
         assets.forEach((asset) => {
             this.assetSelectList.set(asset.id, asset.name)
             this.attributeSelectList.set(asset.id, new Map(Object.entries(asset.attributes).map(([key, value]) => [key, value.name])))
@@ -230,7 +238,7 @@ export class PageConfigViewer extends LitElement {
             return
         }
         try {
-            this.modelConfig = await this.apiService.getModelConfig(this.configId)
+            this.modelConfig = await APIService.getModelConfig(this.configId)
             // Create a deep copy of the model config for the form data
             this.formData = JSON.parse(JSON.stringify(this.modelConfig))
             this.loading = false
@@ -252,16 +260,14 @@ export class PageConfigViewer extends LitElement {
         const isExistingConfig = this.modelConfig !== null
 
         // Switch between update and create -- based on whether the config
-        const saveRequest = isExistingConfig
-            ? this.apiService.updateModelConfig(this.formData)
-            : this.apiService.createModelConfig(this.formData)
+        const saveRequest = isExistingConfig ? APIService.updateModelConfig(this.formData) : APIService.createModelConfig(this.formData)
 
         try {
             const modelConfig = await saveRequest
             if (isExistingConfig) {
                 await this.loadConfig()
             } else {
-                Router.go(`/service/${modelConfig.realm}/configs/${modelConfig.id}`)
+                Router.go(`${this.rootPath}${modelConfig.realm}/configs/${modelConfig.id}`)
             }
         } catch (error) {
             console.error(error)
@@ -339,14 +345,24 @@ export class PageConfigViewer extends LitElement {
                             .searchProvider="${this.assetSelectList.size > 0 ? this.searchAssets.bind(this) : null}"
                         ></or-mwc-input>
 
-                        <or-mwc-input
-                            type="${InputType.SELECT}"
-                            name="attribute_name"
-                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.handleRegressorInput(e, index)}"
-                            label="Attribute"
-                            .value="${regressor.attribute_name}"
-                            .options="${[...(this.attributeSelectList.get(regressor.asset_id) ?? new Map())]}"
-                        ></or-mwc-input>
+                        <!-- Render the attribute select list if the asset is selected -->
+                        ${regressor.asset_id
+                            ? html`
+                                  <or-mwc-input
+                                      type="${InputType.SELECT}"
+                                      name="attribute_name"
+                                      @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.handleRegressorInput(e, index)}"
+                                      label="Attribute"
+                                      .value="${regressor.attribute_name}"
+                                      .options="${[...(this.attributeSelectList.get(regressor.asset_id) ?? new Map())]}"
+                                  ></or-mwc-input>
+                              `
+                            : html`<or-mwc-input
+                                  type="${InputType.SELECT}"
+                                  name="attribute_name"
+                                  label="Attribute"
+                                  disabled
+                              ></or-mwc-input>`}
 
                         <or-mwc-input
                             type="${InputType.DATETIME}"
@@ -403,7 +419,7 @@ export class PageConfigViewer extends LitElement {
         }
 
         return html`
-            <form id="config-form" class="config-viewer">
+            <form id="config-form" class="config-editor">
                 <div class="config-header">
                     <div class="config-header-name">
                         <or-mwc-input
@@ -512,14 +528,24 @@ export class PageConfigViewer extends LitElement {
                                 .searchProvider="${this.assetSelectList.size > 0 ? this.searchAssets.bind(this) : null}"
                             ></or-mwc-input>
 
-                            <or-mwc-input
-                                type="${InputType.SELECT}"
-                                name="target.attribute_name"
-                                @or-mwc-input-changed="${this.handleTargetInput}"
-                                label="Attribute"
-                                .value="${this.formData.target.attribute_name}"
-                                .options="${[...(this.attributeSelectList.get(this.formData.target.asset_id) ?? new Map())]}"
-                            ></or-mwc-input>
+                            <!-- Render the attribute select list if the asset is selected -->
+                            ${this.formData.target.asset_id
+                                ? html`
+                                      <or-mwc-input
+                                          type="${InputType.SELECT}"
+                                          name="target.attribute_name"
+                                          @or-mwc-input-changed="${this.handleTargetInput}"
+                                          label="Attribute"
+                                          .value="${this.formData.target.attribute_name}"
+                                          .options="${[...(this.attributeSelectList.get(this.formData.target.asset_id) ?? new Map())]}"
+                                      ></or-mwc-input>
+                                  `
+                                : html`<or-mwc-input
+                                      type="${InputType.SELECT}"
+                                      name="target.attribute_name"
+                                      label="Attribute"
+                                      disabled
+                                  ></or-mwc-input>`}
 
                             <or-mwc-input
                                 type="${InputType.DATETIME}"

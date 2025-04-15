@@ -141,7 +141,7 @@ class OpenRemoteService:
                         f"Unable to retrieve predicted datapoints for {regressor.asset_id} "
                         f"{regressor.get_feature_name()} - skipping"
                     )
-                    continue
+                    return None  # Return immediately, forecast will fail without regressor future data
 
                 regressors.append(
                     FeatureDatapoints(
@@ -164,7 +164,7 @@ class OpenRemoteService:
         """
         assets = self.client.retrieve_assets_with_historical_datapoints(realm)
         if assets is None:
-            logger.warning(f"Unable to retrieve assets for realm {realm}")
+            logger.warning(f"Unable to retrieve assets with storeDataPoints for realm {realm}")
             return []
 
         return assets
@@ -175,9 +175,10 @@ class OpenRemoteService:
         Returns:
             A list of all assets from OpenRemote.
         """
+        logger.info(f"Retrieving assets by ids: {asset_ids} for realm {realm}")
         assets = self.client.retrieve_assets_by_ids(asset_ids, realm)
         if assets is None:
-            logger.warning(f"Unable to retrieve assets for realm {realm}")
+            logger.warning(f"Unable to retrieve assets by ids for realm {realm}")
             return []
 
         return assets

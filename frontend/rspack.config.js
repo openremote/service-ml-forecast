@@ -7,6 +7,8 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 const isProduction = process.env.NODE_ENV === 'production'
+const serviceUrl = process.env.ML_SERVICE_URL || ''
+const reverseProxyPrefix = process.env.ML_ROOT_PATH || '/'
 
 export default {
     mode: isProduction ? 'production' : 'development',
@@ -15,9 +17,10 @@ export default {
         main: './src/index.ts'
     },
     output: {
-        filename: 'bundle.js',
+        filename: `bundle.[contenthash].js`,
+        clean: true,
         path: path.resolve(__dirname, 'dist'),
-        publicPath: '/'
+        publicPath: reverseProxyPrefix
     },
     resolve: {
         extensions: ['.ts', '.js']
@@ -51,13 +54,16 @@ export default {
     },
     plugins: [
         new rspack.HtmlRspackPlugin({
-            template: './index.html'
+            template: './index.html',
+            templateParameters: {
+                publicPath: reverseProxyPrefix
+            }
         }),
         new rspack.CopyRspackPlugin({
-            patterns: [{ from: 'static', to: 'static' }]
+            patterns: [{ from: 'assets', to: 'assets' }]
         }),
         new rspack.DefinePlugin({
-            'process.env.ML_SERVICE_URL': JSON.stringify(process.env.ML_SERVICE_URL || '')
+            'process.env.ML_SERVICE_URL': JSON.stringify(serviceUrl)
         })
     ],
     devServer: {
@@ -65,6 +71,11 @@ export default {
         historyApiFallback: true,
         hot: true,
         watchFiles: ['/**/*'],
-        compress: true
+        compress: true,
+        headers: {
+            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0',
+        }
     }
 }

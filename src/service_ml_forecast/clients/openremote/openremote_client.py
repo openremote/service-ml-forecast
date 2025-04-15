@@ -280,6 +280,9 @@ class OpenRemoteClient:
 
         url = f"{self.openremote_url}/api/master/asset/query"
 
+
+        self.logger.info(f"Retrieving assets with storeDataPoints: {realm}")
+
         # OR Asset Query to retrieve only assets that have attributes with "meta": {"storeDataPoints": true}
         asset_query = {
             "realm": {"name": realm},
@@ -328,7 +331,7 @@ class OpenRemoteClient:
                 parsed_assets = [_filter_asset_attributes(Asset(**asset_data)) for asset_data in assets_data]
                 return parsed_assets
             except (httpx.HTTPStatusError, httpx.ConnectError) as e:
-                self.logger.error(f"Error retrieving assets: {e}")
+                self.logger.error(f"Error retrieving assets with storeDataPoints: {e}")
                 return None
 
     def retrieve_assets_by_ids(self, asset_ids: list[str], realm: str) -> list[Asset] | None:

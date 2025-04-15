@@ -19,7 +19,7 @@ import logging.config
 from collections.abc import AsyncGenerator
 
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, APIRouter
 from fastapi.concurrency import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
@@ -37,7 +37,6 @@ logging.config.dictConfig(LOGGING_CONFIG)
 
 logger = logging.getLogger(__name__)
 
-
 # FastAPI Lifecycle, handles startup and shutdown tasks
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncGenerator[None]:
@@ -48,6 +47,7 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None]:
 
 
 app = FastAPI(
+    root_path=ENV.ML_ROOT_PATH,
     title=__app_info__.name,
     description=__app_info__.description,
     version=__app_info__.version,
@@ -75,12 +75,16 @@ app.add_middleware(
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 
-# --- Include Routers ---
-app.include_router(model_config_route.router)
-app.include_router(openremote_route.router)
+# Create a main router with global prefix
+main_router = APIRouter()
 
-# Serves the frontend dist bundle (from the ENV.ML_WEB_DIST_DIR)
-app.include_router(web_route.router)
+# --- Include Routers under the main router ---
+main_router.include_router(model_config_route.router)
+main_router.include_router(openremote_route.router)
+main_router.include_router(web_route.router)
+
+# Include the main router in the app
+app.include_router(main_router)
 
 # --- Exception Handlers ---
 register_exception_handlers(app)

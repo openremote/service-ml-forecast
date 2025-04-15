@@ -32,13 +32,10 @@ from service_ml_forecast.config import DIRS
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(include_in_schema=False)
-
-STATIC_DIR = "/static"
-STATIC_DIR_MOUNT_NAME = "static"
+router = APIRouter(prefix="/ui", include_in_schema=False)
 
 if DIRS.ML_WEB_DIST_DIR.exists():
-    router.mount(STATIC_DIR, StaticFiles(directory=str(DIRS.ML_WEB_DIST_DIR)), name=STATIC_DIR_MOUNT_NAME)
+    router.mount("/assets", StaticFiles(directory=str(DIRS.ML_WEB_DIST_DIR / "assets")))
 else:
     logger.error(f"Web dist directory not found at {DIRS.ML_WEB_DIST_DIR}, bundle cannot be served")
 

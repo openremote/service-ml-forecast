@@ -57,16 +57,19 @@ class ModelConfigService:
             ResourceDependencyError: If asset dependencies are invalid.
         """
         path = self._get_config_file_path(config.id)
+
+        if not self._validate_asset_dependencies(config):
+            raise ResourceDependencyError(
+                f"Invalid model config: {config.id}! - some of the assets do not exist or are not in the correct realm"
+            )
+
         try:
             FsUtil.create_file(path, config.model_dump_json())
         except FileExistsError as e:
             logger.error(f"Could not create config: {config.id} - already exists: {e}")
             raise ResourceAlreadyExistsError(f"Could not create config: {config.id} - already exists") from e
 
-        if not self._validate_asset_dependencies(config):
-            raise ResourceDependencyError(
-                f"Invalid model config: {config.id}! - some of the assets do not exist or are not in the correct realm"
-            )
+
 
         return config
 
@@ -133,16 +136,16 @@ class ModelConfigService:
         """
         path = self._get_config_file_path(config_id)
 
+        if not self._validate_asset_dependencies(config):
+            raise ResourceDependencyError(
+                f"Invalid model config: {config.id}! - some of the assets do not exist or are not in the correct realm"
+            )
+
         try:
             FsUtil.update_file(path, config.model_dump_json())
         except FileNotFoundError as e:
             logger.error(f"Cannot update config: {config_id} - does not exist: {e}")
             raise ResourceNotFoundError(f"Cannot update config: {config_id} - does not exist") from e
-
-        if not self._validate_asset_dependencies(config):
-            raise ResourceDependencyError(
-                f"Invalid model config: {config.id}! - some of the assets do not exist or are not in the correct realm"
-            )
 
         return config
 
@@ -195,7 +198,7 @@ class ModelConfigService:
         assets = self.openremote_service.get_assets_by_ids(asset_ids_to_check, config.realm)
 
         if len(assets) != len(asset_ids_to_check):
-            logger.error(f"Invalid model config: {config.id}! - some assets do not exist in the correct realm")
+            logger.error(f"Invalid model config: {config.id} - some assets do not exist in the correct realm")
             return False
 
         return True

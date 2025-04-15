@@ -1,16 +1,29 @@
 import { IconSet, createSvgIconSet, IconSets, OrIconSet } from '@openremote/or-icon'
 import { html } from 'lit'
 import * as Core from '@openremote/core'
-import { ApiService } from './services/api-service'
+import { APIService } from './services/api-service'
+
+// Detect the actual root path from the script URL
+export function getRootPath() {
+    const scriptElement = document.querySelector('script[src*="bundle"]')
+
+    if (scriptElement && scriptElement.getAttribute('src')) {
+        const scriptPath = new URL(scriptElement.getAttribute('src')!, window.location.href).pathname
+
+        // Positive lookahead to match everything up to bundle.js
+        const match = scriptPath.match(/(.*?)(?=bundle)/)
+        return match ? match[1] : ''
+    }
+
+    return ''
+}
 
 /**
- * Get the realm from the path
- * @param path - The path to get the realm from
- * @returns The realm
+ * Check if the environment is development
+ * @returns True if the environment is development, false otherwise
  */
-export function getRealm(): string {
-    // e.g. /service/realm/configs -> realm
-    return window.location.pathname.split('/')[2]
+export function isDevelopment(): boolean {
+    return process.env.NODE_ENV === 'development'
 }
 
 /**
@@ -25,14 +38,16 @@ export function setupORIcons() {
             },
             onAdd(): void {
                 const style = document.createElement('style')
+                const rootPath = getRootPath()
+
                 style.id = 'mdiFontStyle'
                 style.textContent = `
                     @font-face {
                         font-family: "Material Design Icons";
-                        src: url("/static/fonts/materialdesignicons-webfont.eot") format("embedded-opentype"),
-                             url("/static/fonts/materialdesignicons-webfont.woff2") format("woff2"),
-                             url("/static/fonts/materialdesignicons-webfont.woff") format("woff"),
-                             url("/static/fonts/materialdesignicons-webfont.ttf") format("truetype");
+                        src: url("${rootPath}assets/fonts/materialdesignicons-webfont.eot") format("embedded-opentype"),
+                             url("${rootPath}assets/fonts/materialdesignicons-webfont.woff2") format("woff2"),
+                             url("${rootPath}assets/fonts/materialdesignicons-webfont.woff") format("woff"),
+                             url("${rootPath}assets/fonts/materialdesignicons-webfont.ttf") format("truetype");
                         font-weight: normal;
                         font-style: normal;
                     }
@@ -59,9 +74,7 @@ export interface ThemeSettings {
 /**
  * Set the realm theme based on realm config from the service backend
  */
-export async function setRealmTheme() {
-    const apiService = new ApiService()
-
+export async function setRealmTheme(realm: string) {
     // Default theme settings
     const theme: ThemeSettings = {
         color1: Core.DefaultColor1,
@@ -73,7 +86,7 @@ export async function setRealmTheme() {
     }
 
     try {
-        const config = await apiService.getRealmConfig()
+        const config = await APIService.getRealmConfig(realm)
         if (config && config.styles) {
             const cssString = config.styles
             const colorRegex = /--or-app-color(\d+):\s*(#[0-9a-fA-F]{6})/g
@@ -105,8 +118,8 @@ export async function setRealmTheme() {
                 }
             }
         }
-    } catch (error) {
-        console.error('Error getting realm config', error)
+    } catch {
+        console.error('Error getting realm config')
     }
 
     setTheme(theme)

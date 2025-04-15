@@ -1,56 +1,60 @@
 import { Router } from '@vaadin/router'
 import './pages/pages-config-list'
 import './pages/pages-config-editor'
-import './components/breadcrumb'
 import './pages/pages-not-found'
 import './pages/pages-service-unavailable'
+import './pages/app-layout'
 import { html, render } from 'lit'
-import { setRealmTheme, setupORIcons } from './util'
-import { ApiService } from './services/api-service'
-
-const apiService = new ApiService()
-const outlet = document.querySelector('#outlet') as HTMLElement
-const router = new Router(outlet)
+import { setupORIcons, getRootPath } from './util'
+import { APIService } from './services/api-service'
 
 async function init() {
-    setupORIcons()
+    const outlet = document.querySelector('#outlet') as HTMLElement
 
-    const backendIsAvailable = await apiService.isServiceAvailable()
+    const backendIsAvailable = await APIService.isServiceAvailable()
     if (!backendIsAvailable) {
         render(html`<page-service-unavailable></page-service-unavailable>`, outlet)
         return
     }
 
-    // Load realm theme
-    await setRealmTheme()
+    // Setup OR icons
+    setupORIcons()
 
-    // Render breadcrumb component
-    render(html`<breadcrumb-nav></breadcrumb-nav>`, outlet)
+    const router = new Router(outlet, { baseUrl: getRootPath() })
 
-    initRouter()
+    initRouter(router)
 }
 
-function initRouter() {
+function initRouter(router: Router) {
     const routes = [
         {
-            path: `/service/:realm/`,
-            redirect: `/service/:realm/configs`
-        },
-        {
-            path: `/service/:realm/configs`,
-            component: 'page-config-list'
-        },
-        {
-            path: `/service/:realm/configs/new`,
-            component: 'page-config-viewer'
-        },
-        {
-            path: `/service/:realm/configs/:id`,
-            component: 'page-config-viewer'
-        },
-        {
-            path: '/service(.*)',
-            component: 'page-not-found'
+            path: '',
+            component: 'app-layout',
+            children: [
+                {
+                    path: `/:realm`,
+                    redirect: `/:realm/configs`
+                },
+                {
+                    path: `/:realm/configs`,
+                    component: 'page-config-list',
+                    title: 'Configs'
+                },
+                {
+                    path: `/:realm/configs/new`,
+                    component: 'page-config-editor',
+                    title: 'New Config'
+                },
+                {
+                    path: `/:realm/configs/:id`,
+                    component: 'page-config-editor',
+                    title: 'Edit Config'
+                },
+                {
+                    path: '(.*)',
+                    component: 'page-not-found'
+                }
+            ]
         }
     ]
     router.setRoutes(routes)

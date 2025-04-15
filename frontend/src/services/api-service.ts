@@ -1,10 +1,9 @@
-import { getRealm } from '../util'
 import { CustomAsset, ModelConfig, RealmConfig } from './models'
 
-export class ApiService {
-    // Use env variable, else fallback to relative URL (e.g. front-end on the same host as the ML service)
-    private readonly baseUrl: string = (process.env.ML_SERVICE_URL || '').replace(/\/$/, '')
+// Use env variable, else fallback to relative URL (e.g. front-end on the same host as the ML service)
+const baseUrl: string = (process.env.ML_SERVICE_URL || '').replace(/\/$/, '')
 
+export const APIService = {
     /**
      * Check if the service is available
      * @returns True if the service is available, false otherwise
@@ -12,7 +11,7 @@ export class ApiService {
      */
     async isServiceAvailable(): Promise<boolean> {
         try {
-            const response = await fetch(`${this.baseUrl}/docs`, {
+            const response = await fetch(`${baseUrl}/docs`, {
                 method: 'GET'
             })
             return response.ok
@@ -20,53 +19,50 @@ export class ApiService {
             console.error('Error checking service availability:', error)
             return false
         }
-    }
+    },
 
     /**
      * Get all model configs for the current realm
      * @returns The list of model configs
      */
-    async getModelConfigs(): Promise<ModelConfig[]> {
-        const realm = getRealm()
-        const response = await fetch(`${this.baseUrl}/api/model/configs` + (realm ? `?realm=${realm}` : ''), {
+    async getModelConfigs(realm: string): Promise<ModelConfig[]> {
+        const response = await fetch(`${baseUrl}/api/model/configs` + (realm ? `?realm=${realm}` : ''), {
             method: 'GET'
         })
         if (!response.ok) {
             throw new Error(`Failed to get model configs: ${response.statusText}`)
         }
         return response.json()
-    }
+    },
 
     /**
      * Get all assets for the current realm with attributesthat store datapoints
      * @returns The list of assets
      */
-    async getAssets(): Promise<CustomAsset[]> {
-        const realm = getRealm()
-        const response = await fetch(`${this.baseUrl}/api/openremote/assets` + (realm ? `?realm=${realm}` : ''), {
+    async getAssets(realm: string): Promise<CustomAsset[]> {
+        const response = await fetch(`${baseUrl}/api/openremote/assets` + (realm ? `?realm=${realm}` : ''), {
             method: 'GET'
         })
         if (!response.ok) {
             throw new Error(`Failed to get assets: ${response.statusText}`)
         }
         return response.json()
-    }
+    },
 
     /**
      * Get assets by ids for the current realm
      * @param ids The list of asset ids
      * @returns The list of assets
      */
-    async getAssetsByIds(ids: string[]): Promise<CustomAsset[]> {
-        const realm = getRealm()
-        const response = await fetch(`${this.baseUrl}/api/openremote/assets/ids?realm=${realm}&ids=${ids.join(',')}`, {
+    async getAssetsByIds(ids: string[], realm: string): Promise<CustomAsset[]> {
+        const response = await fetch(`${baseUrl}/api/openremote/assets/ids?realm=${realm}&ids=${ids.join(',')}`, {
             method: 'GET'
         })
         if (!response.ok) {
             throw new Error(`Failed to get assets: ${response.statusText}`)
         }
         return response.json()
-    }
+    },
 
     /**
      * Get a model config by id
@@ -74,27 +70,27 @@ export class ApiService {
      * @returns The model config
      */
     async getModelConfig(id: string): Promise<ModelConfig> {
-        const response = await fetch(`${this.baseUrl}/api/model/configs/${id}`, {
+        const response = await fetch(`${baseUrl}/api/model/configs/${id}`, {
             method: 'GET'
         })
         if (!response.ok) {
             throw new Error(`Failed to get model config ${id}: ${response.statusText}`)
         }
         return response.json()
-    }
+    },
 
     /**
      * Delete a model config by id
      * @param id The id of the model config
      */
     async deleteModelConfig(id: string): Promise<void> {
-        const response = await fetch(`${this.baseUrl}/api/model/configs/${id}`, {
+        const response = await fetch(`${baseUrl}/api/model/configs/${id}`, {
             method: 'DELETE'
         })
         if (!response.ok) {
             throw new Error(`Failed to delete model config ${id}: ${response.statusText}`)
         }
-    }
+    },
 
     /**
      * Update a model config
@@ -102,7 +98,7 @@ export class ApiService {
      * @returns The updated model config
      */
     async updateModelConfig(modelConfig: ModelConfig): Promise<ModelConfig> {
-        const response = await fetch(`${this.baseUrl}/api/model/configs/${modelConfig.id}`, {
+        const response = await fetch(`${baseUrl}/api/model/configs/${modelConfig.id}`, {
             method: 'PUT',
             body: JSON.stringify(modelConfig),
             headers: {
@@ -113,7 +109,7 @@ export class ApiService {
             throw new Error(`Failed to update model config: ${response.statusText}`)
         }
         return response.json()
-    }
+    },
 
     /**
      * Create a model config
@@ -121,7 +117,7 @@ export class ApiService {
      * @returns The created model config
      */
     async createModelConfig(modelConfig: ModelConfig): Promise<ModelConfig> {
-        const response = await fetch(`${this.baseUrl}/api/model/configs`, {
+        const response = await fetch(`${baseUrl}/api/model/configs`, {
             method: 'POST',
             body: JSON.stringify(modelConfig),
             headers: {
@@ -132,15 +128,14 @@ export class ApiService {
             throw new Error(`Failed to create model config: ${response.statusText}`)
         }
         return response.json()
-    }
+    },
 
     /**
      * Get the realm config for the current realm (for styling purposes)
      * @returns The realm config
      */
-    async getRealmConfig(): Promise<RealmConfig> {
-        const realm = getRealm()
-        const response = await fetch(`${this.baseUrl}/api/openremote/realm/config/${realm}`, {
+    async getRealmConfig(realm: string): Promise<RealmConfig> {
+        const response = await fetch(`${baseUrl}/api/openremote/realm/config/${realm}`, {
             method: 'GET'
         })
         if (!response.ok) {

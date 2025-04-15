@@ -3,7 +3,7 @@ import { css, html, TemplateResult } from 'lit'
 import { customElement, property } from 'lit/decorators.js'
 import { CustomAsset, ModelConfig } from '../services/models'
 import '@openremote/or-mwc-components/or-mwc-input'
-import { getRealm } from '../util'
+import { getRootPath } from '../util'
 import { Router } from '@vaadin/router'
 import { InputType } from '@openremote/or-mwc-components/or-mwc-input'
 
@@ -75,6 +75,9 @@ export class ConfigsTable extends OrMwcTable {
     @property({ type: Array })
     public configAssets: CustomAsset[] = []
 
+    @property({ type: String })
+    public realm: string = ''
+
     public columns: TableColumn[] = [
         { title: 'State', isSortable: true },
         { title: 'Name', isSortable: true },
@@ -83,6 +86,8 @@ export class ConfigsTable extends OrMwcTable {
         { title: 'Attribute', isSortable: true },
         { title: 'Actions', isSortable: false }
     ]
+
+    private readonly rootPath = getRootPath()
 
     protected config: TableConfig = {
         stickyFirstColumn: false
@@ -181,8 +186,7 @@ export class ConfigsTable extends OrMwcTable {
 
     // Handle the add config click
     private handleAddConfig() {
-        const realm = getRealm()
-        Router.go(`/service/${realm}/configs/new`)
+        Router.go(`${this.rootPath}${this.realm}/configs/new`)
     }
 
     // Render the table
