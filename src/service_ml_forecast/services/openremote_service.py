@@ -99,8 +99,10 @@ class OpenRemoteService:
                         f"Unable to retrieve regressor datapoints for {regressor.asset_id} "
                         f"{regressor.get_feature_name()} - skipping"
                     )
-                    raise ValueError(f"Unable to retrieve regressor datapoints for {regressor.asset_id} "
-                                     f"{regressor.get_feature_name()}")
+                    raise ValueError(
+                        f"Unable to retrieve regressor datapoints for {regressor.asset_id} "
+                        f"{regressor.get_feature_name()}"
+                    )
 
                 regressors.append(
                     FeatureDatapoints(
