@@ -48,7 +48,7 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None]:
 
 
 app = FastAPI(
-    root_path=ENV.ML_ROOT_PATH,
+    root_path=ENV.ML_API_ROOT_PATH,
     title=__app_info__.name,
     description=__app_info__.description,
     version=__app_info__.version,
@@ -103,4 +103,4 @@ if __name__ == "__main__":
 
     initialize_background_services()
     reload = ENV.is_development()
-    uvicorn.run("service_ml_forecast.main:app", host=ENV.ML_SERVICE_HOST, port=ENV.ML_SERVICE_PORT, reload=reload)
+    uvicorn.run("service_ml_forecast.main:app", host=ENV.ML_WEBSERVER_HOST, port=ENV.ML_WEBSERVER_PORT, reload=reload)

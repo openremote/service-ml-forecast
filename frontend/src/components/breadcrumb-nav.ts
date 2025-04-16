@@ -138,7 +138,7 @@ export class BreadcrumbNav extends LitElement {
             if (params.id) {
                 parts.push({
                     path: `${this.rootPath}${this.realm}/configs/${params.id}`,
-                    name: params.id === 'new' ? 'New Config' : `Config ${params.id}`
+                    name: params.id === 'new' ? 'New Config' : `${params.id}`
                 })
             }
         }

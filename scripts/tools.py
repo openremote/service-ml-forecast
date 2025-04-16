@@ -105,9 +105,9 @@ def build() -> None:
 
 
 def build_frontend() -> None:
-    """Build the frontend bundle."""
+    """Build the frontend bundle and copy to deployment/web."""
 
-    step(f"npm run build", "Building frontend in frontend directory", FRONTEND_DIR)
+    step(f"npm run build:prod", "Building frontend in frontend directory", FRONTEND_DIR)
 
     DEPLOYMENT_WEB_DIR.mkdir(parents=True, exist_ok=True)
     

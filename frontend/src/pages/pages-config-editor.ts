@@ -95,8 +95,6 @@ export class PageConfigEditor extends LitElement {
     @state()
     private attributeSelectList: Map<string, Map<string, string>> = new Map()
 
-    private assetSearchSize: number = 10
-
     @state()
     private loading: boolean = true
 
@@ -341,7 +339,7 @@ export class PageConfigEditor extends LitElement {
                             @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.handleRegressorInput(e, index)}"
                             label="Asset"
                             .value="${regressor.asset_id}"
-                            .options="${[...this.assetSelectList.entries()].slice(0, this.assetSearchSize)}"
+                            .options="${[...this.assetSelectList.entries()]}"
                             .searchProvider="${this.assetSelectList.size > 0 ? this.searchAssets.bind(this) : null}"
                         ></or-mwc-input>
 
@@ -406,10 +404,10 @@ export class PageConfigEditor extends LitElement {
     protected async searchAssets(search?: string): Promise<[any, string][]> {
         const options = [...this.assetSelectList.entries()]
         if (!search) {
-            return options.slice(0, this.assetSearchSize)
+            return options
         }
         const searchTerm = search.toLowerCase()
-        return options.filter(([, label]) => label.toLowerCase().includes(searchTerm)).slice(0, this.assetSearchSize)
+        return options.filter(([, label]) => label.toLowerCase().includes(searchTerm))
     }
 
     // Render the editor
@@ -524,7 +522,7 @@ export class PageConfigEditor extends LitElement {
                                 @or-mwc-input-changed="${this.handleTargetInput}"
                                 label="Asset"
                                 .value="${this.formData.target.asset_id}"
-                                .options="${[...this.assetSelectList.entries()].slice(0, this.assetSearchSize)}"
+                                .options="${[...this.assetSelectList.entries()]}"
                                 .searchProvider="${this.assetSelectList.size > 0 ? this.searchAssets.bind(this) : null}"
                             ></or-mwc-input>
 

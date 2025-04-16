@@ -8,7 +8,7 @@ const __dirname = path.dirname(__filename)
 
 const isProduction = process.env.NODE_ENV === 'production'
 const serviceUrl = process.env.ML_SERVICE_URL || ''
-const reverseProxyPrefix = process.env.ML_ROOT_PATH || '/'
+const rootPath = process.env.ML_WEB_ROOT_PATH || '/'
 
 export default {
     mode: isProduction ? 'production' : 'development',
@@ -20,7 +20,7 @@ export default {
         filename: `bundle.[contenthash].js`,
         clean: true,
         path: path.resolve(__dirname, 'dist'),
-        publicPath: reverseProxyPrefix
+        publicPath: rootPath
     },
     resolve: {
         extensions: ['.ts', '.js']
@@ -56,7 +56,7 @@ export default {
         new rspack.HtmlRspackPlugin({
             template: './index.html',
             templateParameters: {
-                publicPath: reverseProxyPrefix
+                publicPath: rootPath
             }
         }),
         new rspack.CopyRspackPlugin({
