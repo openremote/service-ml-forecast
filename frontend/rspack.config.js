@@ -7,8 +7,8 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 const isProduction = process.env.NODE_ENV === 'production'
-const serviceUrl = process.env.ML_SERVICE_URL || ''
-const rootPath = process.env.ML_WEB_ROOT_PATH || '/'
+const serviceUrl = process.env.ML_SERVICE_URL || 'http://localhost:8000' // Default to default dev backend
+const rootPath = process.env.ML_WEB_ROOT_PATH || '/' // Default to empty root path (so base url is the root)
 
 export default {
     mode: isProduction ? 'production' : 'development',

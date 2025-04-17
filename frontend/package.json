@@ -4,9 +4,9 @@
     "version": "0.0.0",
     "type": "module",
     "scripts": {
-        "serve": "cross-env ML_SERVICE_URL=${ML_SERVICE_URL:-http://localhost:8000} rspack serve",
-        "build:dev": "cross-env SERVICE_URL=${SERVICE_URL:-http://localhost:8000} rspack build --mode development",
-        "build:prod": "cross-env ML_WEB_ROOT_PATH=${ML_WEB_ROOT_PATH:-/services/ml-forecast/ui} rspack build --mode production",
+        "serve": "cross-env rspack serve",
+        "build:dev": "cross-env rspack build --mode development",
+        "build:prod": "cross-env SERVICE_URL=${SERVICE_URL:-/services/ml-forecast} ML_WEB_ROOT_PATH=${ML_WEB_ROOT_PATH:-/services/ml-forecast/ui} rspack build --mode production",
         "build:analyze": "rspack build --mode production --analyze",
         "lint": "eslint && prettier . --check",
         "format": "prettier . --write"

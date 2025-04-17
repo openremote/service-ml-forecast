@@ -15,8 +15,7 @@ COPY frontend/ ./
 ARG ML_SERVICE_URL
 ARG ML_WEB_ROOT_PATH
 
-# Run build with defaults if args are empty (see package.json)
-RUN ML_SERVICE_URL=${ML_SERVICE_URL} \
+RUN ML_SERVICE_URL=${ML_SERVICE_URL:-/services/ml-forecast} \
     ML_WEB_ROOT_PATH=${ML_WEB_ROOT_PATH:-/services/ml-forecast/ui} \
     npm run build:prod
 
@@ -58,9 +57,13 @@ RUN echo "Starting runtime phase setup..."
 
 WORKDIR /app
 
+# Explicitly declare the ARG for the build process
+ARG ML_ENVIRONMENT
+
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONPATH=/app/src \
+    # Use the ARG, falling back to a default if not provided during build or runtime
     ML_ENVIRONMENT=${ML_ENVIRONMENT:-production}
 
 # Install runtime dependencies and clean up
@@ -91,6 +94,9 @@ RUN mkdir -p ./deployment/data/models ./deployment/data/configs
 
 # Expose port
 EXPOSE 8000
+
+# Add health check
+HEALTHCHECK --interval=5s --timeout=5s --start-period=30s --retries=3 CMD curl --fail --silent http://localhost:8000/ui || exit 1
 
 RUN echo "Container setup complete! Starting application..."
 
