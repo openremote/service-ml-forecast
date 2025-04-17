@@ -63,6 +63,11 @@ class AppEnvironment(BaseSettings):
     ML_OR_SERVICE_USER: str = "serviceuser"  # OpenRemote service user
     ML_OR_SERVICE_USER_SECRET: str = "secret"  # OpenRemote service user secret
 
+
+    # Middleware Settings
+    ML_ENABLE_KEYCLOAK_MIDDLEWARE: bool = True  # whether to enable the keycloak middleware, can be disabled for local development (protects all routes)
+
+
     model_config = SettingsConfigDict(case_sensitive=True, env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     def is_production(self) -> bool:
