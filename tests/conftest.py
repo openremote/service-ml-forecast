@@ -31,7 +31,7 @@ TEST_OLDEST_TIMESTAMP = 1716153600000  # 2024-05-20 00:00:00 UTC
 
 # Mock URLs and credentials
 MOCK_OPENREMOTE_URL = "https://openremote.local"
-MOCK_KEYCLOAK_URL = "https://keycloak.local"
+MOCK_KEYCLOAK_URL = "https://keycloak.local/auth"
 MOCK_SERVICE_USER = "service_user"
 MOCK_SERVICE_USER_SECRET = "service_user_secret"
 MOCK_ACCESS_TOKEN = "mock_access_token"
@@ -83,7 +83,7 @@ def mock_openremote_client() -> OpenRemoteClient | None:
     """Create a mock OpenRemote client with mocked authentication."""
     with respx.mock(base_url=MOCK_KEYCLOAK_URL) as respx_mock:
         # Mock the authentication endpoint
-        respx_mock.post("/auth/realms/master/protocol/openid-connect/token").mock(
+        respx_mock.post("/realms/master/protocol/openid-connect/token").mock(
             return_value=respx.MockResponse(
                 HTTPStatus.OK,
                 json={
