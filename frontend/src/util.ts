@@ -91,12 +91,18 @@ export async function setRealmTheme(realm: string) {
         color6: Core.DefaultColor6
     }
 
+    // If no realm is provided, use the default theme
+    if (!realm || realm === 'undefined') {
+        setTheme(theme)
+        return
+    }
+
     try {
         const config = await APIService.getRealmConfig(realm)
         if (config && config.styles) {
             const cssString = config.styles
             const colorRegex = /--or-app-color(\d+):\s*(#[0-9a-fA-F]{6})/g
-            let match
+            let match: any[]
 
             while ((match = colorRegex.exec(cssString)) !== null) {
                 const colorIndex = parseInt(match[1], 10)
@@ -124,15 +130,15 @@ export async function setRealmTheme(realm: string) {
                 }
             }
         }
+        // Set the theme with the realm specific settings
+        setTheme(theme)
     } catch {
-        console.error('Error getting realm config')
+        console.warn('Was unable to retrieve realm specific theme settings, falling back to default')
     }
-
-    setTheme(theme)
 }
 
 /**
- * Set the theme
+ * Helper function to update the color variables in the document body
  * @param theme - The theme to set
  */
 export function setTheme(theme: ThemeSettings) {
