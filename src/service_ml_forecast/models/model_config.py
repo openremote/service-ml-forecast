@@ -103,11 +103,11 @@ class ProphetModelConfig(BaseModelConfig):
 
     type: Literal[ModelTypeEnum.PROPHET] = ModelTypeEnum.PROPHET
     yearly_seasonality: bool = Field(
-        default=False,
+        default=True,
         description="Include yearly seasonality in the model.",
     )
     weekly_seasonality: bool = Field(
-        default=False,
+        default=True,
         description="Include weekly seasonality in the model.",
     )
     daily_seasonality: bool = Field(
