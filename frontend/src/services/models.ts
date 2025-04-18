@@ -180,12 +180,12 @@ export interface ProphetModelConfig extends BaseModelConfig {
     type: ModelTypeEnum.PROPHET // Use literal type for discriminator
     /**
      * Include yearly seasonality in the model.
-     * @default true
+     * @default false
      */
     yearly_seasonality?: boolean // Optional as it has a default
     /**
      * Include weekly seasonality in the model.
-     * @default true
+     * @default false
      */
     weekly_seasonality?: boolean // Optional as it has a default
     /**
