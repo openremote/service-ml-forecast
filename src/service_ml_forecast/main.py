@@ -63,6 +63,7 @@ if not ENV.ML_PUBLISH_DOCS:
     app.redoc_url = None
     app.openapi_url = None
 
+# CORS Middleware
 # noinspection PyTypeChecker
 app.add_middleware(
     CORSMiddleware,
@@ -73,6 +74,7 @@ app.add_middleware(
 )
 
 # Compress responses >= 1KB
+# noinspection PyTypeChecker
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 

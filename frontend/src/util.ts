@@ -130,11 +130,12 @@ export async function setRealmTheme(realm: string) {
                 }
             }
         }
-        // Set the theme with the realm specific settings
-        setTheme(theme)
     } catch {
         console.warn('Was unable to retrieve realm specific theme settings, falling back to default')
     }
+
+    // Set the theme with any settings that were retrieved
+    setTheme(theme)
 }
 
 /**
