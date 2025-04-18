@@ -47,15 +47,15 @@ class AppEnvironment(BaseSettings):
     ML_LOG_LEVEL: str = "INFO"  # log level to use
     ML_ENVIRONMENT: str = "development"  # environment to run the service in
 
-    # FastAPI Settings
-    ML_PUBLISH_DOCS: bool = True  # whether to make the openapi docs available
 
-    # Uvicorn Settings
-    ML_WEBSERVER_HOST: str = "0.0.0.0"  # host to bind the web server (uvicorn) to
-    ML_WEBSERVER_PORT: int = 8000  # port to bind the web server (uvicorn) to
+    # Web Server Settings (FastAPI & Uvicorn)
+    ML_WEBSERVER_HOST: str = "0.0.0.0"
+    ML_WEBSERVER_PORT: int = 8000 
+    ML_WEBSERVER_ORIGINS: list[str] = ["http://localhost:8000", "http://localhost:8001"]
     ML_API_ROOT_PATH: str = (
         "/services/ml-forecast"  # when running behind a reverse proxy, the root path of the fastapi app
     )
+    ML_API_PUBLISH_DOCS: bool = True  # whether to make the openapi docs available
 
     # OpenRemote Settings
     ML_OR_URL: str = "http://localhost:8080"  # OpenRemote URL
@@ -63,19 +63,12 @@ class AppEnvironment(BaseSettings):
     ML_OR_SERVICE_USER: str = "serviceuser"  # OpenRemote service user
     ML_OR_SERVICE_USER_SECRET: str = "secret"  # OpenRemote service user secret
 
-
-    # Middleware Settings
-    ML_ENABLE_KEYCLOAK_MIDDLEWARE: bool = True  # whether to enable the keycloak middleware, can be disabled for local development (protects all routes)
-
-
     model_config = SettingsConfigDict(case_sensitive=True, env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     def is_production(self) -> bool:
-        """Check if the environment is production."""
         return self.ML_ENVIRONMENT == "production"
 
     def is_development(self) -> bool:
-        """Check if the environment is development."""
         return self.ML_ENVIRONMENT == "development"
 
 

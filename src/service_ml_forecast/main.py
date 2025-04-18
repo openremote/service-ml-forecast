@@ -37,6 +37,8 @@ logging.config.dictConfig(LOGGING_CONFIG)
 
 logger = logging.getLogger(__name__)
 
+IS_DEV = ENV.is_development()
+
 
 # FastAPI Lifecycle, handles startup and shutdown tasks
 @asynccontextmanager
@@ -58,7 +60,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-if not ENV.ML_PUBLISH_DOCS:
+if not ENV.ML_API_PUBLISH_DOCS:
     app.docs_url = None
     app.redoc_url = None
     app.openapi_url = None
@@ -66,7 +68,7 @@ if not ENV.ML_PUBLISH_DOCS:
 # noinspection PyTypeChecker
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # TODO: Adjust to be stricter
+    allow_origins=ENV.ML_WEBSERVER_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -76,16 +78,10 @@ app.add_middleware(
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 
-# Create a main router with global prefix
-main_router = APIRouter()
-
 # --- Include Routers under the main router ---
-main_router.include_router(model_config_route.router)
-main_router.include_router(openremote_route.router)
-main_router.include_router(web_route.router)
-
-# Include the main router in the app
-app.include_router(main_router)
+app.include_router(model_config_route.router)
+app.include_router(openremote_route.router)
+app.include_router(web_route.router)
 
 # --- Exception Handlers ---
 register_exception_handlers(app)
@@ -93,14 +89,22 @@ register_exception_handlers(app)
 
 def initialize_background_services() -> None:
     """Initialize background services, these run in the background and are not part of the FastAPI lifecycle"""
+
     # Setup the ML Model Scheduler
     model_scheduler = ModelScheduler(get_openremote_service())
     model_scheduler.start()
 
 
+# --- Main ---
+# Only runs if executed directly (not imported)
 if __name__ == "__main__":
+    if IS_DEV:
+        logger.info("APPLICATION IS RUNNING IN DEVELOPMENT MODE -- DO NOT USE IN PRODUCTION")
+
     logger.info("Application details: %s", __app_info__)
 
+    # Initialize any services that run separately from the FastAPI app
     initialize_background_services()
-    reload = ENV.is_development()
+
+    reload = IS_DEV  # Enable auto-reload in development mode
     uvicorn.run("service_ml_forecast.main:app", host=ENV.ML_WEBSERVER_HOST, port=ENV.ML_WEBSERVER_PORT, reload=reload)
