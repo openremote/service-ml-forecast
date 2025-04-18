@@ -30,6 +30,7 @@ from service_ml_forecast.api.route_exception_handlers import register_exception_
 from service_ml_forecast.config import ENV
 from service_ml_forecast.dependencies import get_openremote_service
 from service_ml_forecast.logging_config import LOGGING_CONFIG
+from service_ml_forecast.middlewares.keycloak_middleware import KeycloakMiddleware
 from service_ml_forecast.services.model_scheduler import ModelScheduler
 
 # Load the logging configuration
@@ -49,6 +50,7 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None]:
     logger.info("FastAPI instance shutting down")
 
 
+# --- FastAPI App ---
 app = FastAPI(
     root_path=ENV.ML_API_ROOT_PATH,
     title=__app_info__.name,
@@ -60,11 +62,14 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# --- API Docs ---
 if not ENV.ML_API_PUBLISH_DOCS:
     app.docs_url = None
     app.redoc_url = None
     app.openapi_url = None
 
+
+# --- Middlewares ---
 # noinspection PyTypeChecker
 app.add_middleware(
     CORSMiddleware,
@@ -74,11 +79,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Compress responses >= 1KB
+# GZIP Middleware, compresses responses >= 1KB
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
+# Keycloak Middleware, enforces keycloak authentication on all routes
+app.add_middleware(
+    KeycloakMiddleware,
+    keycloak_url=ENV.ML_OR_KEYCLOAK_URL,
+    excluded_paths=["/docs", "/redoc", "/openapi.json"],
+)
 
-# --- Include Routers under the main router ---
+
+# --- Include Routers ---
 app.include_router(model_config_route.router)
 app.include_router(openremote_route.router)
 app.include_router(web_route.router)
@@ -98,7 +110,7 @@ def initialize_background_services() -> None:
 # Entrypoint for the service
 if __name__ == "__main__":
     if IS_DEV:
-        logger.info("APPLICATION IS RUNNING IN DEVELOPMENT MODE -- DO NOT USE IN PRODUCTION")
+        logger.warning("APPLICATION IS RUNNING IN DEVELOPMENT MODE -- DO NOT USE IN PRODUCTION")
 
     logger.info("Application details: %s", __app_info__)
 

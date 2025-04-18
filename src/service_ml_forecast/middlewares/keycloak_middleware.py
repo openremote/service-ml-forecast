@@ -13,13 +13,11 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 from starlette.types import ASGIApp
 
-from service_ml_forecast.config import ENV
-
 logger = logging.getLogger(__name__)
 
 
 # Get JWKS from Keycloak based on the issuer URL
-async def _get_jwks(issuer: str) -> dict[str, Any]:
+async def _get_jwks(keycloak_url: str, issuer: str) -> dict[str, Any]:
     try:
         parsed_url = urlparse(issuer)
         path_segments = [segment for segment in parsed_url.path.split("/") if segment]
@@ -34,8 +32,7 @@ async def _get_jwks(issuer: str) -> dict[str, Any]:
             raise ValueError("Realm name cannot be empty.")
 
         # Construct the JWKS URL using the base URL from env and the extracted realm
-        base_url = ENV.ML_OR_KEYCLOAK_URL.rstrip("/")
-        jwks_url = f"{base_url}/realms/{realm_name}/protocol/openid-connect/certs"
+        jwks_url = f"{keycloak_url}/realms/{realm_name}/protocol/openid-connect/certs"
 
     except Exception as e:
         logger.error(f"Error constructing JWKS URL from issuer '{issuer}': {e}", exc_info=True)
@@ -53,7 +50,7 @@ async def _get_jwks(issuer: str) -> dict[str, Any]:
 
 
 # Verify the JWT token using the public key obtained from Keycloak's JWKS endpoint
-async def _verify_jwt_token(token: str) -> dict[str, Any]:
+async def _verify_jwt_token(token: str, keycloak_url: str) -> dict[str, Any]:
     try:
         unverified_header = jwt.get_unverified_header(token)
         if not unverified_header or "kid" not in unverified_header:
@@ -68,11 +65,11 @@ async def _verify_jwt_token(token: str) -> dict[str, Any]:
             raise jwt.exceptions.InvalidTokenError("Issuer missing in token")
 
         # Ensure issuer begins with the keycloak base url
-        if not issuer.startswith(ENV.ML_OR_KEYCLOAK_URL):
+        if not issuer.startswith(keycloak_url):
             raise jwt.exceptions.InvalidTokenError("Issuer does not match expected keycloak URL")
 
         # Try and get the JWKS
-        jwks = await _get_jwks(issuer)
+        jwks = await _get_jwks(keycloak_url, issuer)
         public_key_material: RSAPublicKey | None = None
 
         for key in jwks.get("keys", []):
@@ -118,9 +115,10 @@ class KeycloakMiddleware(BaseHTTPMiddleware):
         excluded_paths: A set of URL paths that do require authentication.
     """
 
-    def __init__(self, app: ASGIApp, excluded_paths: list[str] | None = None):
+    def __init__(self, app: ASGIApp, keycloak_url: str, excluded_paths: list[str] | None = None):
         super().__init__(app)
         self.excluded_paths: set[str] = set(excluded_paths) if excluded_paths else set()
+        self.keycloak_url = keycloak_url
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         if request.url.path in self.excluded_paths:
@@ -142,7 +140,7 @@ class KeycloakMiddleware(BaseHTTPMiddleware):
             )
 
         try:
-            payload = await _verify_jwt_token(token)
+            payload = await _verify_jwt_token(token, self.keycloak_url)
             request.state.user = payload
         except HTTPException as e:
             return JSONResponse(
