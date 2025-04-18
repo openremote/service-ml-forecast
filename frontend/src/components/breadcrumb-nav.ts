@@ -71,7 +71,7 @@ export class BreadcrumbNav extends LitElement {
 
     private get HOME_LINK(): BreadcrumbPart {
         return {
-            path: `${this.rootPath}${this.realm}/configs`,
+            path: `${this.rootPath}/${this.realm}/configs`,
             name: 'ML Forecast Service'
         }
     }
@@ -82,7 +82,7 @@ export class BreadcrumbNav extends LitElement {
         if (changedProperties.has('realm') && this.realm) {
             // Trigger location change event
             const location: Partial<RouterLocation> = {
-                pathname: `${this.rootPath}${this.realm}/configs`,
+                pathname: `${this.rootPath}/${this.realm}/configs`,
                 params: {
                     realm: this.realm
                 }
@@ -122,7 +122,7 @@ export class BreadcrumbNav extends LitElement {
         // Add Smartcity part (realm)
         if (this.realm) {
             parts.push({
-                path: `${this.rootPath}${this.realm}/configs`,
+                path: `${this.rootPath}/${this.realm}/configs`,
                 name: this.realm.charAt(0).toUpperCase() + this.realm.slice(1)
             })
         }
@@ -130,14 +130,14 @@ export class BreadcrumbNav extends LitElement {
         // Add Configs part
         if (pathname.includes('/configs')) {
             parts.push({
-                path: `${this.rootPath}${this.realm}/configs`,
+                path: `${this.rootPath}/${this.realm}/configs`,
                 name: 'Configs'
             })
 
             // Add specific config part if we're on a config page
             if (params.id) {
                 parts.push({
-                    path: `${this.rootPath}${this.realm}/configs/${params.id}`,
+                    path: `${this.rootPath}/${this.realm}/configs/${params.id}`,
                     name: params.id === 'new' ? 'New Config' : `${params.id}`
                 })
             }

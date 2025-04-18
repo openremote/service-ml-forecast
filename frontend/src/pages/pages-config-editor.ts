@@ -265,7 +265,7 @@ export class PageConfigEditor extends LitElement {
             if (isExistingConfig) {
                 await this.loadConfig()
             } else {
-                Router.go(`${this.rootPath}${modelConfig.realm}/configs/${modelConfig.id}`)
+                Router.go(`${this.rootPath}/${modelConfig.realm}/configs/${modelConfig.id}`)
             }
         } catch (error) {
             console.error(error)

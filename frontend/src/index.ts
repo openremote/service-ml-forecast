@@ -20,12 +20,14 @@ async function init() {
     // Setup OR icons
     setupORIcons()
 
-    const router = new Router(outlet, { baseUrl: getRootPath() })
+    // Setup the router -- Vaadin expects a trailing slash in the baseUrl
+    const router = new Router(outlet, { baseUrl: getRootPath() + '/' })
 
     initRouter(router)
 }
 
 function initRouter(router: Router) {
+    // Setup the routes
     const routes = [
         {
             path: '',
@@ -57,6 +59,8 @@ function initRouter(router: Router) {
             ]
         }
     ]
+
+    // Set the routes
     router.setRoutes(routes)
 }
 

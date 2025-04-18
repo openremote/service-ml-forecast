@@ -3,7 +3,12 @@ import { html } from 'lit'
 import * as Core from '@openremote/core'
 import { APIService } from './services/api-service'
 
-// Detect the actual root path from the script URL
+/**
+ * Get the root path of the application
+ * @returns The full root path of the application
+ * @remarks This is a workaround to have consistent full root path, rather than relative via the ENV variable.
+ * @remarks Neglible performance impact, sub millisecond lookup
+ */
 export function getRootPath() {
     const scriptElement = document.querySelector('script[src*="bundle"]')
 
@@ -12,7 +17,8 @@ export function getRootPath() {
 
         // Positive lookahead to match everything up to bundle.js
         const match = scriptPath.match(/(.*?)(?=bundle)/)
-        return match ? match[1] : ''
+        // Remove trailing slash if present
+        return match ? (match[1].endsWith('/') ? match[1].slice(0, -1) : match[1]) : ''
     }
 
     return ''
@@ -44,10 +50,10 @@ export function setupORIcons() {
                 style.textContent = `
                     @font-face {
                         font-family: "Material Design Icons";
-                        src: url("${rootPath}assets/fonts/materialdesignicons-webfont.eot") format("embedded-opentype"),
-                             url("${rootPath}assets/fonts/materialdesignicons-webfont.woff2") format("woff2"),
-                             url("${rootPath}assets/fonts/materialdesignicons-webfont.woff") format("woff"),
-                             url("${rootPath}assets/fonts/materialdesignicons-webfont.ttf") format("truetype");
+                        src: url("${rootPath}/assets/fonts/materialdesignicons-webfont.eot") format("embedded-opentype"),
+                             url("${rootPath}/assets/fonts/materialdesignicons-webfont.woff2") format("woff2"),
+                             url("${rootPath}/assets/fonts/materialdesignicons-webfont.woff") format("woff"),
+                             url("${rootPath}/assets/fonts/materialdesignicons-webfont.ttf") format("truetype");
                         font-weight: normal;
                         font-style: normal;
                     }

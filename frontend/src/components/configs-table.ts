@@ -186,7 +186,7 @@ export class ConfigsTable extends OrMwcTable {
 
     // Handle the add config click
     private handleAddConfig() {
-        Router.go(`${this.rootPath}${this.realm}/configs/new`)
+        Router.go(`${this.rootPath}/${this.realm}/configs/new`)
     }
 
     // Render the table

@@ -88,7 +88,7 @@ export class PageConfigList extends LitElement {
     // Handle the `edit-config` event
     private handleEditConfig(e: CustomEvent<ModelConfig>) {
         const config = e.detail
-        Router.go(`${this.rootPath}${this.realm}/configs/${config.id}`)
+        Router.go(`${this.rootPath}/${this.realm}/configs/${config.id}`)
     }
 
     // Handle the `delete-config` event
@@ -115,7 +115,7 @@ export class PageConfigList extends LitElement {
 
     // Handle the `add-config` event
     private handleAddConfig() {
-        Router.go(`${this.rootPath}${this.realm}/configs/new`)
+        Router.go(`${this.rootPath}/${this.realm}/configs/new`)
     }
 
     // Construct the configs table template
