@@ -82,7 +82,7 @@ class OpenRemoteClient:
         return False
 
     def __get_token(self) -> OAuthTokenResponse | None:
-        url = f"{self.keycloak_url}/auth/realms/master/protocol/openid-connect/token"
+        url = f"{self.keycloak_url}/realms/master/protocol/openid-connect/token"
 
         data = OAuthTokenRequest(
             grant_type="client_credentials",

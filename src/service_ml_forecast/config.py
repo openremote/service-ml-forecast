@@ -59,7 +59,7 @@ class AppEnvironment(BaseSettings):
 
     # OpenRemote Settings
     ML_OR_URL: str = "http://localhost:8080"  # OpenRemote URL
-    ML_OR_KEYCLOAK_URL: str = "http://localhost:8081"  # OpenRemote Keycloak URL
+    ML_OR_KEYCLOAK_URL: str = "http://localhost:8081/auth"  # OpenRemote Keycloak URL
     ML_OR_SERVICE_USER: str = "serviceuser"  # OpenRemote service user
     ML_OR_SERVICE_USER_SECRET: str = "secret"  # OpenRemote service user secret
 
