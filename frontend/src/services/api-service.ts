@@ -5,23 +5,6 @@ const baseUrl: string = (process.env.ML_SERVICE_URL || '').replace(/\/$/, '')
 
 export const APIService = {
     /**
-     * Check if the service is available
-     * @returns True if the service is available, false otherwise
-     * @remarks This is a temporary endpoint to check if the service is available until we have a proper health check endpoint
-     */
-    async isServiceAvailable(): Promise<boolean> {
-        try {
-            const response = await fetch(`${baseUrl}/docs`, {
-                method: 'GET'
-            })
-            return response.ok
-        } catch (error) {
-            console.error('Error checking service availability:', error)
-            return false
-        }
-    },
-
-    /**
      * Get all model configs for the current realm
      * @returns The list of model configs
      */
