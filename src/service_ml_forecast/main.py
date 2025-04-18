@@ -66,7 +66,7 @@ if not ENV.ML_PUBLISH_DOCS:
 # noinspection PyTypeChecker
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # TODO: Adjust to be stricter
+    allow_origins=ENV.ML_WEBSERVER_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

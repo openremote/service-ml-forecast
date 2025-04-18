@@ -53,6 +53,7 @@ class AppEnvironment(BaseSettings):
     # Uvicorn Settings
     ML_WEBSERVER_HOST: str = "0.0.0.0"  # host to bind the web server (uvicorn) to
     ML_WEBSERVER_PORT: int = 8000  # port to bind the web server (uvicorn) to
+    ML_WEBSERVER_ORIGINS: list[str] = ["http://localhost:8000", "http://localhost:8001"]  # origins to allow
     ML_API_ROOT_PATH: str = (
         "/services/ml-forecast"  # when running behind a reverse proxy, the root path of the fastapi app
     )
