@@ -47,10 +47,9 @@ class AppEnvironment(BaseSettings):
     ML_LOG_LEVEL: str = "INFO"  # log level to use
     ML_ENVIRONMENT: str = "development"  # environment to run the service in
 
-
     # Web Server Settings (FastAPI & Uvicorn)
     ML_WEBSERVER_HOST: str = "0.0.0.0"
-    ML_WEBSERVER_PORT: int = 8000 
+    ML_WEBSERVER_PORT: int = 8000
     ML_WEBSERVER_ORIGINS: list[str] = ["http://localhost:8000", "http://localhost:8001"]
     ML_API_ROOT_PATH: str = (
         "/services/ml-forecast"  # when running behind a reverse proxy, the root path of the fastapi app

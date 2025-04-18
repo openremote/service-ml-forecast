@@ -19,7 +19,7 @@ import logging.config
 from collections.abc import AsyncGenerator
 
 import uvicorn
-from fastapi import APIRouter, FastAPI
+from fastapi import FastAPI
 from fastapi.concurrency import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
@@ -95,8 +95,7 @@ def initialize_background_services() -> None:
     model_scheduler.start()
 
 
-# --- Main ---
-# Only runs if executed directly (not imported)
+# Entrypoint for the service
 if __name__ == "__main__":
     if IS_DEV:
         logger.info("APPLICATION IS RUNNING IN DEVELOPMENT MODE -- DO NOT USE IN PRODUCTION")
