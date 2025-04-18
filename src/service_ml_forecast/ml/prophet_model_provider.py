@@ -72,12 +72,12 @@ class ProphetModelProvider(ModelProvider[Prophet]):
         return model
 
     def load_model(self, model_id: UUID) -> Prophet:
-        model_json = self.model_storage_service.get(model_id, "json")
+        model_json = self.model_storage_service.get(model_id)
         return model_from_json(model_json)
 
     def save_model(self, model: Prophet) -> None:
         model_json = model_to_json(model)
-        self.model_storage_service.save(model_json, self.config.id, "json")
+        self.model_storage_service.save(model_json, self.config.id)
         logger.info(f"Saved trained model -- {self.config.id}")
 
     def generate_forecast(self, forecast_feature_set: ForecastFeatureSet | None = None) -> ForecastResult:

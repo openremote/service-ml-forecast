@@ -37,7 +37,7 @@ FORECAST_JOB_ID_PREFIX = "model:forecast"
 
 JOB_GRACE_PERIOD = 60  # Allow jobs to be late a maximum of 1 minute, otherwise reschedule
 
-CONFIG_POLLING_INTERVAL = 10  # Poll configs for changes every 10 seconds
+CONFIG_POLLING_INTERVAL = 30  # Poll configs for changes every 30 seconds
 
 
 class ModelScheduler(Singleton):

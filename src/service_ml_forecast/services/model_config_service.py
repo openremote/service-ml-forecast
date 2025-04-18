@@ -29,6 +29,7 @@ from service_ml_forecast.common.exceptions import (
 from service_ml_forecast.common.fs_util import FsUtil
 from service_ml_forecast.config import DIRS
 from service_ml_forecast.models.model_config import ModelConfig
+from service_ml_forecast.services.model_storage_service import ModelStorageService
 from service_ml_forecast.services.openremote_service import OpenRemoteService
 
 logger = logging.getLogger(__name__)
@@ -42,6 +43,7 @@ class ModelConfigService:
 
     def __init__(self, openremote_service: OpenRemoteService):
         self.openremote_service = openremote_service
+        self.model_storage_service = ModelStorageService()
 
     def create(self, config: ModelConfig) -> ModelConfig:
         """Create a new ML model configuration.
@@ -158,11 +160,18 @@ class ModelConfigService:
         """
         path = self._get_config_file_path(config_id)
 
+        # Delete the config file
         try:
             FsUtil.delete_file(path)
         except FileNotFoundError as e:
             logger.error(f"Cannot delete config: {config_id} - does not exist: {e}")
             raise ResourceNotFoundError(f"Cannot delete config: {config_id} - does not exist") from e
+
+        # Clean up the model file if it exists
+        try:
+            self.model_storage_service.delete(config_id)
+        except ResourceNotFoundError as e:
+            logger.info(f"Config did not have a model file to delete: {config_id} - {e}")
 
     def _parse(self, json: str) -> ModelConfig:
         """Parse the provided ML model config JSON string into the concrete type."""
