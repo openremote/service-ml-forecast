@@ -47,6 +47,17 @@ class ProphetModelProvider(ModelProvider[Prophet]):
             logger.error("No target data provided, cannot train Prophet model")
             return None
 
+        logger.info(f"Training model -- {self.config.id} with {len(training_dataset.target.datapoints)} datapoints")
+
+        # Add a warning if the dataset is very small
+        min_required_datapoints = 50
+        num_datapoints = len(training_dataset.target.datapoints)
+        if num_datapoints < min_required_datapoints:
+            logger.warning(
+                f"Training dataset for model {self.config.id} has only {num_datapoints} datapoints "
+                f"(minimum recommended: {min_required_datapoints}). The resulting model may be unreliable."
+            )
+
         dataframe = _prepare_training_dataframe(training_dataset)
 
         # Construct the model

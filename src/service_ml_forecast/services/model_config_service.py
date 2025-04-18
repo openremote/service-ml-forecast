@@ -191,18 +191,20 @@ class ModelConfigService:
         Returns:
             True if the asset dependencies are valid, False otherwise.
         """
-        asset_ids_to_check = []
+
+        # Use a set to avoid duplicates, since we can have multiple regressors with the same asset id
+        asset_ids_to_check: set[str] = set()
 
         # Check target asset
-        asset_ids_to_check.append(config.target.asset_id)
+        asset_ids_to_check.add(config.target.asset_id)
 
         # Check regressor assets if provided
         if config.regressors:
             for regressor in config.regressors:
-                asset_ids_to_check.append(regressor.asset_id)
+                asset_ids_to_check.add(regressor.asset_id)
 
         # Check if all assets exist in the correct realm
-        assets = self.openremote_service.get_assets_by_ids(asset_ids_to_check, config.realm)
+        assets = self.openremote_service.get_assets_by_ids(list(asset_ids_to_check), config.realm)
 
         if len(assets) != len(asset_ids_to_check):
             logger.error(f"Invalid model config: {config.id} - some assets do not exist in the correct realm")
