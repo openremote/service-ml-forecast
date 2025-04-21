@@ -181,17 +181,17 @@ def _model_training_job(config: ModelConfig, data_service: OpenRemoteService) ->
     start_time = time.perf_counter()
     provider = ModelProviderFactory.create_provider(config)
 
-    training_feature_set = data_service.get_training_feature_set(config)
+    training_data = data_service.get_training_data(config)
 
-    if training_feature_set is None:
+    if training_data is None:
         logger.error(
-            f"Cannot train model {config.id} - no training feature set found. "
+            f"Cannot train model {config.id} - no training data found. "
             f"Asset ID: {config.target.asset_id}, Attribute: {config.target.attribute_name}, "
         )
         return
 
     # Train the model
-    model = provider.train_model(training_feature_set)
+    model = provider.train_model(training_data)
 
     if model is None:
         logger.error(
@@ -221,19 +221,19 @@ def _model_forecast_job(config: ModelConfig, data_service: OpenRemoteService) ->
     start_time = time.perf_counter()
     provider = ModelProviderFactory.create_provider(config)
 
-    # Retrieve the forecast feature set
-    forecast_feature_set = data_service.get_forecast_feature_set(config)
+    # Retrieve the forecast data
+    forecast_data = data_service.get_forecast_data(config)
 
-    if config.regressors is not None and forecast_feature_set is None:
+    if config.regressors is not None and forecast_data is None:
         logger.error(
-            f"Cannot forecast model {config.id} - config has regressors but no forecast feature set. "
+            f"Cannot forecast model {config.id} - config has regressors but no forecast data. "
             f"Asset ID: {config.target.asset_id}, Attribute: {config.target.attribute_name}, "
             f"Regressors: {', '.join(r.attribute_name for r in config.regressors)}"
         )
         return
 
     # Generate the forecast
-    forecast = provider.generate_forecast(forecast_feature_set)
+    forecast = provider.generate_forecast(forecast_data)
 
     # Write the forecasted datapoints
     if not data_service.write_predicted_datapoints(
