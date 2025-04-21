@@ -20,40 +20,29 @@ from pydantic import BaseModel
 from service_ml_forecast.clients.openremote.models import AssetDatapoint
 
 
-class AssetFeatureDatapoints(BaseModel):
-    """Feature with the feature name and the datapoints.
+class FeatureDatapoints(BaseModel):
+    """Feature with the feature name and the datapoints."""
 
-    The feature name is the combined asset id and attribute name e.g. "asset_id.attribute_name".
-    """
-
+    # (Combined asset id and attribute name e.g. "asset_id.attribute_name")
     feature_name: str
     datapoints: list[AssetDatapoint]
 
 
-class TrainingDataSet(BaseModel):
-    """Training set of the asset target and optional asset regressors.
+class TrainingFeatureSet(BaseModel):
+    """Training set of the target and regressors."""
 
-    The target is required, but the regressors are optional.
-    """
-
-    target: AssetFeatureDatapoints
-    regressors: list[AssetFeatureDatapoints] | None = None
+    target: FeatureDatapoints
+    regressors: list[FeatureDatapoints] | None = None
 
 
-class ForecastDataSet(BaseModel):
-    """Forecast feature set with asset regressors.
+class ForecastFeatureSet(BaseModel):
+    """Forecast feature set with regressors."""
 
-    The regressors are required.
-    """
-
-    regressors: list[AssetFeatureDatapoints]
+    regressors: list[FeatureDatapoints]
 
 
 class ForecastResult(BaseModel):
-    """Forecast result with the asset id, attribute name and the forecasted datapoints.
-
-    The forecast result is a list of AssetDatapoint objects.
-    """
+    """Forecast result with the asset id, attribute name and the forecasted datapoints."""
 
     asset_id: str
     attribute_name: str

@@ -1,6 +1,6 @@
 from service_ml_forecast.clients.openremote.models import AssetDatapoint
 from service_ml_forecast.ml.model_provider_factory import ModelProviderFactory
-from service_ml_forecast.models.feature_data_wrappers import AssetFeatureDatapoints, ForecastDataSet, TrainingDataSet
+from service_ml_forecast.models.feature_data_wrappers import FeatureDatapoints, ForecastFeatureSet, TrainingFeatureSet
 from service_ml_forecast.models.model_config import ProphetModelConfig
 
 
@@ -19,8 +19,8 @@ def test_train_and_predict(
 
     # Train the model
     model = model_provider.train_model(
-        TrainingDataSet(
-            target=AssetFeatureDatapoints(
+        TrainingFeatureSet(
+            target=FeatureDatapoints(
                 feature_name=prophet_basic_config.target.attribute_name,
                 datapoints=windspeed_mock_datapoints,
             ),
@@ -56,14 +56,14 @@ def test_train_and_predict_with_regressor(
     """
     # Create the windspeed model
     windspeed_provider = ModelProviderFactory.create_provider(prophet_basic_config)
-    windspeed_target_datapoints = AssetFeatureDatapoints(
+    windspeed_target_datapoints = FeatureDatapoints(
         feature_name=prophet_basic_config.target.attribute_name,
         datapoints=windspeed_mock_datapoints,
     )
 
     # Train the windspeed model
     windspeed_model = windspeed_provider.train_model(
-        TrainingDataSet(target=windspeed_target_datapoints),
+        TrainingFeatureSet(target=windspeed_target_datapoints),
     )
     assert windspeed_model is not None
     # Save the windspeed model
@@ -78,7 +78,7 @@ def test_train_and_predict_with_regressor(
 
     # Create the tariff model
     tarrif_provider = ModelProviderFactory.create_provider(prophet_multi_variable_config)
-    tariff_target_datapoints = AssetFeatureDatapoints(
+    tariff_target_datapoints = FeatureDatapoints(
         feature_name=prophet_multi_variable_config.target.attribute_name,
         datapoints=tariff_mock_datapoints,
     )
@@ -89,12 +89,12 @@ def test_train_and_predict_with_regressor(
 
     # Train the tariff model
     regressor_feature_datapoints = [
-        AssetFeatureDatapoints(feature_name=regressor.attribute_name, datapoints=windspeed_mock_datapoints)
+        FeatureDatapoints(feature_name=regressor.attribute_name, datapoints=windspeed_mock_datapoints)
         for regressor in prophet_multi_variable_config.regressors
     ]
 
     tariff_model = tarrif_provider.train_model(
-        TrainingDataSet(target=tariff_target_datapoints, regressors=regressor_feature_datapoints),
+        TrainingFeatureSet(target=tariff_target_datapoints, regressors=regressor_feature_datapoints),
     )
     assert tariff_model is not None
 
@@ -103,12 +103,12 @@ def test_train_and_predict_with_regressor(
     assert tarrif_provider.load_model(prophet_multi_variable_config.id) is not None
 
     # Generate the forecast including the regressor forecast datapoints
-    windspeed_regressor_datapoints = AssetFeatureDatapoints(
+    windspeed_regressor_datapoints = FeatureDatapoints(
         feature_name=prophet_basic_config.target.attribute_name,
         datapoints=windspeed_forecast.datapoints,
     )
-    forecast_dataset = ForecastDataSet(regressors=[windspeed_regressor_datapoints])
-    forecast = tarrif_provider.generate_forecast(forecast_dataset)
+    forecast_featureset = ForecastFeatureSet(regressors=[windspeed_regressor_datapoints])
+    forecast = tarrif_provider.generate_forecast(forecast_featureset)
     assert forecast is not None
     assert forecast.datapoints is not None
     assert len(forecast.datapoints) > 0
