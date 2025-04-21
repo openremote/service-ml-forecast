@@ -48,7 +48,7 @@ class AppEnvironment(BaseSettings):
     ML_ENVIRONMENT: str = "development"  # environment to run the service in
 
     # FastAPI Settings
-    ML_PUBLISH_DOCS: bool = True  # whether to make the openapi docs available
+    ML_API_PUBLISH_DOCS: bool = True  # whether to make the openapi docs available
 
     # Uvicorn Settings
     ML_WEBSERVER_HOST: str = "0.0.0.0"  # host to bind the web server (uvicorn) to
