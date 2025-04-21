@@ -11,15 +11,18 @@ export const realmContext = createContext<string>(Symbol('realm'))
 
 @customElement('app-layout')
 export class AppLayout extends LitElement {
+    // Provide the realm context to all child elements
     @provide({ context: realmContext })
     @state()
     realm = ''
 
+    // Set the realm when the route changes
     onBeforeEnter(location: RouterLocation) {
         this.realm = location.params.realm as string
         setRealmTheme(this.realm)
     }
 
+    // Render the breadcrumb nav and slot
     render() {
         return html`
             <breadcrumb-nav realm=${this.realm}></breadcrumb-nav>

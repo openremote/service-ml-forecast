@@ -122,6 +122,9 @@ export class PageConfigEditor extends LitElement {
         forecast_periods: 24,
         forecast_frequency: '1h',
         training_interval: 'PT24H',
+        daily_seasonality: true,
+        weekly_seasonality: true,
+        yearly_seasonality: true,
         changepoint_range: 0.8,
         changepoint_prior_scale: 0.05,
         seasonality_mode: ProphetSeasonalityModeEnum.ADDITIVE
@@ -265,7 +268,7 @@ export class PageConfigEditor extends LitElement {
             if (isExistingConfig) {
                 await this.loadConfig()
             } else {
-                Router.go(`${this.rootPath}${modelConfig.realm}/configs/${modelConfig.id}`)
+                Router.go(`${this.rootPath}/${modelConfig.realm}/configs/${modelConfig.id}`)
             }
         } catch (error) {
             console.error(error)

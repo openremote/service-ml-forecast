@@ -8,7 +8,7 @@ const __dirname = path.dirname(__filename)
 
 const isProduction = process.env.NODE_ENV === 'production'
 const serviceUrl = process.env.ML_SERVICE_URL || 'http://localhost:8000' // Default to default dev backend
-const rootPath = process.env.ML_WEB_ROOT_PATH || '/' // Default to empty root path (so base url is the root)
+const rootPath = process.env.ML_WEB_ROOT_PATH
 
 export default {
     mode: isProduction ? 'production' : 'development',
@@ -20,7 +20,8 @@ export default {
         filename: `bundle.[contenthash].js`,
         clean: true,
         path: path.resolve(__dirname, 'dist'),
-        publicPath: rootPath
+        // prefix for the bundle, use root path or fallback to '/'
+        publicPath: rootPath ? rootPath : '/'
     },
     resolve: {
         extensions: ['.ts', '.js']
@@ -56,7 +57,8 @@ export default {
         new rspack.HtmlRspackPlugin({
             template: './index.html',
             templateParameters: {
-                publicPath: rootPath
+                // prefix hrefs inside the index.html
+                templateRootPath: rootPath ? rootPath : ''
             }
         }),
         new rspack.CopyRspackPlugin({
@@ -71,7 +73,6 @@ export default {
         historyApiFallback: true,
         hot: true,
         watchFiles: ['/**/*'],
-        compress: true,
         headers: {
             'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
             Pragma: 'no-cache',

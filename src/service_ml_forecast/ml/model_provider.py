@@ -18,7 +18,7 @@
 from typing import Protocol, TypeVar
 from uuid import UUID
 
-from service_ml_forecast.models.feature_data_wrappers import ForecastFeatureSet, ForecastResult, TrainingFeatureSet
+from service_ml_forecast.models.feature_data_wrappers import ForecastDataSet, ForecastResult, TrainingDataSet
 
 # Define a generic type variable for the model
 # Enables type checking for different model type implementations
@@ -31,7 +31,7 @@ class ModelProvider(Protocol[ModelType]):
     This protocol defines the methods that all ML model providers must implement.
     """
 
-    def train_model(self, training_dataset: TrainingFeatureSet) -> ModelType | None:
+    def train_model(self, training_dataset: TrainingDataSet) -> ModelType | None:
         """Train the model on the training dataset.
 
         Args:
@@ -41,11 +41,11 @@ class ModelProvider(Protocol[ModelType]):
             The trained model or None if the model could not be trained.
         """
 
-    def generate_forecast(self, forecast_featureset: ForecastFeatureSet | None = None) -> ForecastResult:
-        """Generate a forecast for the given forecast featureset.
+    def generate_forecast(self, forecast_dataset: ForecastDataSet | None = None) -> ForecastResult:
+        """Generate a forecast for the given forecast dataset.
 
         Args:
-            forecast_featureset: any additional featureset to use for forecasting
+            forecast_dataset: any additional dataset to use for forecasting
 
         Returns:
             The forecast result or None if the forecast could not be generated.

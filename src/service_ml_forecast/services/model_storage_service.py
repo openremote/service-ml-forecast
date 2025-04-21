@@ -30,8 +30,11 @@ class ModelStorageService:
     """Manages the persistence of ML models."""
 
     MODEL_FILE_PREFIX = "model"
+    DEFAULT_MODEL_FILE_EXTENSION = "json"
 
-    def save(self, model_content: str, model_id: UUID, model_file_extension: str) -> None:
+    def save(
+        self, model_content: str, model_id: UUID, model_file_extension: str = DEFAULT_MODEL_FILE_EXTENSION
+    ) -> None:
         """Save a model file. Will overwrite existing model file.
 
         Args:
@@ -44,7 +47,7 @@ class ModelStorageService:
         # Overwrite the existing model file
         FsUtil.create_file(path, model_content, overwrite=True)
 
-    def get(self, model_id: UUID, model_file_extension: str) -> str:
+    def get(self, model_id: UUID, model_file_extension: str = DEFAULT_MODEL_FILE_EXTENSION) -> str:
         """Get a model file.
 
         Args:
@@ -65,7 +68,7 @@ class ModelStorageService:
             logger.error(f"Cannot get model file: {model_id} - does not exist: {e}")
             raise ResourceNotFoundError(f"Cannot get model file: {model_id} - does not exist") from e
 
-    def delete(self, model_id: UUID, model_file_extension: str) -> None:
+    def delete(self, model_id: UUID, model_file_extension: str = DEFAULT_MODEL_FILE_EXTENSION) -> None:
         """Delete a model file.
 
         Args:

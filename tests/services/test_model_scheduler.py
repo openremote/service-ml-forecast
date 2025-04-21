@@ -141,7 +141,7 @@ def test_training_execution(
         )
         _model_training_job(prophet_basic_config, mock_openremote_service)
 
-    assert model_storage.get(prophet_basic_config.id, "json") is not None
+    assert model_storage.get(prophet_basic_config.id) is not None
 
 
 def test_training_execution_with_missing_datapoints(
@@ -172,7 +172,7 @@ def test_training_execution_with_missing_datapoints(
         _model_training_job(prophet_basic_config, mock_openremote_service)
 
     with pytest.raises(ResourceNotFoundError):
-        model_storage.get(prophet_basic_config.id, "json")
+        model_storage.get(prophet_basic_config.id)
 
 
 def test_forecast_execution(

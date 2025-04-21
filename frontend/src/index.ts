@@ -2,30 +2,23 @@ import { Router } from '@vaadin/router'
 import './pages/pages-config-list'
 import './pages/pages-config-editor'
 import './pages/pages-not-found'
-import './pages/pages-service-unavailable'
 import './pages/app-layout'
-import { html, render } from 'lit'
 import { setupORIcons, getRootPath } from './util'
-import { APIService } from './services/api-service'
 
 async function init() {
     const outlet = document.querySelector('#outlet') as HTMLElement
 
-    const backendIsAvailable = await APIService.isServiceAvailable()
-    if (!backendIsAvailable) {
-        render(html`<page-service-unavailable></page-service-unavailable>`, outlet)
-        return
-    }
-
     // Setup OR icons
     setupORIcons()
 
-    const router = new Router(outlet, { baseUrl: getRootPath() })
+    // Setup the router -- Vaadin expects a trailing slash in the baseUrl
+    const router = new Router(outlet, { baseUrl: getRootPath() + '/' })
 
     initRouter(router)
 }
 
 function initRouter(router: Router) {
+    // Setup the routes
     const routes = [
         {
             path: '',
@@ -57,6 +50,8 @@ function initRouter(router: Router) {
             ]
         }
     ]
+
+    // Set the routes
     router.setRoutes(routes)
 }
 

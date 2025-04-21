@@ -37,7 +37,7 @@ FORECAST_JOB_ID_PREFIX = "model:forecast"
 
 JOB_GRACE_PERIOD = 60  # Allow jobs to be late a maximum of 1 minute, otherwise reschedule
 
-CONFIG_POLLING_INTERVAL = 10  # Poll configs for changes every 10 seconds
+CONFIG_POLLING_INTERVAL = 30  # Poll configs for changes every 30 seconds
 
 
 class ModelScheduler(Singleton):
@@ -181,17 +181,17 @@ def _model_training_job(config: ModelConfig, data_service: OpenRemoteService) ->
     start_time = time.perf_counter()
     provider = ModelProviderFactory.create_provider(config)
 
-    training_feature_set = data_service.get_training_feature_set(config)
+    training_dataset = data_service.get_training_dataset(config)
 
-    if training_feature_set is None:
+    if training_dataset is None:
         logger.error(
-            f"Cannot train model {config.id} - no training feature set found. "
+            f"Cannot train model {config.id} - no training dataset found. "
             f"Asset ID: {config.target.asset_id}, Attribute: {config.target.attribute_name}, "
         )
         return
 
     # Train the model
-    model = provider.train_model(training_feature_set)
+    model = provider.train_model(training_dataset)
 
     if model is None:
         logger.error(
@@ -211,7 +211,7 @@ def _model_training_job(config: ModelConfig, data_service: OpenRemoteService) ->
 
 
 def _model_forecast_job(config: ModelConfig, data_service: OpenRemoteService) -> None:
-    """Model forecast job. Constructs the model provider, retrieves the forecast feature set,
+    """Model forecast job. Constructs the model provider, retrieves the forecast dataset,
     generates the forecast, and writes the forecasted datapoints to OpenRemote.
 
     Args:
@@ -221,19 +221,19 @@ def _model_forecast_job(config: ModelConfig, data_service: OpenRemoteService) ->
     start_time = time.perf_counter()
     provider = ModelProviderFactory.create_provider(config)
 
-    # Retrieve the forecast feature set
-    forecast_feature_set = data_service.get_forecast_feature_set(config)
+    # Retrieve the forecast dataset
+    forecast_dataset = data_service.get_forecast_dataset(config)
 
-    if config.regressors is not None and forecast_feature_set is None:
+    if config.regressors is not None and forecast_dataset is None:
         logger.error(
-            f"Cannot forecast model {config.id} - config has regressors but no forecast feature set. "
+            f"Cannot forecast model {config.id} - config has regressors but no forecast dataset. "
             f"Asset ID: {config.target.asset_id}, Attribute: {config.target.attribute_name}, "
             f"Regressors: {', '.join(r.attribute_name for r in config.regressors)}"
         )
         return
 
     # Generate the forecast
-    forecast = provider.generate_forecast(forecast_feature_set)
+    forecast = provider.generate_forecast(forecast_dataset)
 
     # Write the forecasted datapoints
     if not data_service.write_predicted_datapoints(
