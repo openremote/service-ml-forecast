@@ -46,6 +46,9 @@ async def _get_jwks(keycloak_url: str, issuer: str) -> dict[str, Any]:
             response.raise_for_status()
             return cast(dict[str, Any], response.json())
 
+    except httpx.RequestError as e:
+        logger.error(f"Error requesting JWKS from {jwks_url}: {e}", exc_info=True)
+        raise HTTPException(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail="Error fetching JWKS") from e
     except Exception as e:
         logger.error(f"Unexpected error processing JWKS response from {jwks_url}: {e}", exc_info=True)
         raise HTTPException(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail="An unexpected error occurred") from e
@@ -57,11 +60,11 @@ async def _verify_jwt_token(token: str, keycloak_url: str) -> dict[str, Any]:
     try:
         unverified_header = jwt.get_unverified_header(token)
         if not unverified_header or "kid" not in unverified_header:
-            raise jwt.exceptions.InvalidTokenError("Invalid token header")
+            raise jwt.exceptions.InvalidTokenError("Invalid token header: Missing kid")
 
         kid = unverified_header["kid"]
 
-        # Decode the token without verifying (we dont have the public key yet)
+        # Decode the token without verifying (we don't have the public key yet)
         unverified_payload = jwt.decode(token, options={"verify_signature": False, "verify_aud": False})
         issuer = unverified_payload.get("iss")
         if not issuer:
@@ -74,7 +77,7 @@ async def _verify_jwt_token(token: str, keycloak_url: str) -> dict[str, Any]:
 
         # Ensure issuer begins with the OpenRemote URL
         if not issuer.startswith(ENV.ML_OR_URL):
-            raise jwt.exceptions.InvalidTokenError("Issuer does not match expected keycloak URL")
+            raise jwt.exceptions.InvalidTokenError(f"Issuer '{issuer}' does not match expected Keycloak URL")
 
         # Try and get the JWKS
         jwks = await _get_jwks(keycloak_url, issuer)
@@ -107,15 +110,15 @@ async def _verify_jwt_token(token: str, keycloak_url: str) -> dict[str, Any]:
     # Handle common JWT errors
     except jwt.ExpiredSignatureError as e:
         logger.info("Token validation failed: Expired signature")
-        raise HTTPException(status_code=401, detail="Token has expired") from e
+        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail="Token has expired") from e
     except jwt.exceptions.InvalidTokenError as e:
-        logger.warning(f"Token validation failed: {e}", exc_info=True)
-        raise HTTPException(status_code=401, detail=f"Invalid token: {e}") from e
+        logger.error(f"Token validation failed: {e}", exc_info=True)
+        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail=f"Invalid token: {e}") from e
     except HTTPException as e:
         raise e  # Propagate the HTTPException
     except Exception as e:
         logger.error(f"Unexpected error during token validation: {e}", exc_info=True)
-        raise HTTPException(status_code=401, detail="Failed to validate token") from e
+        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail="Failed to validate token") from e
 
 
 class KeycloakMiddleware(BaseHTTPMiddleware):
@@ -158,7 +161,7 @@ class KeycloakMiddleware(BaseHTTPMiddleware):
                 token = parts[1]
 
         if not token:
-            logger.warning("Authorization header missing")
+            logger.warning("Authorization header missing or malformed")
             return JSONResponse(
                 status_code=HTTPStatus.UNAUTHORIZED,
                 content={"detail": "Not authenticated or invalid format"},
