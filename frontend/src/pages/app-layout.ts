@@ -4,7 +4,7 @@ import { createContext, provide } from '@lit/context'
 import { Router, RouterLocation } from '@vaadin/router'
 import { html, LitElement } from 'lit'
 import { customElement, state } from 'lit/decorators.js'
-import { setRealmTheme as updateRealmTheme } from '../util'
+import { getRootPath, setRealmTheme as updateRealmTheme } from '../util'
 import '../components/breadcrumb-nav'
 import '../components/loading-spinner'
 import { AuthService } from '../services/auth-service'
@@ -20,6 +20,8 @@ export class AppLayout extends LitElement {
     @state()
     private authenticated = false
 
+    private readonly rootPath = getRootPath()
+
     async onBeforeEnter(location: RouterLocation) {
         // Try and get realm via location params before entering the route
         const realm = location.params.realm as string
@@ -28,7 +30,8 @@ export class AppLayout extends LitElement {
         // Fallback to authservice if param is not provided
         if (!this.realm) {
             this.realm = AuthService.realm
-            Router.go(`/${this.realm}`)
+            console.log('No realm param provided, falling back to auth realm:', this.realm)
+            Router.go(`${this.rootPath}/${this.realm}`)
         }
 
         // Update the app with the realm theme
