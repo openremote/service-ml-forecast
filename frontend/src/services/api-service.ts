@@ -9,6 +9,7 @@ export class APIServiceClass {
      * @returns The headers
      */
     private buildHeaders(): Record<string, string> {
+        AuthService.updateToken() // Ensure token is refreshed
         const token = AuthService.token
         if (!token) {
             return {}

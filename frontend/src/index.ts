@@ -3,8 +3,10 @@ import './pages/pages-config-list'
 import './pages/pages-config-editor'
 import './pages/pages-not-found'
 import './pages/app-layout'
+import './components/loading-spinner'
 import { setupORIcons, getRootPath, isEmbedded } from './util'
 import { AuthService } from './services/auth-service'
+import { html, render } from 'lit'
 
 async function init() {
     const outlet = document.querySelector('#outlet') as HTMLElement
@@ -12,7 +14,14 @@ async function init() {
     console.log('Service context:', isEmbedded() ? 'iframe embedded' : 'browser standalone')
 
     // Initialize the auth service
-    await initAuthService()
+    try {
+        render(html`<loading-spinner></loading-spinner>`, outlet)
+        await initAuthService()
+    } catch (error) {
+        console.error('Failed to initialize auth service:', error)
+    } finally {
+        render(null, outlet) // Clear the loading spinner
+    }
 
     // Setup OR icons
     setupORIcons()
