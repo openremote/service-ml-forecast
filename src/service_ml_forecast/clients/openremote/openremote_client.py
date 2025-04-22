@@ -96,7 +96,7 @@ class OpenRemoteClient:
             client_secret=self.service_user_secret,
         )
 
-        with httpx.Client(verify=False) as client:
+        with httpx.Client() as client:
             try:
                 response = client.post(url, data=data.model_dump())
                 response.raise_for_status()
@@ -134,7 +134,7 @@ class OpenRemoteClient:
         url = f"{self.openremote_url}/api/master/health"
 
         request = self.__build_request("GET", url)
-        with httpx.Client(verify=False) as client:
+        with httpx.Client() as client:
             try:
                 response = client.send(request)
                 response.raise_for_status()
@@ -159,7 +159,7 @@ class OpenRemoteClient:
 
         request = self.__build_request("GET", url)
 
-        with httpx.Client(verify=False) as client:
+        with httpx.Client() as client:
             try:
                 response = client.send(request)
                 response.raise_for_status()
@@ -197,7 +197,7 @@ class OpenRemoteClient:
 
         request = self.__build_request("POST", url, data=request_body.model_dump())
 
-        with httpx.Client(verify=False) as client:
+        with httpx.Client() as client:
             try:
                 response = client.send(request)
                 response.raise_for_status()
@@ -226,7 +226,7 @@ class OpenRemoteClient:
 
         request = self.__build_request("PUT", url, data=datapoints_json)
 
-        with httpx.Client(verify=False) as client:
+        with httpx.Client() as client:
             try:
                 response = client.send(request)
                 response.raise_for_status()
@@ -264,7 +264,7 @@ class OpenRemoteClient:
 
         request = self.__build_request("POST", url, data=request_body.model_dump())
 
-        with httpx.Client(verify=False) as client:
+        with httpx.Client() as client:
             try:
                 response = client.send(request)
                 response.raise_for_status()
@@ -317,7 +317,7 @@ class OpenRemoteClient:
 
         request = self.__build_request("POST", url, data=asset_query)
 
-        with httpx.Client(verify=False) as client:
+        with httpx.Client() as client:
             try:
                 response = client.send(request)
                 response.raise_for_status()
@@ -355,7 +355,7 @@ class OpenRemoteClient:
 
         request = self.__build_request("POST", url, data=asset_query)
 
-        with httpx.Client(verify=False) as client:
+        with httpx.Client() as client:
             try:
                 response = client.send(request)
                 response.raise_for_status()
@@ -378,7 +378,7 @@ class OpenRemoteClient:
         url = f"{self.openremote_url}/api/master/configuration/manager"
         request = self.__build_request("GET", url)
 
-        with httpx.Client(verify=False) as client:
+        with httpx.Client() as client:
             try:
                 response = client.send(request)
                 response.raise_for_status()

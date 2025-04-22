@@ -41,7 +41,7 @@ async def _get_jwks(keycloak_url: str, issuer: str) -> dict[str, Any]:
         raise HTTPException(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail="An unexpected error occurred") from e
 
     try:
-        async with httpx.AsyncClient(verify=False) as client:
+        async with httpx.AsyncClient() as client:
             response = await client.get(jwks_url)
             response.raise_for_status()
             return cast(dict[str, Any], response.json())
