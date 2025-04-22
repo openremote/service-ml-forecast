@@ -8,10 +8,11 @@ export class APIServiceClass {
      * Build the headers for the API request
      * @returns The headers
      */
-    private buildHeaders(): Record<string, string> {
-        AuthService.updateToken() // Ensure token is refreshed
+    private async buildHeaders(): Promise<Record<string, string>> {
+        await AuthService.updateToken()
         const token = AuthService.token
         if (!token) {
+            console.error('Unable to build authorization headers: no token')
             return {}
         }
         return {
@@ -27,7 +28,7 @@ export class APIServiceClass {
     async getModelConfigs(realm: string): Promise<ModelConfig[]> {
         const response = await fetch(`${baseUrl}/api/model/configs` + (realm ? `?realm=${realm}` : ''), {
             method: 'GET',
-            headers: this.buildHeaders()
+            headers: await this.buildHeaders()
         })
         if (!response.ok) {
             throw new Error(`Failed to get model configs: ${response.statusText}`)
@@ -43,7 +44,7 @@ export class APIServiceClass {
     async getAssets(realm: string): Promise<CustomAsset[]> {
         const response = await fetch(`${baseUrl}/api/openremote/assets` + (realm ? `?realm=${realm}` : ''), {
             method: 'GET',
-            headers: this.buildHeaders()
+            headers: await this.buildHeaders()
         })
         if (!response.ok) {
             throw new Error(`Failed to get assets: ${response.statusText}`)
@@ -60,7 +61,7 @@ export class APIServiceClass {
     async getAssetsByIds(ids: string[], realm: string): Promise<CustomAsset[]> {
         const response = await fetch(`${baseUrl}/api/openremote/assets/ids?realm=${realm}&ids=${ids.join(',')}`, {
             method: 'GET',
-            headers: this.buildHeaders()
+            headers: await this.buildHeaders()
         })
         if (!response.ok) {
             throw new Error(`Failed to get assets: ${response.statusText}`)
@@ -76,7 +77,7 @@ export class APIServiceClass {
     async getModelConfig(id: string): Promise<ModelConfig> {
         const response = await fetch(`${baseUrl}/api/model/configs/${id}`, {
             method: 'GET',
-            headers: this.buildHeaders()
+            headers: await this.buildHeaders()
         })
         if (!response.ok) {
             throw new Error(`Failed to get model config ${id}: ${response.statusText}`)
@@ -91,7 +92,7 @@ export class APIServiceClass {
     async deleteModelConfig(id: string): Promise<void> {
         const response = await fetch(`${baseUrl}/api/model/configs/${id}`, {
             method: 'DELETE',
-            headers: this.buildHeaders()
+            headers: await this.buildHeaders()
         })
         if (!response.ok) {
             throw new Error(`Failed to delete model config ${id}: ${response.statusText}`)
@@ -109,7 +110,7 @@ export class APIServiceClass {
             body: JSON.stringify(modelConfig),
             headers: {
                 'Content-Type': 'application/json',
-                ...this.buildHeaders()
+                ...(await this.buildHeaders())
             }
         })
         if (!response.ok) {
@@ -129,7 +130,7 @@ export class APIServiceClass {
             body: JSON.stringify(modelConfig),
             headers: {
                 'Content-Type': 'application/json',
-                ...this.buildHeaders()
+                ...(await this.buildHeaders())
             }
         })
         if (!response.ok) {
@@ -146,7 +147,7 @@ export class APIServiceClass {
     async getRealmConfig(realm: string): Promise<RealmConfig> {
         const response = await fetch(`${baseUrl}/api/openremote/realm/config/${realm}`, {
             method: 'GET',
-            headers: this.buildHeaders()
+            headers: await this.buildHeaders()
         })
 
         if (!response.ok) {

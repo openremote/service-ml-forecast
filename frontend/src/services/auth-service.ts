@@ -84,7 +84,7 @@ class AuthServiceClass {
         if (this.tokenRefreshInterval) {
             clearInterval(this.tokenRefreshInterval)
         }
-        this.tokenRefreshInterval = setInterval(() => this.updateToken(), 1000)
+        this.tokenRefreshInterval = setInterval(() => this.updateToken(), 5000)
     }
 
     private stopUpdateTokenInterval() {
@@ -95,8 +95,8 @@ class AuthServiceClass {
         }
     }
 
-    updateToken() {
-        this.keycloak
+    async updateToken(): Promise<boolean> {
+        return this.keycloak
             ?.updateToken(20)
             .then((refreshed) => {
                 if (refreshed) {
@@ -104,9 +104,11 @@ class AuthServiceClass {
                     this.token = this.keycloak?.token
                     this.notify()
                 }
+                return refreshed
             })
-            .catch(() => {
-                console.error('Manual token refresh failed.')
+            .catch((error) => {
+                console.error('Manual token refresh failed.', error)
+                return false
             })
     }
 
