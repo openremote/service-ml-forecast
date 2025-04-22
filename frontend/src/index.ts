@@ -9,7 +9,7 @@ import { AuthService } from './services/auth-service'
 async function init() {
     const outlet = document.querySelector('#outlet') as HTMLElement
 
-    console.log('Service context:', isEmbedded() ? 'embedded' : 'browser')
+    console.log('Service context:', isEmbedded() ? 'iframe embedded' : 'browser standalone')
 
     // Initialize the auth service
     await initAuthService()
@@ -19,18 +19,16 @@ async function init() {
 
     // Setup the router -- Vaadin expects a trailing slash in the baseUrl
     const router = new Router(outlet, { baseUrl: getRootPath() + '/' })
-
     initRouter(router)
 }
 
 async function initAuthService() {
-    // Realm is provided via the query params, if not provided we will use master as fallback
     let authRealm = new URLSearchParams(window.location.search).get('realm')
 
     const hasRealmParam = authRealm !== null
 
     if (!hasRealmParam) {
-        console.log('No realm param provided, using master as fallback')
+        console.log('No direct realm param provided, using master.')
         authRealm = 'master'
     }
 
