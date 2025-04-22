@@ -96,20 +96,21 @@ class AuthServiceClass {
     }
 
     async updateToken(): Promise<boolean> {
-        return this.keycloak
-            ?.updateToken(20)
-            .then((refreshed) => {
-                if (refreshed) {
-                    console.log('Token refreshed.')
-                    this.token = this.keycloak?.token
-                    this.notify()
-                }
-                return refreshed
-            })
-            .catch((error) => {
-                console.error('Manual token refresh failed.', error)
-                return false
-            })
+        if (!this.keycloak) {
+            return false
+        }
+        try {
+            const refreshed = await this.keycloak.updateToken(20)
+            if (refreshed) {
+                console.log('Token refreshed.')
+                this.token = this.keycloak.token
+                this.notify()
+            }
+            return refreshed
+        } catch (error) {
+            console.error('Manual token refresh failed.', error)
+            return false
+        }
     }
 
     async ensureAuthenticated(realm: string): Promise<boolean> {
