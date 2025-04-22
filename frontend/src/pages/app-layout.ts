@@ -8,39 +8,29 @@ import { setRealmTheme } from '../util'
 import '../components/breadcrumb-nav'
 import { AuthService } from '../services/auth-service'
 
-export interface AppContext {
-    realm: string
-}
-
-export const context = createContext<AppContext>(Symbol('app'))
+export const context = createContext<string>(Symbol('realm'))
 
 @customElement('app-layout')
 export class AppLayout extends LitElement {
     @provide({ context })
     @state()
-    app: AppContext = {
-        realm: ''
-    }
-
-    defaultRealm = 'master'
+    realm = undefined
 
     @state()
     private authenticated = false
 
     async onBeforeEnter(location: RouterLocation) {
         const realm = location.params.realm as string
-        this.app.realm = realm
+        this.realm = realm
 
-        if (!this.app.realm) {
-            console.log('No realm found, redirecting to master')
-            Router.go(`/master`)
-        }
-        this.app = {
-            realm: this.app.realm
+        // Try authservice if param is not provided
+        if (!this.realm) {
+            this.realm = AuthService.realm
+            Router.go(`/${this.realm}`)
         }
 
         // Update the app theme with the realm
-        setRealmTheme(this.app.realm)
+        setRealmTheme(this.realm)
 
         this.authenticated = AuthService.authenticated
         AuthService.subscribe(() => {
@@ -54,7 +44,7 @@ export class AppLayout extends LitElement {
         }
 
         return html`
-            <breadcrumb-nav realm=${this.app.realm}></breadcrumb-nav>
+            <breadcrumb-nav realm=${this.realm}></breadcrumb-nav>
             <slot></slot>
         `
     }

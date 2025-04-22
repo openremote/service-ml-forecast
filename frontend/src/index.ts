@@ -3,11 +3,13 @@ import './pages/pages-config-list'
 import './pages/pages-config-editor'
 import './pages/pages-not-found'
 import './pages/app-layout'
-import { setupORIcons, getRootPath } from './util'
+import { setupORIcons, getRootPath, isEmbedded } from './util'
 import { AuthService } from './services/auth-service'
 
 async function init() {
     const outlet = document.querySelector('#outlet') as HTMLElement
+
+    console.log('Service context:', isEmbedded() ? 'embedded' : 'browser')
 
     // Initialize the auth service
     await initAuthService()
@@ -25,8 +27,11 @@ async function initAuthService() {
     // Realm is provided via the query params, if not provided we will use master as fallback
     let authRealm = new URLSearchParams(window.location.search).get('realm')
 
-    if (!authRealm) {
-        authRealm = 'master' // Fallback
+    const hasRealmParam = authRealm !== null
+
+    if (!hasRealmParam) {
+        console.log('No realm param provided, using master as fallback')
+        authRealm = 'master'
     }
 
     // Initialize the auth service - This will trigger a login if required, prefers SSO if available

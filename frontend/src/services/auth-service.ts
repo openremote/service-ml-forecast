@@ -1,4 +1,5 @@
 import Keycloak from 'keycloak-js'
+import { isEmbedded } from '../util'
 
 const keycloakUrl: string = (process.env.ML_KEYCLOAK_URL || '').replace(/\/$/, '')
 
@@ -14,12 +15,15 @@ class AuthServiceClass {
     keycloak: Keycloak | undefined
 
     private listeners: AuthChangeListener[] = []
+    private tokenRefreshInterval: NodeJS.Timeout | null = null
 
     async init(realm: string, force = false): Promise<boolean> {
         if (this.initializing && !force) {
+            console.log('Already initializing', realm)
             return this.initPromise!
         }
         if (this.keycloak && this.realm === realm && !force) {
+            console.log('Already initialized', realm)
             return this.authenticated
         }
 
@@ -44,6 +48,12 @@ class AuthServiceClass {
                 this.user = keycloakInstance.tokenParsed?.preferred_username
                 this.initializing = false
                 this.notify()
+
+                console.log('Initialized KC: ', realm)
+                if (!isEmbedded()) {
+                    this.startUpdateTokenInterval()
+                }
+
                 return auth
             })
             .catch((error) => {
@@ -66,6 +76,38 @@ class AuthServiceClass {
 
     logout() {
         this.keycloak?.logout()
+        this.stopUpdateTokenInterval()
+    }
+
+    private startUpdateTokenInterval() {
+        console.log('Starting token refresh interval')
+        if (this.tokenRefreshInterval) {
+            clearInterval(this.tokenRefreshInterval)
+        }
+        this.tokenRefreshInterval = setInterval(() => this.updateToken(), 1000)
+    }
+
+    private stopUpdateTokenInterval() {
+        console.log('Stopping token refresh interval')
+        if (this.tokenRefreshInterval) {
+            clearInterval(this.tokenRefreshInterval)
+            this.tokenRefreshInterval = null
+        }
+    }
+
+    updateToken() {
+        this.keycloak
+            ?.updateToken(20)
+            .then((refreshed) => {
+                if (refreshed) {
+                    console.log('Token refreshed.')
+                    this.token = this.keycloak?.token
+                    this.notify()
+                }
+            })
+            .catch(() => {
+                console.error('Manual token refresh failed.')
+            })
     }
 
     async ensureAuthenticated(realm: string): Promise<boolean> {
@@ -90,4 +132,7 @@ class AuthServiceClass {
     }
 }
 
+/**
+ * Singleton for handling authentication
+ */
 export const AuthService = new AuthServiceClass()

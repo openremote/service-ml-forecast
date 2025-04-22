@@ -10,15 +10,13 @@ import { InputType } from '@openremote/or-mwc-components/or-mwc-input'
 import { showOkCancelDialog } from '@openremote/or-mwc-components/or-mwc-dialog'
 import { showSnackbar } from '@openremote/or-mwc-components/or-mwc-snackbar'
 import { consume } from '@lit/context'
-import { AppContext, context } from './app-layout'
+import { context } from './app-layout'
 import { APIService } from '../services/api-service'
 
 @customElement('page-config-list')
 export class PageConfigList extends LitElement {
     @consume({ context })
-    app: AppContext = {
-        realm: ''
-    }
+    realm = ''
 
     static get styles() {
         return css`
@@ -73,8 +71,8 @@ export class PageConfigList extends LitElement {
     // Load the model configs from the API
     async loadModelConfigs() {
         try {
-            this.modelConfigs = await APIService.getModelConfigs(this.app.realm)
-            this.configAssets = await APIService.getAssetsByIds(this.modelConfigs?.map((c) => c.target.asset_id) ?? [], this.app.realm)
+            this.modelConfigs = await APIService.getModelConfigs(this.realm)
+            this.configAssets = await APIService.getAssetsByIds(this.modelConfigs?.map((c) => c.target.asset_id) ?? [], this.realm)
             this.loading = false
         } catch (error) {
             console.error('PageConfigList: Failed to fetch model configs:', error)
@@ -87,7 +85,7 @@ export class PageConfigList extends LitElement {
     // Handle the `edit-config` event
     private handleEditConfig(e: CustomEvent<ModelConfig>) {
         const config = e.detail
-        Router.go(`${this.rootPath}/${this.app.realm}/configs/${config.id}`)
+        Router.go(`${this.rootPath}/${this.realm}/configs/${config.id}`)
     }
 
     // Handle the `delete-config` event
@@ -114,7 +112,7 @@ export class PageConfigList extends LitElement {
 
     // Handle the `add-config` event
     private handleAddConfig() {
-        Router.go(`${this.rootPath}/${this.app.realm}/configs/new`)
+        Router.go(`${this.rootPath}/${this.realm}/configs/new`)
     }
 
     // Construct the configs table template
@@ -128,7 +126,7 @@ export class PageConfigList extends LitElement {
             @delete-config="${this.handleDeleteConfig}"
             .modelConfigs="${this.modelConfigs}"
             .configAssets="${this.configAssets}"
-            .realm="${this.app.realm}"
+            .realm="${this.realm}"
         ></configs-table>`
     }
 

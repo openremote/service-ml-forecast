@@ -12,15 +12,13 @@ import { getRootPath } from '../util'
 import '../components/custom-duration-input'
 import { DurationInputType } from '../components/custom-duration-input'
 import { consume } from '@lit/context'
-import { AppContext, context } from './app-layout'
+import { context } from './app-layout'
 import { APIService } from '../services/api-service'
 
 @customElement('page-config-editor')
 export class PageConfigEditor extends LitElement {
     @consume({ context })
-    app: AppContext = {
-        realm: ''
-    }
+    realm = ''
 
     static get styles() {
         return css`
@@ -215,7 +213,7 @@ export class PageConfigEditor extends LitElement {
     // Set up all the data for the editor
     private async setupEditor() {
         // Set the realm from the context provider
-        this.formData.realm = this.app.realm
+        this.formData.realm = this.realm
 
         await this.loadAssets()
         await this.loadConfig()
@@ -224,7 +222,7 @@ export class PageConfigEditor extends LitElement {
     // Loads valid assets and their attributes from the API
     private async loadAssets() {
         this.assetSelectList.clear()
-        const assets = await APIService.getAssets(this.app.realm)
+        const assets = await APIService.getAssets(this.realm)
         assets?.forEach((asset) => {
             this.assetSelectList.set(asset.id, asset.name)
             this.attributeSelectList.set(asset.id, new Map(Object.entries(asset.attributes).map(([key, value]) => [key, value.name])))
