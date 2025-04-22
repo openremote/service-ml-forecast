@@ -87,4 +87,4 @@ class ModelStorageService:
             raise ResourceNotFoundError(f"Cannot delete model file: {model_id} - does not exist") from e
 
     def _get_model_file_path(self, model_id: UUID, model_file_extension: str) -> Path:
-        return Path(f"{DIRS.ML_MODELS_DIR}/{self.MODEL_FILE_PREFIX}-{model_id}.{model_file_extension}")
+        return Path(f"{DIRS.ML_MODELS_DATA_DIR}/{self.MODEL_FILE_PREFIX}-{model_id}.{model_file_extension}")

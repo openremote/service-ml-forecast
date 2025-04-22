@@ -82,7 +82,7 @@ class ModelConfigService:
         Returns:
             A list of all previously saved model configurations.
         """
-        existing_config_files = FsUtil.get_files_in_dir(DIRS.ML_CONFIGS_DIR, self.CONFIG_FILE_EXTENSION)
+        existing_config_files = FsUtil.get_files_in_dir(DIRS.ML_CONFIGS_DATA_DIR, self.CONFIG_FILE_EXTENSION)
 
         configs = []
 
@@ -213,4 +213,4 @@ class ModelConfigService:
         return True
 
     def _get_config_file_path(self, config_id: UUID) -> Path:
-        return Path(f"{DIRS.ML_CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config_id}.{self.CONFIG_FILE_EXTENSION}")
+        return Path(f"{DIRS.ML_CONFIGS_DATA_DIR}/{self.CONFIG_FILE_PREFIX}-{config_id}.{self.CONFIG_FILE_EXTENSION}")

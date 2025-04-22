@@ -14,9 +14,11 @@ COPY frontend/ ./
 # Define build arguments
 ARG ML_SERVICE_URL
 ARG ML_WEB_ROOT_PATH
+ARG ML_KEYCLOAK_URL
 
 RUN ML_SERVICE_URL=${ML_SERVICE_URL:-/services/ml-forecast} \
     ML_WEB_ROOT_PATH=${ML_WEB_ROOT_PATH:-/services/ml-forecast/ui} \
+    ML_KEYCLOAK_URL=${ML_KEYCLOAK_URL:-/auth} \
     npm run build:prod
 
 # --- Python Build Phase -------------------------------------------------------

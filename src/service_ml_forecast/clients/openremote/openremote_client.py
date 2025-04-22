@@ -63,7 +63,13 @@ class OpenRemoteClient:
 
     logger = logging.getLogger(__name__)
 
-    def __init__(self, openremote_url: str, keycloak_url: str, service_user: str, service_user_secret: str):
+    def __init__(
+        self,
+        openremote_url: str,
+        keycloak_url: str,
+        service_user: str,
+        service_user_secret: str,
+    ):
         self.openremote_url: str = openremote_url
         self.keycloak_url: str = keycloak_url
         self.service_user: str = service_user
@@ -90,7 +96,7 @@ class OpenRemoteClient:
             client_secret=self.service_user_secret,
         )
 
-        with httpx.Client() as client:
+        with httpx.Client(verify=False) as client:
             try:
                 response = client.post(url, data=data.model_dump())
                 response.raise_for_status()
@@ -128,7 +134,7 @@ class OpenRemoteClient:
         url = f"{self.openremote_url}/api/master/health"
 
         request = self.__build_request("GET", url)
-        with httpx.Client() as client:
+        with httpx.Client(verify=False) as client:
             try:
                 response = client.send(request)
                 response.raise_for_status()
@@ -153,7 +159,7 @@ class OpenRemoteClient:
 
         request = self.__build_request("GET", url)
 
-        with httpx.Client() as client:
+        with httpx.Client(verify=False) as client:
             try:
                 response = client.send(request)
                 response.raise_for_status()
@@ -191,7 +197,7 @@ class OpenRemoteClient:
 
         request = self.__build_request("POST", url, data=request_body.model_dump())
 
-        with httpx.Client() as client:
+        with httpx.Client(verify=False) as client:
             try:
                 response = client.send(request)
                 response.raise_for_status()
@@ -220,7 +226,7 @@ class OpenRemoteClient:
 
         request = self.__build_request("PUT", url, data=datapoints_json)
 
-        with httpx.Client() as client:
+        with httpx.Client(verify=False) as client:
             try:
                 response = client.send(request)
                 response.raise_for_status()
@@ -258,7 +264,7 @@ class OpenRemoteClient:
 
         request = self.__build_request("POST", url, data=request_body.model_dump())
 
-        with httpx.Client() as client:
+        with httpx.Client(verify=False) as client:
             try:
                 response = client.send(request)
                 response.raise_for_status()
@@ -311,7 +317,7 @@ class OpenRemoteClient:
 
         request = self.__build_request("POST", url, data=asset_query)
 
-        with httpx.Client() as client:
+        with httpx.Client(verify=False) as client:
             try:
                 response = client.send(request)
                 response.raise_for_status()
@@ -349,7 +355,7 @@ class OpenRemoteClient:
 
         request = self.__build_request("POST", url, data=asset_query)
 
-        with httpx.Client() as client:
+        with httpx.Client(verify=False) as client:
             try:
                 response = client.send(request)
                 response.raise_for_status()
@@ -372,7 +378,7 @@ class OpenRemoteClient:
         url = f"{self.openremote_url}/api/master/configuration/manager"
         request = self.__build_request("GET", url)
 
-        with httpx.Client() as client:
+        with httpx.Client(verify=False) as client:
             try:
                 response = client.send(request)
                 response.raise_for_status()

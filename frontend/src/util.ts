@@ -32,6 +32,10 @@ export function isDevelopment(): boolean {
     return process.env.NODE_ENV === 'development'
 }
 
+export function isEmbedded(): boolean {
+    return window.top !== window.self
+}
+
 /**
  * Setup the OR icons
  * Overrides the default createMdiIconSet with a function that uses the static fonts part of the build

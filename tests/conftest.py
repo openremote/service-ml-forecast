@@ -46,8 +46,8 @@ TEST_TMP_DIR: Path = Path(tempfile.mkdtemp(prefix="service_ml_forecast_test_"))
 
 # Override directory constants for tests
 DIRS.ML_BASE_DIR = TEST_TMP_DIR
-DIRS.ML_MODELS_DIR = TEST_TMP_DIR / "models"
-DIRS.ML_CONFIGS_DIR = TEST_TMP_DIR / "configs"
+DIRS.ML_MODELS_DATA_DIR = TEST_TMP_DIR / "models"
+DIRS.ML_CONFIGS_DATA_DIR = TEST_TMP_DIR / "configs"
 
 
 # Clean up temporary directory after each test call

@@ -1,7 +1,21 @@
 import { CustomAsset, ModelConfig, RealmConfig } from './models'
-
+import { AuthService } from './auth-service'
 // Use env variable, else fallback to relative URL (e.g. front-end on the same host as the ML service)
 const baseUrl: string = (process.env.ML_SERVICE_URL || '').replace(/\/$/, '')
+
+/**
+ * Build the headers for the API request
+ * @returns The headers
+ */
+const buildHeaders = (): Record<string, string> => {
+    const token = AuthService.token
+    if (!token) {
+        return {}
+    }
+    return {
+        Authorization: `Bearer ${token}`
+    }
+}
 
 export const APIService = {
     /**
@@ -10,7 +24,8 @@ export const APIService = {
      */
     async getModelConfigs(realm: string): Promise<ModelConfig[]> {
         const response = await fetch(`${baseUrl}/api/model/configs` + (realm ? `?realm=${realm}` : ''), {
-            method: 'GET'
+            method: 'GET',
+            headers: buildHeaders()
         })
         if (!response.ok) {
             throw new Error(`Failed to get model configs: ${response.statusText}`)
@@ -24,7 +39,8 @@ export const APIService = {
      */
     async getAssets(realm: string): Promise<CustomAsset[]> {
         const response = await fetch(`${baseUrl}/api/openremote/assets` + (realm ? `?realm=${realm}` : ''), {
-            method: 'GET'
+            method: 'GET',
+            headers: buildHeaders()
         })
         if (!response.ok) {
             throw new Error(`Failed to get assets: ${response.statusText}`)
@@ -39,7 +55,8 @@ export const APIService = {
      */
     async getAssetsByIds(ids: string[], realm: string): Promise<CustomAsset[]> {
         const response = await fetch(`${baseUrl}/api/openremote/assets/ids?realm=${realm}&ids=${ids.join(',')}`, {
-            method: 'GET'
+            method: 'GET',
+            headers: buildHeaders()
         })
         if (!response.ok) {
             throw new Error(`Failed to get assets: ${response.statusText}`)
@@ -54,7 +71,8 @@ export const APIService = {
      */
     async getModelConfig(id: string): Promise<ModelConfig> {
         const response = await fetch(`${baseUrl}/api/model/configs/${id}`, {
-            method: 'GET'
+            method: 'GET',
+            headers: buildHeaders()
         })
         if (!response.ok) {
             throw new Error(`Failed to get model config ${id}: ${response.statusText}`)
@@ -68,7 +86,8 @@ export const APIService = {
      */
     async deleteModelConfig(id: string): Promise<void> {
         const response = await fetch(`${baseUrl}/api/model/configs/${id}`, {
-            method: 'DELETE'
+            method: 'DELETE',
+            headers: buildHeaders()
         })
         if (!response.ok) {
             throw new Error(`Failed to delete model config ${id}: ${response.statusText}`)
@@ -85,7 +104,8 @@ export const APIService = {
             method: 'PUT',
             body: JSON.stringify(modelConfig),
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                ...buildHeaders()
             }
         })
         if (!response.ok) {
@@ -104,7 +124,8 @@ export const APIService = {
             method: 'POST',
             body: JSON.stringify(modelConfig),
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                ...buildHeaders()
             }
         })
         if (!response.ok) {
@@ -119,8 +140,10 @@ export const APIService = {
      */
     async getRealmConfig(realm: string): Promise<RealmConfig> {
         const response = await fetch(`${baseUrl}/api/openremote/realm/config/${realm}`, {
-            method: 'GET'
+            method: 'GET',
+            headers: buildHeaders()
         })
+
         if (!response.ok) {
             throw new Error(`Failed to get realm config: ${response.statusText}`)
         }

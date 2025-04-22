@@ -30,9 +30,9 @@ class DirectoryConstants:
     """Directory paths constants. Tests can override these constants."""
 
     ML_BASE_DIR: Path = PROJECT_ROOT  # base directory for the service
-    ML_MODELS_DIR: Path = ML_BASE_DIR / "deployment/data/models"  # directory for the models
-    ML_CONFIGS_DIR: Path = ML_BASE_DIR / "deployment/data/configs"  # directory for the configs
-    ML_WEB_DIST_DIR: Path = ML_BASE_DIR / "deployment/web/dist"  # directory for the web dist
+    ML_MODELS_DATA_DIR: Path = ML_BASE_DIR / "deployment/data/models"  # directory for the models
+    ML_CONFIGS_DATA_DIR: Path = ML_BASE_DIR / "deployment/data/configs"  # directory for the configs
+    ML_WEBSERVER_UI_DIST_DIR: Path = ML_BASE_DIR / "deployment/web/dist"  # directory for the web dist
 
 
 class AppEnvironment(BaseSettings):
@@ -53,7 +53,10 @@ class AppEnvironment(BaseSettings):
     # Uvicorn Settings
     ML_WEBSERVER_HOST: str = "0.0.0.0"  # host to bind the web server (uvicorn) to
     ML_WEBSERVER_PORT: int = 8000  # port to bind the web server (uvicorn) to
-    ML_WEBSERVER_ORIGINS: list[str] = ["http://localhost:8000", "http://localhost:8001"]  # origins to allow
+    ML_WEBSERVER_ORIGINS: list[str] = [
+        "http://localhost:8000",
+        "http://localhost:8001",
+    ]  # origins to allow
     ML_API_ROOT_PATH: str = (
         "/services/ml-forecast"  # when running behind a reverse proxy, the root path of the fastapi app
     )

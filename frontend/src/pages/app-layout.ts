@@ -1,31 +1,60 @@
 // main-layout.ts
 
 import { createContext, provide } from '@lit/context'
-import { RouterLocation } from '@vaadin/router'
+import { Router, RouterLocation } from '@vaadin/router'
 import { html, LitElement } from 'lit'
 import { customElement, state } from 'lit/decorators.js'
 import { setRealmTheme } from '../util'
 import '../components/breadcrumb-nav'
+import { AuthService } from '../services/auth-service'
 
-export const realmContext = createContext<string>(Symbol('realm'))
+export interface AppContext {
+    realm: string
+}
+
+export const context = createContext<AppContext>(Symbol('app'))
 
 @customElement('app-layout')
 export class AppLayout extends LitElement {
-    // Provide the realm context to all child elements
-    @provide({ context: realmContext })
+    @provide({ context })
     @state()
-    realm = ''
-
-    // Set the realm when the route changes
-    onBeforeEnter(location: RouterLocation) {
-        this.realm = location.params.realm as string
-        setRealmTheme(this.realm)
+    app: AppContext = {
+        realm: ''
     }
 
-    // Render the breadcrumb nav and slot
+    defaultRealm = 'master'
+
+    @state()
+    private authenticated = false
+
+    async onBeforeEnter(location: RouterLocation) {
+        const realm = location.params.realm as string
+        this.app.realm = realm
+
+        if (!this.app.realm) {
+            console.log('No realm found, redirecting to master')
+            Router.go(`/master`)
+        }
+        this.app = {
+            realm: this.app.realm
+        }
+
+        // Update the app theme with the realm
+        setRealmTheme(this.app.realm)
+
+        this.authenticated = AuthService.authenticated
+        AuthService.subscribe(() => {
+            this.authenticated = AuthService.authenticated
+        })
+    }
+
     render() {
+        if (!this.authenticated) {
+            return html` <div>Unauthenticated</div> `
+        }
+
         return html`
-            <breadcrumb-nav realm=${this.realm}></breadcrumb-nav>
+            <breadcrumb-nav realm=${this.app.realm}></breadcrumb-nav>
             <slot></slot>
         `
     }

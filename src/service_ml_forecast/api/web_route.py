@@ -34,10 +34,10 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/ui", include_in_schema=False)
 
-if DIRS.ML_WEB_DIST_DIR.exists():
-    router.mount("/assets", StaticFiles(directory=str(DIRS.ML_WEB_DIST_DIR / "assets")))
+if DIRS.ML_WEBSERVER_UI_DIST_DIR.exists():
+    router.mount("/assets", StaticFiles(directory=str(DIRS.ML_WEBSERVER_UI_DIST_DIR / "assets")))
 else:
-    logger.error(f"Web dist directory not found at {DIRS.ML_WEB_DIST_DIR}, bundle cannot be served")
+    logger.error(f"Web dist directory not found at {DIRS.ML_WEBSERVER_UI_DIST_DIR}, bundle cannot be served")
 
 
 @router.get(
@@ -51,7 +51,7 @@ else:
 async def serve_index() -> FileResponse:
     """Serve the index.html file from the web dist directory."""
 
-    index_path = DIRS.ML_WEB_DIST_DIR / "index.html"
+    index_path = DIRS.ML_WEBSERVER_UI_DIST_DIR / "index.html"
     if not index_path.exists():
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="index.html not found")
     return FileResponse(index_path)
@@ -68,14 +68,14 @@ async def serve_index() -> FileResponse:
 async def serve_spa(path: str) -> FileResponse:
     """Serve static files or return index.html for SPA routing."""
 
-    requested_path = DIRS.ML_WEB_DIST_DIR / path
+    requested_path = DIRS.ML_WEBSERVER_UI_DIST_DIR / path
 
     # If the exact file exists, serve it (e.g. css, images, etc.)
     if requested_path.is_file():
         return FileResponse(requested_path)
 
     # Return index.html for client-side routing
-    index_path = DIRS.ML_WEB_DIST_DIR / "index.html"
+    index_path = DIRS.ML_WEBSERVER_UI_DIST_DIR / "index.html"
     if not index_path.exists():
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="index.html not found")
     return FileResponse(index_path)
