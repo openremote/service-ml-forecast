@@ -144,7 +144,9 @@ class KeycloakMiddleware(BaseHTTPMiddleware):
 
         # Check if the request path is in the excluded paths (with or without the API root path)
         for excluded_path in self.excluded_paths:
-            if request.url.path.startswith(ENV.ML_API_ROOT_PATH + excluded_path) or request.url.path.startswith(excluded_path):
+            if request.url.path.startswith(ENV.ML_API_ROOT_PATH + excluded_path) or request.url.path.startswith(
+                excluded_path
+            ):
                 return await call_next(request)
 
         auth_header = request.headers.get("Authorization")
