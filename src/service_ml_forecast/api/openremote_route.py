@@ -29,12 +29,12 @@ from service_ml_forecast.clients.openremote.models import Asset, RealmConfig
 from service_ml_forecast.dependencies import get_openremote_service
 from service_ml_forecast.services.openremote_service import OpenRemoteService
 
-router = APIRouter(prefix="/api/openremote", tags=["OpenRemote"])
+router = APIRouter(prefix="/openremote/{realm}", tags=["OpenRemote Proxy API"])
 
 
 @router.get(
     "/assets",
-    summary="Retrieve assets that have attributes that store historical data",
+    summary="Retrieve assets from an OpenRemote realm that store datapoints",
     responses={
         HTTPStatus.OK: {"description": "Assets have been retrieved"},
     },
@@ -47,7 +47,7 @@ async def get_assets(
 
 @router.get(
     "/assets/ids",
-    summary="Retrieve assets by a comma-separated list of Asset IDs",
+    summary="Retrieve assets from an OpenRemote realm by a comma-separated list of Asset IDs",
     responses={
         HTTPStatus.OK: {"description": "Assets have been retrieved"},
     },
@@ -58,12 +58,12 @@ async def get_assets_by_ids(
     openremote_service: OpenRemoteService = Depends(get_openremote_service),
 ) -> list[Asset]:
     ids_list = [asset_id.strip() for asset_id in ids_str.split(",") if asset_id.strip()]
-    return openremote_service.get_assets_by_ids(ids_list, realm)
+    return openremote_service.get_assets_by_ids(realm, ids_list)
 
 
 @router.get(
-    "/realm/config/{realm}",
-    summary="Retrieve the configuration of a realm",
+    "/realm/config",
+    summary="Retrieve the realm configuration of an OpenRemote realm",
     responses={
         HTTPStatus.OK: {"description": "Realm configuration has been retrieved"},
         HTTPStatus.NOT_FOUND: {"description": "Realm configuration not found"},

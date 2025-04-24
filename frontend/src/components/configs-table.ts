@@ -90,7 +90,11 @@ export class ConfigsTable extends OrMwcTable {
     private readonly rootPath = getRootPath()
 
     protected config: TableConfig = {
-        stickyFirstColumn: false
+        stickyFirstColumn: false,
+        pagination: {
+            enable: true,
+            options: [10, 20, 50, 100]
+        }
     }
 
     // Construct the state row template

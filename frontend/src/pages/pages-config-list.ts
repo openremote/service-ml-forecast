@@ -72,9 +72,9 @@ export class PageConfigList extends LitElement {
     async loadModelConfigs() {
         try {
             this.modelConfigs = await APIService.getModelConfigs(this.realm)
-            this.configAssets = await APIService.getAssetsByIds(
-                this.modelConfigs.map((c) => c.target.asset_id),
-                this.realm
+            this.configAssets = await APIService.getOpenRemoteAssetsById(
+                this.realm,
+                this.modelConfigs.map((c) => c.target.asset_id)
             )
             this.loading = false
         } catch (error) {
@@ -104,7 +104,7 @@ export class PageConfigList extends LitElement {
 
         if (result) {
             try {
-                await APIService.deleteModelConfig(config.id)
+                await APIService.deleteModelConfig(this.realm, config.id)
                 this.modelConfigs = this.modelConfigs?.filter((c) => c.id !== config.id)
             } catch (error) {
                 showSnackbar(undefined, `Failed to delete config: ${error}`)

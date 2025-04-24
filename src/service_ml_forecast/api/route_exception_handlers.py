@@ -28,8 +28,8 @@ from fastapi.responses import JSONResponse
 
 from service_ml_forecast.common.exceptions import (
     ResourceAlreadyExistsError,
-    ResourceDependencyError,
     ResourceNotFoundError,
+    ResourceValidationError,
 )
 
 
@@ -55,8 +55,8 @@ async def resource_already_exists_handler(request: Request, exc: Exception) -> J
     )
 
 
-async def resource_dependency_error_handler(request: Request, exc: Exception) -> JSONResponse:
-    """Handle ResourceDependencyError exceptions.
+async def resource_validation_error_handler(request: Request, exc: Exception) -> JSONResponse:
+    """Handle ResourceValidationError exceptions.
     Returns:
         A JSON response with a 400 status code.
     """
@@ -75,4 +75,4 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     app.add_exception_handler(ResourceNotFoundError, resource_not_found_handler)
     app.add_exception_handler(ResourceAlreadyExistsError, resource_already_exists_handler)
-    app.add_exception_handler(ResourceDependencyError, resource_dependency_error_handler)
+    app.add_exception_handler(ResourceValidationError, resource_validation_error_handler)

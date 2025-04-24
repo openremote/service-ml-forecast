@@ -98,11 +98,11 @@ export async function setRealmTheme(realm: string) {
     }
 
     try {
-        const config = await APIService.getRealmConfig(realm)
+        const config = await APIService.getOpenRemoteRealmConfig(realm)
         if (config && config.styles) {
             const cssString = config.styles
             const colorRegex = /--or-app-color(\d+):\s*(#[0-9a-fA-F]{6})/g
-            let match: any[]
+            let match: RegExpExecArray | null
 
             while ((match = colorRegex.exec(cssString)) !== null) {
                 const colorIndex = parseInt(match[1], 10)

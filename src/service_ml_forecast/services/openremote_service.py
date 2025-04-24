@@ -172,7 +172,7 @@ class OpenRemoteService:
 
         return assets
 
-    def get_assets_by_ids(self, asset_ids: list[str], realm: str) -> list[Asset]:
+    def get_assets_by_ids(self, realm: str, asset_ids: list[str]) -> list[Asset]:
         """Get all assets from OpenRemote.
 
         Returns:

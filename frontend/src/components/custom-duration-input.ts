@@ -102,7 +102,7 @@ export class CustomDurationInput extends LitElement {
     }
 
     // Extract the unit from the ISO 8601 Duration string
-    getUnitFromDuration(duration: string): TimeDurationUnit {
+    getUnitFromDuration(duration: string): TimeDurationUnit | null {
         const match = /PT(\d+)([HM])/.exec(duration)
         return match ? (match[2] as TimeDurationUnit) : null
     }
@@ -114,7 +114,7 @@ export class CustomDurationInput extends LitElement {
     }
 
     // Extract the unit from the Pandas Frequency string
-    getUnitFromPandasFrequency(freq: string): PandasTimeUnit {
+    getUnitFromPandasFrequency(freq: string): PandasTimeUnit | null {
         const match = /(\d+)(min|h)/.exec(freq)
         return match ? (match[2] as PandasTimeUnit) : null
     }
