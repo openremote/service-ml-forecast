@@ -20,10 +20,13 @@ import { html, render } from 'lit'
 import { setupORIcons } from './common/theme'
 import { setupRouter } from './router'
 import { APP_OUTLET } from './common/constants'
-import { isEmbedded } from './common/util'
+import { isEmbedded, setupConsoleLogging } from './common/util'
+
+// Override default log statements with service prefix
+setupConsoleLogging()
 
 async function init() {
-    console.log('[ml-forecast] app context:', isEmbedded() ? 'iframe embedded' : 'browser standalone')
+    console.log('Context:', isEmbedded() ? 'iframe embedded' : 'browser standalone')
 
     try {
         render(html`<loading-spinner></loading-spinner>`, APP_OUTLET)

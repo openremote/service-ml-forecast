@@ -1,6 +1,11 @@
 import { Router } from '@vaadin/router'
 import { getRootPath } from './common/util'
 import { APP_OUTLET } from './common/constants'
+import './pages/pages-config-list'
+import './pages/pages-config-editor'
+import './pages/pages-not-found'
+import './components/loading-spinner'
+import './pages/app-layout'
 
 const routes = [
     {

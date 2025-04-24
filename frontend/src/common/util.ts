@@ -36,3 +36,29 @@ export function getRootPath() {
 export function isEmbedded(): boolean {
     return window.top !== window.self
 }
+
+export function setupConsoleLogging() {
+    // Override console.log to add a prefix
+    const originalConsoleLog = console.log
+    console.log = (...args) => {
+        originalConsoleLog('[ml-forecast]', ...args)
+    }
+
+    // Override console.info to add a prefix
+    const originalConsoleInfo = console.info
+    console.info = (...args) => {
+        originalConsoleInfo('[ml-forecast]', ...args)
+    }
+
+    // Override console.warn to add a prefix
+    const originalConsoleWarn = console.warn
+    console.warn = (...args) => {
+        originalConsoleWarn('[ml-forecast]', ...args)
+    }
+
+    // Override console.error to add a prefix
+    const originalConsoleError = console.error
+    console.error = (...args) => {
+        originalConsoleError('[ml-forecast]', ...args)
+    }
+}
