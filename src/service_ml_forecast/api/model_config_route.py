@@ -31,7 +31,7 @@ from service_ml_forecast.dependencies import get_config_service
 from service_ml_forecast.models.model_config import ModelConfig
 from service_ml_forecast.services.model_config_service import ModelConfigService
 
-router = APIRouter(prefix="/api/{realm}/configs", tags=["Model Configs"])
+router = APIRouter(prefix="/api/{realm}/configs", tags=["Forecast Configs"])
 
 
 @router.post(
@@ -45,10 +45,6 @@ router = APIRouter(prefix="/api/{realm}/configs", tags=["Model Configs"])
 async def create_model_config(
     realm: str, model_config: ModelConfig, config_service: ModelConfigService = Depends(get_config_service)
 ) -> ModelConfig:
-    # Check if provided realm matches the realm in the model config
-    if model_config.realm != realm:
-        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Model does not match realm")
-
     return config_service.create(realm, model_config)
 
 
