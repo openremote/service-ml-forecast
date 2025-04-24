@@ -17,7 +17,7 @@
 
 import { CustomAsset, ModelConfig, RealmConfig } from './models'
 import { AuthService } from './auth-service'
-// Use env variable, else fallback to relative URL (e.g. front-end on the same host as the ML service)
+
 const baseUrl: string = (process.env.ML_SERVICE_URL || '').replace(/\/$/, '')
 
 export class APIServiceClass {
