@@ -23,7 +23,7 @@ import { APP_OUTLET } from './common/constants'
 import { isEmbedded } from './common/util'
 
 async function init() {
-    console.log('Service context:', isEmbedded() ? 'iframe embedded' : 'browser standalone')
+    console.log('[ml-forecast] app context:', isEmbedded() ? 'iframe embedded' : 'browser standalone')
 
     try {
         render(html`<loading-spinner></loading-spinner>`, APP_OUTLET)
