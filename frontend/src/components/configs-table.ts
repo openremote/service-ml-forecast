@@ -19,8 +19,7 @@ export class ConfigsTable extends OrMwcTable {
 
                 .table-container {
                     min-height: 300px;
-                    height: 50vh;
-                    max-height: 70vh;
+                    padding-bottom: 10px;
                 }
 
                 .no-data-section {
@@ -44,8 +43,8 @@ export class ConfigsTable extends OrMwcTable {
                     font-weight: 600;
                 }
 
-                td:has(> .state-label.disabled) {
-                    width: 100px;
+                td:has(> .state-label) {
+                    width: 110px;
                 }
 
                 .state-label.enabled {
@@ -81,31 +80,35 @@ export class ConfigsTable extends OrMwcTable {
     public columns: TableColumn[] = [
         { title: 'State', isSortable: true },
         { title: 'Name', isSortable: true },
-        { title: 'Type', isSortable: true },
+        { title: 'Type', isSortable: true, hideMobile: true },
         { title: 'Asset', isSortable: true },
         { title: 'Attribute', isSortable: true },
         { title: 'Actions', isSortable: false }
     ]
 
-    private readonly rootPath = getRootPath()
+    protected readonly rootPath = getRootPath()
 
     protected config: TableConfig = {
+        fullHeight: true,
         stickyFirstColumn: false,
         pagination: {
             enable: true,
-            options: [10, 20, 50, 100]
+            options: [10]
         }
     }
 
+    protected sortIndex = 0
+    protected sortDirection: 'ASC' | 'DESC' = 'DESC'
+
     // Construct the state row template
-    private getStateRowTemplate(config: ModelConfig): TemplateResult {
+    protected getStateRowTemplate(config: ModelConfig): TemplateResult {
         return html` <span class="state-label ${config.enabled ? 'enabled' : 'disabled'}">
             ${config.enabled ? 'Enabled' : 'Disabled'}
         </span>`
     }
 
     // Construct the actions row template
-    private getActionsRowTemplate(config: ModelConfig): TemplateResult {
+    protected getActionsRowTemplate(config: ModelConfig): TemplateResult {
         const handleEdit = (e: Event) => {
             e.stopPropagation()
             this.dispatchEvent(
@@ -144,7 +147,7 @@ export class ConfigsTable extends OrMwcTable {
     }
 
     // Construct the asset name template
-    private getAssetNameTemplate(assetId: string): TemplateResult {
+    protected getAssetNameTemplate(assetId: string): TemplateResult {
         const asset = this.configAssets.find((a) => a.id === assetId)
 
         if (!asset) {
@@ -189,7 +192,7 @@ export class ConfigsTable extends OrMwcTable {
     }
 
     // Handle the add config click
-    private handleAddConfig() {
+    protected handleAddConfig() {
         Router.go(`${this.rootPath}/${this.realm}/configs/new`)
     }
 

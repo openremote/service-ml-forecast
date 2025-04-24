@@ -100,7 +100,10 @@ class ModelConfigService:
                 continue
 
         # Filter the configs by realm
-        return [config for config in configs if realm is None or config.realm == realm]
+        filtered_configs = [config for config in configs if realm is None or config.realm == realm]
+
+        # Sort the configs by enabled status
+        return sorted(filtered_configs, key=lambda x: x.enabled, reverse=True)
 
     def get(self, realm: str, config_id: UUID) -> ModelConfig:
         """Get a model config by its ID and realm.
