@@ -20,7 +20,7 @@ import { css, html, TemplateResult } from 'lit'
 import { customElement, property } from 'lit/decorators.js'
 import { CustomAsset, ModelConfig } from '../services/models'
 import '@openremote/or-mwc-components/or-mwc-input'
-import { getRootPath } from '../util'
+import { getRootPath } from '../common/util'
 import { Router } from '@vaadin/router'
 import { InputType } from '@openremote/or-mwc-components/or-mwc-input'
 

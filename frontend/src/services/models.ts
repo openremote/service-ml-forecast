@@ -15,13 +15,14 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+// TODO: Automate the generation of these models using the OpenAPI spec from the backend
+
 /**
  * Enum representing the different types of machine learning models available.
  * Corresponds to service_ml_forecast.models.model_type.ModelTypeEnum
  */
 export enum ModelTypeEnum {
     PROPHET = 'prophet'
-    // Add other model types here if applicable
 }
 
 /**
@@ -48,7 +49,6 @@ export interface TargetFeature {
 
 /**
  * Represents a regressor feature used in model configuration.
- * Corresponds to Python class RegressorFeature.
  */
 export interface RegressorFeature {
     /**
@@ -70,7 +70,6 @@ export interface RegressorFeature {
 
 /**
  * Represents an attribute of an asset.
- * Corresponds to Python class service_ml_forecast.clients.openremote.models.AssetAttribute.
  */
 export interface CustomAttribute {
     /**
@@ -93,7 +92,6 @@ export interface CustomAttribute {
 
 /**
  * Represents a minimal asset from OpenRemote.
- * Corresponds to Python class service_ml_forecast.clients.openremote.models.Asset.
  */
 export interface CustomAsset {
     /**
@@ -121,7 +119,6 @@ export interface CustomAsset {
 
 /**
  * Base configuration common to all ML models.
- * Corresponds to Python class BaseModelConfig.
  */
 interface BaseModelConfig {
     /**
@@ -179,7 +176,6 @@ interface BaseModelConfig {
 
 /**
  * Seasonality modes for the Prophet model.
- * Corresponds to Python enum ProphetSeasonalityModeEnum.
  */
 export enum ProphetSeasonalityModeEnum {
     ADDITIVE = 'additive',
@@ -188,7 +184,6 @@ export enum ProphetSeasonalityModeEnum {
 
 /**
  * Prophet specific model configuration.
- * Corresponds to Python class ProphetModelConfig.
  */
 export interface ProphetModelConfig extends BaseModelConfig {
     /**
@@ -235,13 +230,11 @@ export interface ProphetModelConfig extends BaseModelConfig {
 /**
  * Represents a model configuration, which can be one of the specific model types.
  * This uses a discriminated union based on the 'type' field.
- * Corresponds to Python type hint ModelConfig.
  */
-export type ModelConfig = ProphetModelConfig // Add other config types here with | (e.g., | OtherModelConfig)
+export type ModelConfig = ProphetModelConfig
 
 /**
  * Represents the configuration of a realm.
- * Corresponds to Python class RealmConfig.
  */
 export interface RealmConfig {
     /**

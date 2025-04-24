@@ -18,7 +18,7 @@
 import { css, html, LitElement } from 'lit'
 import { customElement, property, state } from 'lit/decorators.js'
 import { Router, RouterLocation } from '@vaadin/router'
-import { getRootPath } from '../util'
+import { getRootPath } from '../common/util'
 
 /**
  * Represents a part of the breadcrumb navigation
@@ -82,18 +82,18 @@ export class BreadcrumbNav extends LitElement {
     `
 
     @state()
-    private parts: BreadcrumbPart[] = []
+    protected parts: BreadcrumbPart[] = []
 
-    private readonly rootPath = getRootPath()
+    protected readonly rootPath = getRootPath()
 
-    private get HOME_LINK(): BreadcrumbPart {
+    protected get HOME_LINK(): BreadcrumbPart {
         return {
             path: `${this.rootPath}/${this.realm}/configs`,
             name: 'ML Forecast Service'
         }
     }
 
-    private readonly MAX_TEXT_LENGTH = 20
+    protected readonly MAX_TEXT_LENGTH = 20
 
     updated(changedProperties: Map<string, any>) {
         if (changedProperties.has('realm') && this.realm) {
@@ -113,7 +113,7 @@ export class BreadcrumbNav extends LitElement {
     /**
      * Handles location changes in the router
      */
-    private readonly handleLocationChange = (event: CustomEvent<{ location: RouterLocation }>) => {
+    protected readonly handleLocationChange = (event: CustomEvent<{ location: RouterLocation }>) => {
         const location = event.detail.location
         // Update the breadcrumbs and title
         this.updateBreadcrumbs(location)
@@ -132,7 +132,7 @@ export class BreadcrumbNav extends LitElement {
     /**
      * Updates the breadcrumb parts based on the current location
      */
-    private updateBreadcrumbs(location: RouterLocation): void {
+    protected updateBreadcrumbs(location: RouterLocation): void {
         const parts: BreadcrumbPart[] = []
         const { pathname, params } = location
 
@@ -166,14 +166,14 @@ export class BreadcrumbNav extends LitElement {
     /**
      * Truncates text to a specified length
      */
-    private truncateText(text: string): string {
+    protected truncateText(text: string): string {
         return text.length > this.MAX_TEXT_LENGTH ? `${text.substring(0, this.MAX_TEXT_LENGTH)}...` : text
     }
 
     /**
      * Renders a single breadcrumb item
      */
-    private renderBreadcrumbItem(part: BreadcrumbPart, isLast: boolean) {
+    protected renderBreadcrumbItem(part: BreadcrumbPart, isLast: boolean) {
         const truncatedName = this.truncateText(part.name)
 
         return html`
@@ -191,7 +191,7 @@ export class BreadcrumbNav extends LitElement {
     /**
      * Handles navigation clicks
      */
-    private handleNavigation(event: MouseEvent, path: string): void {
+    protected handleNavigation(event: MouseEvent, path: string): void {
         event.preventDefault()
         Router.go(path)
     }

@@ -19,7 +19,7 @@ import { createContext, provide } from '@lit/context'
 import { RouterLocation } from '@vaadin/router'
 import { html, LitElement } from 'lit'
 import { customElement, state } from 'lit/decorators.js'
-import { setRealmTheme } from '../util'
+import { setRealmTheme } from '../common/theme'
 import '../components/breadcrumb-nav'
 
 export const realmContext = createContext<string>(Symbol('realm'))

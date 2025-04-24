@@ -15,20 +15,5 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import './pages/pages-config-list'
-import './pages/pages-config-editor'
-import './pages/pages-not-found'
-import './pages/app-layout'
-import { setupORIcons } from './common/theme'
-import { setupRouter } from './router'
-
-async function init() {
-    // Setup OR icons
-    setupORIcons()
-
-    // Setup the router
-    setupRouter()
-}
-
-// Entry point
-await init()
+export const APP_OUTLET = document.querySelector('#outlet') as HTMLElement
+export const IS_DEVELOPMENT = process.env.NODE_ENV === 'development'
