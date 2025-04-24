@@ -17,7 +17,7 @@
 
 import { css, html, LitElement } from 'lit'
 import { customElement } from 'lit/decorators.js'
-import { getRootPath } from '../util'
+import { getRootPath } from '../common/util'
 
 @customElement('loading-spinner')
 export class LoadingSpinner extends LitElement {
@@ -68,7 +68,7 @@ export class LoadingSpinner extends LitElement {
         `
     }
 
-    private readonly rootPath = getRootPath()
+    protected readonly rootPath = getRootPath()
 
     render() {
         return html`<span class="loading-spinner"><img src="${this.rootPath}/assets/images/logo.svg" alt="" /></span>`

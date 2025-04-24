@@ -21,7 +21,7 @@ import { CustomAsset, ModelConfig } from '../services/models'
 import { Router } from '@vaadin/router'
 import '../components/configs-table'
 import '@openremote/or-panel'
-import { getRootPath } from '../util'
+import { getRootPath } from '../common/util'
 import '../components/loading-spinner'
 import { InputType } from '@openremote/or-mwc-components/or-mwc-input'
 import { showOkCancelDialog } from '@openremote/or-mwc-components/or-mwc-dialog'
@@ -68,16 +68,16 @@ export class PageConfigList extends LitElement {
         `
     }
 
-    private readonly rootPath = getRootPath()
+    protected readonly rootPath = getRootPath()
 
     @state()
-    private modelConfigs?: ModelConfig[] = []
+    protected modelConfigs?: ModelConfig[] = []
 
     @state()
-    private configAssets?: CustomAsset[] = []
+    protected configAssets?: CustomAsset[] = []
 
     @state()
-    private loading: boolean = true
+    protected loading: boolean = true
 
     // Lifecycle, when component is connected to the DOM
     connectedCallback() {
@@ -103,13 +103,13 @@ export class PageConfigList extends LitElement {
     }
 
     // Handle the `edit-config` event
-    private handleEditConfig(e: CustomEvent<ModelConfig>) {
+    protected handleEditConfig(e: CustomEvent<ModelConfig>) {
         const config = e.detail
         Router.go(`${this.rootPath}/${this.realm}/configs/${config.id}`)
     }
 
     // Handle the `delete-config` event
-    private async handleDeleteConfig(e: CustomEvent<ModelConfig>) {
+    protected async handleDeleteConfig(e: CustomEvent<ModelConfig>) {
         const config = e.detail
         if (!config.id) {
             console.error('PageConfigList: Config ID is required')
@@ -131,12 +131,12 @@ export class PageConfigList extends LitElement {
     }
 
     // Handle the `add-config` event
-    private handleAddConfig() {
+    protected handleAddConfig() {
         Router.go(`${this.rootPath}/${this.realm}/configs/new`)
     }
 
     // Construct the configs table template
-    private getConfigsTableTemplate() {
+    protected getConfigsTableTemplate() {
         if (this.loading) {
             return html`<loading-spinner></loading-spinner>`
         }

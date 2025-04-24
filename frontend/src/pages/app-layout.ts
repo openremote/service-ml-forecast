@@ -19,10 +19,11 @@ import { createContext, provide } from '@lit/context'
 import { Router, RouterLocation } from '@vaadin/router'
 import { html, LitElement } from 'lit'
 import { customElement, state } from 'lit/decorators.js'
-import { getRootPath, setRealmTheme as updateRealmTheme } from '../util'
+import { getRootPath } from '../common/util'
 import '../components/breadcrumb-nav'
 import '../components/loading-spinner'
 import { AuthService } from '../services/auth-service'
+import { setRealmTheme } from '../common/theme'
 
 export const context = createContext<string>(Symbol('realm'))
 
@@ -30,7 +31,7 @@ export const context = createContext<string>(Symbol('realm'))
 export class AppLayout extends LitElement {
     @provide({ context })
     @state()
-    realm = undefined
+    realm = ''
 
     @state()
     private authenticated = false
@@ -50,7 +51,7 @@ export class AppLayout extends LitElement {
         }
 
         // Update the app with the realm theme
-        await updateRealmTheme(this.realm)
+        await setRealmTheme(this.realm)
 
         // Listen for auth changes
         this.authenticated = AuthService.authenticated

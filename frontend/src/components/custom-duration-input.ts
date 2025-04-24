@@ -107,10 +107,10 @@ export class CustomDurationInput extends LitElement {
     public value: string = ''
 
     @state()
-    private number: number | null = null
+    protected number: number | null = null
 
     @state()
-    private unit: TimeDurationUnit | PandasTimeUnit | null = null
+    protected unit: TimeDurationUnit | PandasTimeUnit | null = null
 
     // Extract the number from the ISO 8601 Duration string
     getNumberFromDuration(duration: string): number | null {

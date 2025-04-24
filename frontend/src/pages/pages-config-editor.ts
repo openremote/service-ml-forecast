@@ -25,7 +25,7 @@ import '@openremote/or-panel'
 import { InputType, OrInputChangedEvent } from '@openremote/or-mwc-components/or-mwc-input'
 import '../components/loading-spinner'
 import { showSnackbar } from '@openremote/or-mwc-components/or-mwc-snackbar'
-import { getRootPath } from '../util'
+import { getRootPath } from '../common/util'
 import '../components/custom-duration-input'
 import { DurationInputType } from '../components/custom-duration-input'
 import { consume } from '@lit/context'
@@ -104,27 +104,27 @@ export class PageConfigEditor extends LitElement {
     configId?: string
 
     @state()
-    private modelConfig: ProphetModelConfig | null = null
+    protected modelConfig: ProphetModelConfig | null = null
 
     @state()
-    private assetSelectList: Map<string, string> = new Map()
+    protected assetSelectList: Map<string, string> = new Map()
 
     @state()
-    private attributeSelectList: Map<string, Map<string, string>> = new Map()
+    protected attributeSelectList: Map<string, Map<string, string>> = new Map()
 
     @state()
-    private loading: boolean = true
+    protected loading: boolean = true
 
     @state()
-    private isValid: boolean = false
+    protected isValid: boolean = false
 
     @state()
-    private modified: boolean = false
+    protected modified: boolean = false
 
-    private readonly rootPath = getRootPath()
+    protected readonly rootPath = getRootPath()
 
     @state()
-    private formData: ProphetModelConfig = {
+    protected formData: ProphetModelConfig = {
         type: ModelTypeEnum.PROPHET,
         realm: '', // Set during setup
         name: 'New Model Config',
@@ -148,7 +148,7 @@ export class PageConfigEditor extends LitElement {
     }
 
     // Handle basic form field updates
-    private handleBasicInput(ev: OrInputChangedEvent | CustomEvent<{ value: string }>) {
+    protected handleBasicInput(ev: OrInputChangedEvent | CustomEvent<{ value: string }>) {
         const value = 'detail' in ev ? ev.detail?.value : undefined
         const target = ev.target as HTMLInputElement
 
@@ -163,7 +163,7 @@ export class PageConfigEditor extends LitElement {
     }
 
     // Handle target-specific updates
-    private handleTargetInput(ev: OrInputChangedEvent) {
+    protected handleTargetInput(ev: OrInputChangedEvent) {
         const value = ev.detail?.value
         const target = ev.target as HTMLInputElement
 
@@ -196,7 +196,7 @@ export class PageConfigEditor extends LitElement {
     }
 
     // Handle regressor-specific updates
-    private handleRegressorInput(ev: OrInputChangedEvent, index: number) {
+    protected handleRegressorInput(ev: OrInputChangedEvent, index: number) {
         const value = ev.detail?.value
         const target = ev.target as HTMLInputElement
 
@@ -228,7 +228,7 @@ export class PageConfigEditor extends LitElement {
     }
 
     // Set up all the data for the editor
-    private async setupEditor() {
+    protected async setupEditor() {
         // Set the realm from the context provider
         this.formData.realm = this.realm
 
@@ -237,7 +237,7 @@ export class PageConfigEditor extends LitElement {
     }
 
     // Loads valid assets and their attributes from the API
-    private async loadAssets() {
+    protected async loadAssets() {
         this.assetSelectList.clear()
         const assets = await APIService.getOpenRemoteAssets(this.realm)
         assets.forEach((asset) => {
@@ -247,7 +247,7 @@ export class PageConfigEditor extends LitElement {
     }
 
     // Try to load the config from the API
-    private async loadConfig() {
+    protected async loadConfig() {
         this.loading = true
         this.isValid = false
 

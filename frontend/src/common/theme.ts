@@ -15,47 +15,28 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { IconSet, createSvgIconSet, IconSets, OrIconSet } from '@openremote/or-icon'
+import { IconSet, IconSets, OrIconSet, createSvgIconSet } from '@openremote/or-icon'
 import { html } from 'lit'
 import * as Core from '@openremote/core'
-import { APIService } from './services/api-service'
+import { APIService } from '../services/api-service'
+import { getRootPath } from './util'
 
 /**
- * Get the root path of the application
- * @returns The full root path of the application
- * @remarks This is a workaround to have consistent full root path, rather than relative via the ENV variable.
- * @remarks Neglible performance impact, sub millisecond lookup
+ * Base theme settings
  */
-export function getRootPath() {
-    const scriptElement = document.querySelector('script[src*="bundle"]')
-
-    if (scriptElement && scriptElement.getAttribute('src')) {
-        const scriptPath = new URL(scriptElement.getAttribute('src')!, window.location.href).pathname
-
-        // Positive lookahead to match everything up to bundle.js
-        const match = scriptPath.match(/(.*?)(?=bundle)/)
-        // Remove trailing slash if present
-        return match ? (match[1].endsWith('/') ? match[1].slice(0, -1) : match[1]) : ''
-    }
-
-    return ''
-}
-
-/**
- * Check if the environment is development
- * @returns True if the environment is development, false otherwise
- */
-export function isDevelopment(): boolean {
-    return process.env.NODE_ENV === 'development'
-}
-
-export function isEmbedded(): boolean {
-    return window.top !== window.self
+const BASE_THEME = {
+    color1: Core.DefaultColor1,
+    color2: Core.DefaultColor2,
+    color3: Core.DefaultColor3,
+    color4: Core.DefaultColor4,
+    color5: Core.DefaultColor5,
+    color6: Core.DefaultColor6
 }
 
 /**
  * Setup the OR icons
  * Overrides the default createMdiIconSet with a function that uses the static fonts part of the build
+ * Setup the MDI-Icons for or-icon element
  */
 export function setupORIcons() {
     function createMdiIconSet(): IconSet {
@@ -88,8 +69,10 @@ export function setupORIcons() {
     IconSets.addIconSet('or', createSvgIconSet(OrIconSet.size, OrIconSet.icons))
 }
 
-// THEME UTILITIES
-export interface ThemeSettings {
+/**
+ * Theme settings
+ */
+interface ThemeSettings {
     color1: string
     color2: string
     color3: string
@@ -100,19 +83,11 @@ export interface ThemeSettings {
 
 /**
  * Set the realm theme based on realm config from the service backend
+ * @param realm - The realm to set the theme for
  */
 export async function setRealmTheme(realm: string) {
-    // Default theme settings
-    const theme: ThemeSettings = {
-        color1: Core.DefaultColor1,
-        color2: Core.DefaultColor2,
-        color3: Core.DefaultColor3,
-        color4: Core.DefaultColor4,
-        color5: Core.DefaultColor5,
-        color6: Core.DefaultColor6
-    }
+    const theme = BASE_THEME
 
-    // If no realm is provided, use the default theme
     if (!realm || realm === 'undefined') {
         setTheme(theme)
         return
@@ -129,6 +104,7 @@ export async function setRealmTheme(realm: string) {
                 const colorIndex = parseInt(match[1], 10)
                 const colorValue = match[2]
 
+                // Set the color value based on the index
                 switch (colorIndex) {
                     case 1:
                         theme.color1 = colorValue
@@ -155,7 +131,6 @@ export async function setRealmTheme(realm: string) {
         console.warn('Was unable to retrieve realm specific theme settings, falling back to default')
     }
 
-    // Set the theme with any settings that were retrieved
     setTheme(theme)
 }
 
