@@ -1,3 +1,20 @@
+// Copyright 2025, OpenRemote Inc.
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as
+// published by the Free Software Foundation, either version 3 of the
+// License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
+//
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 import { css, html, LitElement, PropertyValues } from 'lit'
 import { customElement, property, state } from 'lit/decorators.js'
 import { ModelTypeEnum, ProphetSeasonalityModeEnum } from '../services/models'
@@ -109,7 +126,7 @@ export class PageConfigEditor extends LitElement {
     @state()
     private formData: ProphetModelConfig = {
         type: ModelTypeEnum.PROPHET,
-        realm: null, // Set during setup
+        realm: '', // Set during setup
         name: 'New Model Config',
         enabled: true,
         target: {
@@ -222,8 +239,8 @@ export class PageConfigEditor extends LitElement {
     // Loads valid assets and their attributes from the API
     private async loadAssets() {
         this.assetSelectList.clear()
-        const assets = await APIService.getAssets(this.realm)
-        assets?.forEach((asset) => {
+        const assets = await APIService.getOpenRemoteAssets(this.realm)
+        assets.forEach((asset) => {
             this.assetSelectList.set(asset.id, asset.name)
             this.attributeSelectList.set(asset.id, new Map(Object.entries(asset.attributes).map(([key, value]) => [key, value.name])))
         })
@@ -239,7 +256,7 @@ export class PageConfigEditor extends LitElement {
             return
         }
         try {
-            this.modelConfig = await APIService.getModelConfig(this.configId)
+            this.modelConfig = await APIService.getModelConfig(this.realm, this.configId)
             // Create a deep copy of the model config for the form data
             this.formData = JSON.parse(JSON.stringify(this.modelConfig))
             this.loading = false
@@ -260,8 +277,11 @@ export class PageConfigEditor extends LitElement {
     async onSave() {
         const isExistingConfig = this.modelConfig !== null
 
-        // Switch between update and create -- based on whether the config
-        const saveRequest = isExistingConfig ? APIService.updateModelConfig(this.formData) : APIService.createModelConfig(this.formData)
+        // Switch between update and create -- based on whether the config exists
+        const saveRequest =
+            isExistingConfig && this.configId
+                ? APIService.updateModelConfig(this.realm, this.configId, this.formData)
+                : APIService.createModelConfig(this.realm, this.formData)
 
         try {
             const modelConfig = await saveRequest
@@ -319,6 +339,10 @@ export class PageConfigEditor extends LitElement {
 
     // Handle deleting a regressor
     handleDeleteRegressor(index: number) {
+        if (!this.formData.regressors) {
+            return
+        }
+
         this.formData.regressors.splice(index, 1)
 
         // Clean up regressors if all are deleted
@@ -331,6 +355,10 @@ export class PageConfigEditor extends LitElement {
 
     // Get the regressor template
     getRegressorTemplate(index: number) {
+        if (!this.formData.regressors) {
+            return
+        }
+
         const regressor = this.formData.regressors[index]
         return html`
             <or-panel heading="REGRESSOR ${index + 1}">

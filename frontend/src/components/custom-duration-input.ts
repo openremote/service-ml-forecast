@@ -1,3 +1,20 @@
+// Copyright 2025, OpenRemote Inc.
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as
+// published by the Free Software Foundation, either version 3 of the
+// License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
+//
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 import { css, html, LitElement } from 'lit'
 import { customElement, property, state } from 'lit/decorators.js'
 import '@openremote/or-mwc-components/or-mwc-input'
@@ -102,7 +119,7 @@ export class CustomDurationInput extends LitElement {
     }
 
     // Extract the unit from the ISO 8601 Duration string
-    getUnitFromDuration(duration: string): TimeDurationUnit {
+    getUnitFromDuration(duration: string): TimeDurationUnit | null {
         const match = /PT(\d+)([HM])/.exec(duration)
         return match ? (match[2] as TimeDurationUnit) : null
     }
@@ -114,7 +131,7 @@ export class CustomDurationInput extends LitElement {
     }
 
     // Extract the unit from the Pandas Frequency string
-    getUnitFromPandasFrequency(freq: string): PandasTimeUnit {
+    getUnitFromPandasFrequency(freq: string): PandasTimeUnit | null {
         const match = /(\d+)(min|h)/.exec(freq)
         return match ? (match[2] as PandasTimeUnit) : null
     }

@@ -1,3 +1,20 @@
+// Copyright 2025, OpenRemote Inc.
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as
+// published by the Free Software Foundation, either version 3 of the
+// License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
+//
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 import { css, html, LitElement } from 'lit'
 import { customElement, state } from 'lit/decorators.js'
 import { CustomAsset, ModelConfig } from '../services/models'
@@ -72,7 +89,10 @@ export class PageConfigList extends LitElement {
     async loadModelConfigs() {
         try {
             this.modelConfigs = await APIService.getModelConfigs(this.realm)
-            this.configAssets = await APIService.getAssetsByIds(this.modelConfigs?.map((c) => c.target.asset_id) ?? [], this.realm)
+            this.configAssets = await APIService.getOpenRemoteAssetsById(
+                this.realm,
+                this.modelConfigs.map((c) => c.target.asset_id)
+            )
             this.loading = false
         } catch (error) {
             console.error('PageConfigList: Failed to fetch model configs:', error)
@@ -101,7 +121,7 @@ export class PageConfigList extends LitElement {
 
         if (result) {
             try {
-                await APIService.deleteModelConfig(config.id)
+                await APIService.deleteModelConfig(this.realm, config.id)
                 this.modelConfigs = this.modelConfigs?.filter((c) => c.id !== config.id)
             } catch (error) {
                 showSnackbar(undefined, `Failed to delete config: ${error}`)

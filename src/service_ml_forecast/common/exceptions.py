@@ -30,8 +30,8 @@ class ResourceAlreadyExistsError(Exception):
     pass
 
 
-class ResourceDependencyError(Exception):
-    """Exception raised when a resource dependency is invalid."""
+class ResourceValidationError(Exception):
+    """Exception raised when a resource validation fails."""
 
     pass
 

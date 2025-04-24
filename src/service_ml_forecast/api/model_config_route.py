@@ -24,14 +24,14 @@ These routes are used to create, retrieve, update and delete model configs.
 from http import HTTPStatus
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 
 from service_ml_forecast.dependencies import get_config_service
 from service_ml_forecast.models.model_config import ModelConfig
 from service_ml_forecast.services.model_config_service import ModelConfigService
 
-router = APIRouter(prefix="/api/model/configs", tags=["Model Configs"])
+router = APIRouter(prefix="/api/{realm}/configs", tags=["Forecast Configs"])
 
 
 @router.post(
@@ -43,9 +43,9 @@ router = APIRouter(prefix="/api/model/configs", tags=["Model Configs"])
     },
 )
 async def create_model_config(
-    model_config: ModelConfig, config_service: ModelConfigService = Depends(get_config_service)
+    realm: str, model_config: ModelConfig, config_service: ModelConfigService = Depends(get_config_service)
 ) -> ModelConfig:
-    return config_service.create(model_config)
+    return config_service.create(realm, model_config)
 
 
 @router.get(
@@ -56,13 +56,15 @@ async def create_model_config(
         HTTPStatus.NOT_FOUND: {"description": "Model config not found"},
     },
 )
-async def get_model_config(id: UUID, config_service: ModelConfigService = Depends(get_config_service)) -> ModelConfig:
-    return config_service.get(id)
+async def get_model_config(
+    realm: str, id: UUID, config_service: ModelConfigService = Depends(get_config_service)
+) -> ModelConfig:
+    return config_service.get(realm, id)
 
 
 @router.get(
     "",
-    summary="Retrieve all model configs for a realm",
+    summary="Retrieve all model configs for a given realm",
     responses={
         HTTPStatus.OK: {"description": "List of model configs has been retrieved"},
     },
@@ -82,9 +84,12 @@ async def get_model_configs(
     },
 )
 async def update_model_config(
-    id: UUID, model_config: ModelConfig, config_service: ModelConfigService = Depends(get_config_service)
+    realm: str, id: UUID, model_config: ModelConfig, config_service: ModelConfigService = Depends(get_config_service)
 ) -> ModelConfig:
-    return config_service.update(id, model_config)
+    if model_config.realm != realm:
+        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Model does not match realm")
+
+    return config_service.update(realm, id, model_config)
 
 
 @router.delete(
@@ -96,7 +101,7 @@ async def update_model_config(
     },
 )
 async def delete_model_config(
-    id: UUID, config_service: ModelConfigService = Depends(get_config_service)
+    realm: str, id: UUID, config_service: ModelConfigService = Depends(get_config_service)
 ) -> JSONResponse:
-    config_service.delete(id)
+    config_service.delete(realm, id)
     return JSONResponse(status_code=HTTPStatus.OK, content={"message": "Model config deleted successfully"})

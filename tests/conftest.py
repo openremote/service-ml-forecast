@@ -153,7 +153,7 @@ def mock_openremote_service(mock_openremote_client: OpenRemoteClient) -> OpenRem
     service = OpenRemoteService(mock_openremote_client)
 
     # Mock get assets by ids, allows external validation to go through
-    def mock_get_assets_by_ids(self: OpenRemoteService, asset_ids: list[str], realm: str) -> list[dict[str, str]]:
+    def mock_get_assets_by_ids(self: OpenRemoteService, realm: str, asset_ids: list[str]) -> list[dict[str, str]]:
         return [{"id": asset_id, "realm": realm} for asset_id in asset_ids]
 
     service.get_assets_by_ids = types.MethodType(mock_get_assets_by_ids, service)  # type: ignore[method-assign]
