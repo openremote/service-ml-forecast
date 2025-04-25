@@ -40,6 +40,7 @@ class KeycloakTokenUserPayload(BaseModel):
 
 # Todo: Double check whether this is adequate for the current use case
 RESOURCE_ACCESS_KEY = "openremote"
+# Todo: These will most likely change in the future to e.g. write:service, read:service, etc.
 REQUIRED_ROLES = ["write:admin", "read:admin"]
 
 
