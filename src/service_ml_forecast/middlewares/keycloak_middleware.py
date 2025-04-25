@@ -7,6 +7,7 @@ import httpx
 import jwt
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 from fastapi import HTTPException
+from pydantic import BaseModel
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
@@ -15,6 +16,31 @@ from starlette.types import ASGIApp
 from service_ml_forecast.config import ENV
 
 logger = logging.getLogger(__name__)
+
+_BASE_EARLY_EXIT_CORS_HEADERS: dict[str, str] = {
+    "Access-Control-Allow-Credentials": "true",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+    "Access-Control-Allow-Headers": "Authorization, Content-Type",
+}
+
+
+# --- Pydantic models for the Keycloak token payload ---
+class RealmRoles(BaseModel):
+    """Represents the roles the user has in a realm."""
+
+    roles: list[str]
+
+
+class KeycloakTokenUserPayload(BaseModel):
+    """Partial payload of the JWT token for handling the roles/permissions."""
+
+    name: str
+    resource_access: dict[str, RealmRoles]
+
+
+# Todo: Double check whether this is adequate for the current use case
+RESOURCE_ACCESS_KEY = "openremote"
+REQUIRED_ROLES = ["write:admin", "read:admin"]
 
 
 async def _get_jwks(keycloak_url: str, issuer: str) -> dict[str, Any]:
@@ -121,6 +147,40 @@ async def _verify_jwt_token(token: str, keycloak_url: str) -> dict[str, Any]:
         raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail="Failed to validate token") from e
 
 
+def _has_required_roles(user_payload: KeycloakTokenUserPayload) -> bool:
+    """Check if the user has all the required roles."""
+
+    resource_access = user_payload.resource_access.get(RESOURCE_ACCESS_KEY, RealmRoles(roles=[]))
+    # Check if the set of required roles is a subset of the user's roles
+    return set(REQUIRED_ROLES).issubset(set(resource_access.roles))
+
+
+def _get_dynamic_cors_headers(request: Request) -> dict[str, str]:
+    """Generates CORS headers for early-exit responses
+
+    Required for correct CORS handling when using early-exit middleware.
+
+    Args:
+        request: The incoming request.
+
+    Returns:
+        A dictionary of CORS headers, including a dynamically set
+        Access-Control-Allow-Origin if the request origin is allowed.
+    """
+    response_headers = _BASE_EARLY_EXIT_CORS_HEADERS.copy()
+    allowed_origins = ENV.ML_WEBSERVER_ORIGINS
+
+    if "*" in allowed_origins:
+        response_headers["Access-Control-Allow-Origin"] = "*"
+    else:
+        origin = request.headers.get("origin")
+        if origin and origin in allowed_origins:
+            response_headers["Access-Control-Allow-Origin"] = origin
+            response_headers["Vary"] = "Origin"
+
+    return response_headers
+
+
 class KeycloakMiddleware(BaseHTTPMiddleware):
     """
     Verifies Bearer token against OR_ML_KEYCLOAK_URL's JWKS endpoint.
@@ -134,52 +194,65 @@ class KeycloakMiddleware(BaseHTTPMiddleware):
         self.keycloak_url = keycloak_url
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
-        # Handle OPTIONS requests for CORS preflight
+        # Handle the OPTIONS request for CORS preflight
         if request.method == "OPTIONS":
             return Response(
                 status_code=HTTPStatus.OK,
-                headers={
-                    "Access-Control-Allow-Origin": "*",
-                    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-                    "Access-Control-Allow-Headers": "Authorization, Content-Type",
-                },
+                headers=_get_dynamic_cors_headers(request),
             )
 
-        # Check if the request path is in the excluded paths (with or without the API root path)
+        # Ensure the request is not excluded from authentication
         for excluded_path in self.excluded_paths:
             if request.url.path.startswith(ENV.ML_API_ROOT_PATH + excluded_path) or request.url.path.startswith(
                 excluded_path
             ):
                 return await call_next(request)
 
-        auth_header = request.headers.get("Authorization")
-        token = None
-        if auth_header:
-            parts = auth_header.split()
-            header_split_length = 2
-            if len(parts) == header_split_length and parts[0].lower() == "bearer":
-                token = parts[1]
-
-        if not token:
-            logger.warning("Authorization header missing or malformed")
-            return JSONResponse(
-                status_code=HTTPStatus.UNAUTHORIZED,
-                content={"detail": "Not authenticated or invalid format"},
-            )
-
         try:
+            # Prepare the token for verification
+            auth_header = request.headers.get("Authorization")
+            token = None
+
+            # Extract the Bearer token from the Authorization header
+            if auth_header:
+                parts = auth_header.split()
+                header_split_length = 2
+                if len(parts) == header_split_length and parts[0].lower() == "bearer":
+                    token = parts[1]
+
+            if not token:
+                logger.warning("Authorization header missing or malformed")
+                raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail="Malformed authorization header")
+
+            # Verify the token via the JWKS endpoint
             payload = await _verify_jwt_token(token, self.keycloak_url)
-            request.state.user = payload
+            user_payload = KeycloakTokenUserPayload(**payload)
+
+            # Check if the user has the required roles
+            if not _has_required_roles(user_payload):
+                raise HTTPException(
+                    status_code=HTTPStatus.FORBIDDEN, detail="Insufficient permissions: missing required roles"
+                )
+
+            # Inject the user payload into the request state
+            request.state.user = user_payload
         except HTTPException as e:
+            logger.warning(f"Auth HTTPException status={e.status_code} detail='{e.detail}'")
+
             return JSONResponse(
                 status_code=e.status_code,
                 content={"detail": e.detail},
+                headers=_get_dynamic_cors_headers(request),
             )
         except Exception as e:
             logger.error(f"Unexpected error during token verification dispatch: {e}", exc_info=True)
+
             return JSONResponse(
                 status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
                 content={"detail": "An unexpected error occurred"},
+                headers=_get_dynamic_cors_headers(request),
             )
 
-        return await call_next(request)
+        # Sucessful, allow request to continue through the middleware stack
+        response = await call_next(request)
+        return response
