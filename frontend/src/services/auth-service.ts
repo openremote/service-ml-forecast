@@ -34,6 +34,12 @@ class AuthServiceClass {
     private listeners: AuthChangeListener[] = []
     private tokenRefreshInterval: NodeJS.Timeout | null = null
 
+    /**
+     * Initialize the Keycloak instance
+     * @param realm The realm to initialize the Keycloak instance for
+     * @param force Whether to force the initialization
+     * @returns True if the initialization was successful, false otherwise
+     */
     async init(realm: string, force = false): Promise<boolean> {
         if (this.initializing && !force) {
             console.warn('Already initializing', realm)
@@ -86,10 +92,16 @@ class AuthServiceClass {
         return this.initPromise
     }
 
+    /**
+     * Login to the Keycloak instance
+     */
     login() {
         this.keycloak?.login()
     }
 
+    /**
+     * Logout from the Keycloak instance
+     */
     logout() {
         this.keycloak?.logout()
         this.stopUpdateTokenInterval()
@@ -109,6 +121,10 @@ class AuthServiceClass {
         }
     }
 
+    /**
+     * Update the token, if it expires in the next 20 seconds
+     * @returns True if the token was refreshed, false otherwise
+     */
     async updateToken(): Promise<boolean> {
         if (!this.keycloak) {
             return false
@@ -126,6 +142,11 @@ class AuthServiceClass {
         }
     }
 
+    /**
+     * Subscribe to authentication changes
+     * @param listener The listener to subscribe to
+     * @returns A function to unsubscribe from the listener
+     */
     subscribe(listener: AuthChangeListener): () => void {
         this.listeners.push(listener)
         return () => {
