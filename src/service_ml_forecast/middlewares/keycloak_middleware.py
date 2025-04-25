@@ -17,25 +17,19 @@ from service_ml_forecast.config import ENV
 
 logger = logging.getLogger(__name__)
 
-_BASE_EARLY_EXIT_CORS_HEADERS: dict[str, str] = {
-    "Access-Control-Allow-Credentials": "true",
-    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-    "Access-Control-Allow-Headers": "Authorization, Content-Type",
-}
-
 
 # --- Pydantic models for the Keycloak token payload ---
-class RealmRoles(BaseModel):
-    """Represents the roles the user has in a realm."""
+class ResourceRoles(BaseModel):
+    """Represents the roles the user has in a resource e.g. realm."""
 
     roles: list[str]
 
 
 class KeycloakTokenUserPayload(BaseModel):
-    """Partial payload of the JWT token for handling the roles/permissions."""
+    """Partial payload of the JWT token for handling resource access."""
 
     name: str
-    resource_access: dict[str, RealmRoles]
+    resource_access: dict[str, ResourceRoles]
 
 
 # Todo: Double check whether this is adequate for the current use case
@@ -151,35 +145,9 @@ async def _verify_jwt_token(token: str, keycloak_url: str) -> dict[str, Any]:
 def _has_required_roles(user_payload: KeycloakTokenUserPayload) -> bool:
     """Check if the user has all the required roles."""
 
-    resource_access = user_payload.resource_access.get(RESOURCE_ACCESS_KEY, RealmRoles(roles=[]))
+    resource_access = user_payload.resource_access.get(RESOURCE_ACCESS_KEY, ResourceRoles(roles=[]))
     # Check if the set of required roles is a subset of the user's roles
     return set(REQUIRED_ROLES).issubset(set(resource_access.roles))
-
-
-def _get_dynamic_cors_headers(request: Request) -> dict[str, str]:
-    """Generates CORS headers for early-exit responses
-
-    Required for correct CORS handling when using early-exit middleware.
-
-    Args:
-        request: The incoming request.
-
-    Returns:
-        A dictionary of CORS headers, including a dynamically set
-        Access-Control-Allow-Origin if the request origin is allowed.
-    """
-    response_headers = _BASE_EARLY_EXIT_CORS_HEADERS.copy()
-    allowed_origins = ENV.ML_WEBSERVER_ORIGINS
-
-    if "*" in allowed_origins:
-        response_headers["Access-Control-Allow-Origin"] = "*"
-    else:
-        origin = request.headers.get("origin")
-        if origin and origin in allowed_origins:
-            response_headers["Access-Control-Allow-Origin"] = origin
-            response_headers["Vary"] = "Origin"
-
-    return response_headers
 
 
 class KeycloakMiddleware(BaseHTTPMiddleware):
@@ -195,14 +163,7 @@ class KeycloakMiddleware(BaseHTTPMiddleware):
         self.keycloak_url = keycloak_url
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
-        # Handle the OPTIONS request for CORS preflight
-        if request.method == "OPTIONS":
-            return Response(
-                status_code=HTTPStatus.OK,
-                headers=_get_dynamic_cors_headers(request),
-            )
-
-        # Ensure the request is not excluded from authentication
+        # Ensure the request path is not excluded from authentication
         for excluded_path in self.excluded_paths:
             if request.url.path.startswith(ENV.ML_API_ROOT_PATH + excluded_path) or request.url.path.startswith(
                 excluded_path
@@ -243,7 +204,6 @@ class KeycloakMiddleware(BaseHTTPMiddleware):
             return JSONResponse(
                 status_code=e.status_code,
                 content={"detail": e.detail},
-                headers=_get_dynamic_cors_headers(request),
             )
         except Exception as e:
             logger.error(f"Unexpected error during token verification dispatch: {e}", exc_info=True)
@@ -251,9 +211,8 @@ class KeycloakMiddleware(BaseHTTPMiddleware):
             return JSONResponse(
                 status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
                 content={"detail": "An unexpected error occurred"},
-                headers=_get_dynamic_cors_headers(request),
             )
 
-        # Sucessful, allow request to continue through the middleware stack
+        # Sucessful, allow request to continue through the middleware
         response = await call_next(request)
         return response

@@ -70,23 +70,23 @@ if not ENV.ML_API_PUBLISH_DOCS:
 
 
 # --- Middlewares ---
-# noinspection PyTypeChecker
+# Last in the chain -- GZIP
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+# Second to last in the chain -- Keycloak
+app.add_middleware(
+    KeycloakMiddleware,
+    keycloak_url=ENV.ML_OR_KEYCLOAK_URL,
+    excluded_paths=["/docs", "/redoc", "/openapi.json", "/ui", "/system"],
+)
+
+# First in the chain -- CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ENV.ML_WEBSERVER_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-)
-
-# GZIP Middleware, compresses responses >= 1KB
-app.add_middleware(GZipMiddleware, minimum_size=1000)
-
-# Keycloak Middleware, enforces keycloak authentication on all routes
-app.add_middleware(
-    KeycloakMiddleware,
-    keycloak_url=ENV.ML_OR_KEYCLOAK_URL,
-    excluded_paths=["/docs", "/redoc", "/openapi.json", "/ui", "/system"],
 )
 
 
