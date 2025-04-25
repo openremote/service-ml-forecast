@@ -37,6 +37,7 @@ export const APIService = {
 
     /**
      * Get a model config by id
+     * @param realm The realm of the model config
      * @param id The id of the model config
      * @returns The model config
      */
@@ -52,6 +53,7 @@ export const APIService = {
 
     /**
      * Delete a model config by id
+     * @param realm The realm of the model config
      * @param id The id of the model config
      */
     async deleteModelConfig(realm: string, id: string): Promise<void> {
@@ -65,6 +67,8 @@ export const APIService = {
 
     /**
      * Update a model config
+     * @param realm The realm of the model config
+     * @param id The id of the model config
      * @param modelConfig The model config to update
      * @returns The updated model config
      */
@@ -84,6 +88,7 @@ export const APIService = {
 
     /**
      * Create a model config
+     * @param realm The realm of the model config
      * @param modelConfig The model config to create
      * @returns The created model config
      */
@@ -103,6 +108,7 @@ export const APIService = {
 
     /**
      * Get the realm config for the current realm (for styling purposes)
+     * @param realm The realm of the realm config
      * @returns The realm config
      */
     async getOpenRemoteRealmConfig(realm: string): Promise<RealmConfig> {
@@ -117,6 +123,7 @@ export const APIService = {
 
     /**
      * Get all assets for the current realm with attributesthat store datapoints
+     * @param realm The realm of the assets
      * @returns The list of assets
      */
     async getOpenRemoteAssets(realm: string): Promise<CustomAsset[]> {
@@ -131,6 +138,7 @@ export const APIService = {
 
     /**
      * Get assets by ids for the current realm
+     * @param realm The realm of the assets
      * @param ids The list of asset ids
      * @returns The list of assets
      */
