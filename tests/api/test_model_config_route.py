@@ -2,8 +2,42 @@ from http import HTTPStatus
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
+import pytest
 
-# Test data
+from service_ml_forecast.dependencies import get_config_service
+from service_ml_forecast.services.model_config_service import ModelConfigService
+
+
+# --- Fixtures ---
+@pytest.fixture
+def mock_test_client(config_service: ModelConfigService) -> TestClient:
+    """Create a FastAPI TestClient instance with mocked services and bypassed auth."""
+    from service_ml_forecast.config import ENV
+    
+    # Override the environment variable to disable keycloak middleware
+    ENV.ML_MIDDLEWARE_KEYCLOAK = False
+
+    # Import the fastapi app
+    from service_ml_forecast.main import app
+
+    # Mock dependencies
+    app.dependency_overrides[get_config_service] = lambda: config_service
+
+    return TestClient(app)
+
+
+@pytest.fixture
+def test_client() -> TestClient:
+    """FastAPI TestClient instance for integration tests. with no mocks."""
+    from service_ml_forecast.main import app
+
+    # Clear the dependency overrides
+    app.dependency_overrides = {}
+
+    return TestClient(app)
+
+
+# --- Test data ---
 TEST_CONFIG_ID = "d3c143a6-1018-4ebd-932b-a509eb7ab841"
 TEST_REALM = "master"
 TEST_ASSET_ID = "41ORIplRVAlT97dYGUD9n5"

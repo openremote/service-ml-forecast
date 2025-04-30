@@ -9,14 +9,12 @@ from pathlib import Path
 
 import pytest
 import respx
-from fastapi.testclient import TestClient
 
 from service_ml_forecast.clients.openremote.models import AssetDatapoint
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 from service_ml_forecast.config import DIRS
 from service_ml_forecast.dependencies import get_config_service
 from service_ml_forecast.logging_config import LOGGING_CONFIG
-from service_ml_forecast.main import app
 from service_ml_forecast.models.model_config import ProphetModelConfig
 from service_ml_forecast.services.model_config_service import ModelConfigService
 from service_ml_forecast.services.model_storage_service import ModelStorageService
@@ -158,24 +156,3 @@ def mock_openremote_service(mock_openremote_client: OpenRemoteClient) -> OpenRem
 
     service.get_assets_by_ids = types.MethodType(mock_get_assets_by_ids, service)  # type: ignore[method-assign]
     return service
-
-
-# Create a TestClient instance for use in tests
-@pytest.fixture
-def mock_test_client(config_service: ModelConfigService) -> TestClient:
-    """Create a FastAPI TestClient instance with mocked services."""
-
-    # Mock dependencies
-    app.dependency_overrides[get_config_service] = lambda: config_service
-
-    return TestClient(app)
-
-
-@pytest.fixture
-def test_client() -> TestClient:
-    """FastAPI TestClient instance for integration tests. with no mocks."""
-
-    # Clear the dependency overrides
-    app.dependency_overrides = {}
-
-    return TestClient(app)

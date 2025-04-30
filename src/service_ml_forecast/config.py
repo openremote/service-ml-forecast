@@ -43,9 +43,10 @@ class AppEnvironment(BaseSettings):
     The environment variables are prefixed with "ML_" to avoid conflicts with other services.
     """
 
-    # Logging
+    # Application Settings
     ML_LOG_LEVEL: str = "INFO"  # log level to use
     ML_ENVIRONMENT: str = "development"  # environment to run the service in
+    ML_MIDDLEWARE_KEYCLOAK: bool = True  # whether to enable keycloak middleware
 
     # FastAPI Settings
     ML_API_PUBLISH_DOCS: bool = True  # whether to make the openapi docs available

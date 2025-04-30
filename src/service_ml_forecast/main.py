@@ -74,11 +74,13 @@ if not ENV.ML_API_PUBLISH_DOCS:
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # Second to last in the chain -- Keycloak
-app.add_middleware(
-    KeycloakMiddleware,
-    keycloak_url=ENV.ML_OR_KEYCLOAK_URL,
-    excluded_paths=["/docs", "/redoc", "/openapi.json", "/ui", "/system"],
-)
+# Can be disabled via the ML_MIDDLEWARE_KEYCLOAK environment variable (which leaves the API unprotected)
+if ENV.ML_MIDDLEWARE_KEYCLOAK:
+    app.add_middleware(
+        KeycloakMiddleware,
+        keycloak_url=ENV.ML_OR_KEYCLOAK_URL,
+        excluded_paths=["/docs", "/redoc", "/openapi.json", "/ui", "/system"],
+    )
 
 # First in the chain -- CORS
 app.add_middleware(
