@@ -13,7 +13,6 @@ import respx
 from service_ml_forecast.clients.openremote.models import AssetDatapoint
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 from service_ml_forecast.config import DIRS
-from service_ml_forecast.dependencies import get_config_service
 from service_ml_forecast.logging_config import LOGGING_CONFIG
 from service_ml_forecast.models.model_config import ProphetModelConfig
 from service_ml_forecast.services.model_config_service import ModelConfigService

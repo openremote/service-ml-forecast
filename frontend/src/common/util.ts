@@ -62,3 +62,7 @@ export function setupConsoleLogging() {
         originalConsoleError('[ml-forecast]', ...args)
     }
 }
+
+export const getRealmParam = () => {
+    return new URLSearchParams(window.location.search).get('realm')
+}

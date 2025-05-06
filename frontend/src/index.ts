@@ -20,7 +20,7 @@ import { html, render } from 'lit'
 import { setupORIcons } from './common/theme'
 import { setupRouter } from './router'
 import { APP_OUTLET } from './common/constants'
-import { isEmbedded, setupConsoleLogging } from './common/util'
+import { isEmbedded, setupConsoleLogging, getRealmParam } from './common/util'
 
 // Override default log statements with service prefix
 setupConsoleLogging()
@@ -45,10 +45,8 @@ async function init() {
 }
 
 async function initAuthService() {
-    const authRealm = new URLSearchParams(window.location.search).get('realm')
-
     // Initialize the auth service - This will trigger a login if required, prefers SSO if available
-    const authenticated = await AuthService.init(authRealm ?? 'master')
+    const authenticated = await AuthService.init(getRealmParam() ?? 'master')
     if (!authenticated) {
         AuthService.login()
         return

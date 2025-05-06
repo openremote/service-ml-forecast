@@ -1,8 +1,8 @@
 from http import HTTPStatus
 from uuid import uuid4
 
-from fastapi.testclient import TestClient
 import pytest
+from fastapi.testclient import TestClient
 
 from service_ml_forecast.dependencies import get_config_service
 from service_ml_forecast.services.model_config_service import ModelConfigService
@@ -13,7 +13,7 @@ from service_ml_forecast.services.model_config_service import ModelConfigService
 def mock_test_client(config_service: ModelConfigService) -> TestClient:
     """Create a FastAPI TestClient instance with mocked services and bypassed auth."""
     from service_ml_forecast.config import ENV
-    
+
     # Override the environment variable to disable keycloak middleware
     ENV.ML_MIDDLEWARE_KEYCLOAK = False
 

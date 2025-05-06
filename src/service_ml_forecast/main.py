@@ -81,6 +81,8 @@ if ENV.ML_MIDDLEWARE_KEYCLOAK:
         keycloak_url=ENV.ML_OR_KEYCLOAK_URL,
         excluded_paths=["/docs", "/redoc", "/openapi.json", "/ui", "/system"],
     )
+else:
+    logger.warning("Keycloak middleware disabled")
 
 # First in the chain -- CORS
 app.add_middleware(
