@@ -32,10 +32,14 @@ export class AppLayout extends LitElement {
     @state()
     realm = '';
 
-    // Set the realm when the route changes
+    // Called before the route is entered, this is called on every Vaadin Router location change
     onBeforeEnter(location: RouterLocation) {
+        const hasRealmChanged = this.realm !== location.params.realm;
         this.realm = location.params.realm as string;
-        setRealmTheme(this.realm);
+
+        if (hasRealmChanged) {
+            setRealmTheme(this.realm);
+        }
     }
 
     // Render the breadcrumb nav and slot
