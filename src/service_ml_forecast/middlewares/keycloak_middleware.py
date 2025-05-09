@@ -38,6 +38,17 @@ RESOURCE_ACCESS_KEY = "openremote"
 REQUIRED_ROLES = ["write:admin", "read:admin"]
 
 
+async def _pin_ssl_certificate(keycloak_url: str) -> None:
+    """
+    Pin the SSL certificate of the Keycloak server.
+    To validate the origin of the JWKS endpoint.
+    """
+
+    # TODO: Retrieve the SSL certificate from the keycloak server via HTTPX and verify the SSL.
+    # Return the certificate so that it can be pinned.
+    pass
+
+
 async def _get_jwks(keycloak_url: str, issuer: str) -> dict[str, Any]:
     """Get JWKS from Keycloak based on the issuer URL."""
 
@@ -55,6 +66,7 @@ async def _get_jwks(keycloak_url: str, issuer: str) -> dict[str, Any]:
             raise ValueError("Realm name cannot be empty.")
 
         # Construct the JWKS URL using the base URL from env and the extracted realm
+        # TODO: SSL Pinning - Avoid MITM
         jwks_url = f"{keycloak_url}/realms/{realm_name}/protocol/openid-connect/certs"
 
     except Exception as e:
