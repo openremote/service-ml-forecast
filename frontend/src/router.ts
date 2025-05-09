@@ -15,9 +15,15 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { Router } from '@vaadin/router'
-import { getRootPath } from './common/util'
-import { APP_OUTLET } from './common/constants'
+// Page Imports
+import './pages/pages-config-list';
+import './pages/pages-config-editor';
+import './pages/pages-not-found';
+import './pages/app-layout';
+
+import { Router } from '@vaadin/router';
+import { getRootPath } from './common/util';
+import { APP_OUTLET } from './common/constants';
 
 const routes = [
     {
@@ -49,10 +55,10 @@ const routes = [
             }
         ]
     }
-]
+];
 
 export function setupRouter() {
     // Setup the router -- Vaadin expects a trailing slash in the baseUrl
-    const router = new Router(APP_OUTLET, { baseUrl: getRootPath() + '/' })
-    router.setRoutes(routes)
+    const router = new Router(APP_OUTLET, { baseUrl: getRootPath() + '/' });
+    router.setRoutes(routes);
 }

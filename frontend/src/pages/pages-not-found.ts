@@ -15,8 +15,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { css, html, LitElement } from 'lit'
-import { customElement } from 'lit/decorators.js'
+import { css, html, LitElement } from 'lit';
+import { customElement } from 'lit/decorators.js';
 
 @customElement('page-not-found')
 export class PageNotFound extends LitElement {
@@ -48,7 +48,7 @@ export class PageNotFound extends LitElement {
                 font-size: 16px;
                 color: var(--or-app-color3);
             }
-        `
+        `;
     }
 
     render() {
@@ -57,6 +57,6 @@ export class PageNotFound extends LitElement {
                 <h1 class="title"><or-icon style="font-size: 36px;" icon="alert-box-outline"></or-icon> Page not found</h1>
                 <p class="subtitle">The page you are looking for does not exist.</p>
             </div>
-        `
+        `;
     }
 }

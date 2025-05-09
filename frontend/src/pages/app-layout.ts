@@ -15,26 +15,27 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { createContext, provide } from '@lit/context'
-import { RouterLocation } from '@vaadin/router'
-import { html, LitElement } from 'lit'
-import { customElement, state } from 'lit/decorators.js'
-import { setRealmTheme } from '../common/theme'
-import '../components/breadcrumb-nav'
+import { createContext, provide } from '@lit/context';
+import { RouterLocation } from '@vaadin/router';
+import { html, LitElement } from 'lit';
+import { customElement, state } from 'lit/decorators.js';
+import { setRealmTheme } from '../common/theme';
 
-export const realmContext = createContext<string>(Symbol('realm'))
+export const realmContext = createContext<string>(Symbol('realm'));
 
 @customElement('app-layout')
 export class AppLayout extends LitElement {
-    // Provide the realm context to all child elements
+    // Use a context to provide the realm to all child elements
+    // Child elements can use the @consume decorator to receive the realm
+    // This is done in the parent layout to extract the realm from the route params on route change in a single place
     @provide({ context: realmContext })
     @state()
-    realm = ''
+    realm = '';
 
     // Set the realm when the route changes
     onBeforeEnter(location: RouterLocation) {
-        this.realm = location.params.realm as string
-        setRealmTheme(this.realm)
+        this.realm = location.params.realm as string;
+        setRealmTheme(this.realm);
     }
 
     // Render the breadcrumb nav and slot
@@ -42,6 +43,6 @@ export class AppLayout extends LitElement {
         return html`
             <breadcrumb-nav realm=${this.realm}></breadcrumb-nav>
             <slot></slot>
-        `
+        `;
     }
 }

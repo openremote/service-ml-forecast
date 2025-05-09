@@ -15,20 +15,25 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import './pages/pages-config-list'
-import './pages/pages-config-editor'
-import './pages/pages-not-found'
-import './pages/app-layout'
-import { setupORIcons } from './common/theme'
-import { setupRouter } from './router'
+// Component Imports
+import '@openremote/or-mwc-components/or-mwc-input';
+import '@openremote/or-panel';
+import '@openremote/or-icon';
+import './components/custom-duration-input';
+import './components/configs-table';
+import './components/loading-spinner';
+import './components/breadcrumb-nav';
 
-async function init() {
+import { setupORIcons } from './common/theme';
+import { setupRouter } from './router';
+
+function init() {
     // Setup OR icons
-    setupORIcons()
+    setupORIcons();
 
     // Setup the router
-    setupRouter()
+    setupRouter();
 }
 
 // Entry point
-await init()
+init();

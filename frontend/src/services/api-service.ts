@@ -15,10 +15,16 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { CustomAsset, ModelConfig, RealmConfig } from './models'
+import { BasicAsset, ModelConfig, RealmConfig } from './models';
+import { ML_SERVICE_URL } from '../common/constants';
 
-// Use env variable, else fallback to relative URL (e.g. front-end on the same host as the ML service)
-const baseUrl: string = (process.env.ML_SERVICE_URL || '').replace(/\/$/, '')
+function getBaseUrl(realm: string): string {
+    return ML_SERVICE_URL + '/api/' + realm;
+}
+
+function getOpenRemoteBaseUrl(realm: string): string {
+    return ML_SERVICE_URL + '/openremote/' + realm;
+}
 
 export const APIService = {
     /**
@@ -26,13 +32,13 @@ export const APIService = {
      * @returns The list of model configs
      */
     async getModelConfigs(realm: string): Promise<ModelConfig[]> {
-        const response = await fetch(`${baseUrl}/api/${realm}/configs`, {
+        const response = await fetch(getBaseUrl(realm) + '/configs', {
             method: 'GET'
-        })
+        });
         if (!response.ok) {
-            throw new Error(`Failed to get model configs: ${response.statusText}`)
+            throw new Error(`Failed to get model configs: ${response.statusText}`);
         }
-        return response.json()
+        return response.json();
     },
 
     /**
@@ -42,13 +48,13 @@ export const APIService = {
      * @returns The model config
      */
     async getModelConfig(realm: string, id: string): Promise<ModelConfig> {
-        const response = await fetch(`${baseUrl}/api/${realm}/configs/${id}`, {
+        const response = await fetch(getBaseUrl(realm) + '/configs/' + id, {
             method: 'GET'
-        })
+        });
         if (!response.ok) {
-            throw new Error(`Failed to get model config ${id}: ${response.statusText}`)
+            throw new Error(`Failed to get model config ${id}: ${response.statusText}`);
         }
-        return response.json()
+        return response.json();
     },
 
     /**
@@ -57,11 +63,11 @@ export const APIService = {
      * @param id The id of the model config
      */
     async deleteModelConfig(realm: string, id: string): Promise<void> {
-        const response = await fetch(`${baseUrl}/api/${realm}/configs/${id}`, {
+        const response = await fetch(getBaseUrl(realm) + '/configs/' + id, {
             method: 'DELETE'
-        })
+        });
         if (!response.ok) {
-            throw new Error(`Failed to delete model config ${id}: ${response.statusText}`)
+            throw new Error(`Failed to delete model config ${id}: ${response.statusText}`);
         }
     },
 
@@ -73,17 +79,17 @@ export const APIService = {
      * @returns The updated model config
      */
     async updateModelConfig(realm: string, id: string, modelConfig: ModelConfig): Promise<ModelConfig> {
-        const response = await fetch(`${baseUrl}/api/${realm}/configs/${id}`, {
+        const response = await fetch(getBaseUrl(realm) + '/configs/' + id, {
             method: 'PUT',
             body: JSON.stringify(modelConfig),
             headers: {
                 'Content-Type': 'application/json'
             }
-        })
+        });
         if (!response.ok) {
-            throw new Error(`Failed to update model config: ${response.statusText}`)
+            throw new Error(`Failed to update model config: ${response.statusText}`);
         }
-        return response.json()
+        return response.json();
     },
 
     /**
@@ -93,17 +99,17 @@ export const APIService = {
      * @returns The created model config
      */
     async createModelConfig(realm: string, modelConfig: ModelConfig): Promise<ModelConfig> {
-        const response = await fetch(`${baseUrl}/api/${realm}/configs`, {
+        const response = await fetch(getBaseUrl(realm) + '/configs', {
             method: 'POST',
             body: JSON.stringify(modelConfig),
             headers: {
                 'Content-Type': 'application/json'
             }
-        })
+        });
         if (!response.ok) {
-            throw new Error(`Failed to create model config: ${response.statusText}`)
+            throw new Error(`Failed to create model config: ${response.statusText}`);
         }
-        return response.json()
+        return response.json();
     },
 
     /**
@@ -112,13 +118,13 @@ export const APIService = {
      * @returns The realm config
      */
     async getOpenRemoteRealmConfig(realm: string): Promise<RealmConfig> {
-        const response = await fetch(`${baseUrl}/openremote/${realm}/realm/config`, {
+        const response = await fetch(getOpenRemoteBaseUrl(realm) + '/realm/config', {
             method: 'GET'
-        })
+        });
         if (!response.ok) {
-            throw new Error(`Failed to get realm config: ${response.statusText}`)
+            throw new Error(`Failed to get realm config: ${response.statusText}`);
         }
-        return response.json()
+        return response.json();
     },
 
     /**
@@ -126,14 +132,14 @@ export const APIService = {
      * @param realm The realm of the assets
      * @returns The list of assets
      */
-    async getOpenRemoteAssets(realm: string): Promise<CustomAsset[]> {
-        const response = await fetch(`${baseUrl}/openremote/${realm}/assets`, {
+    async getOpenRemoteAssets(realm: string): Promise<BasicAsset[]> {
+        const response = await fetch(getOpenRemoteBaseUrl(realm) + '/assets', {
             method: 'GET'
-        })
+        });
         if (!response.ok) {
-            throw new Error(`Failed to get assets: ${response.statusText}`)
+            throw new Error(`Failed to get assets: ${response.statusText}`);
         }
-        return response.json()
+        return response.json();
     },
 
     /**
@@ -142,13 +148,13 @@ export const APIService = {
      * @param ids The list of asset ids
      * @returns The list of assets
      */
-    async getOpenRemoteAssetsById(realm: string, ids: string[]): Promise<CustomAsset[]> {
-        const response = await fetch(`${baseUrl}/openremote/${realm}/assets/ids?ids=${ids.join(',')}`, {
+    async getOpenRemoteAssetsById(realm: string, ids: string[]): Promise<BasicAsset[]> {
+        const response = await fetch(getOpenRemoteBaseUrl(realm) + '/assets/ids?ids=' + ids.join(','), {
             method: 'GET'
-        })
+        });
         if (!response.ok) {
-            throw new Error(`Failed to get assets: ${response.statusText}`)
+            throw new Error(`Failed to get assets: ${response.statusText}`);
         }
-        return response.json()
+        return response.json();
     }
-}
+};
