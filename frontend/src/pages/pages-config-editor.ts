@@ -119,6 +119,9 @@ export class PageConfigEditor extends LitElement {
     @state()
     protected modified: boolean = false;
 
+    @state()
+    protected error: string | null = null;
+
     protected readonly rootPath = getRootPath();
 
     @state()
@@ -236,11 +239,16 @@ export class PageConfigEditor extends LitElement {
     // Loads valid assets and their attributes from the API
     protected async loadAssets() {
         this.assetSelectList.clear();
-        const assets = await APIService.getOpenRemoteAssets(this.realm);
-        assets.forEach((asset) => {
-            this.assetSelectList.set(asset.id, asset.name);
-            this.attributeSelectList.set(asset.id, new Map(Object.entries(asset.attributes).map(([key, value]) => [key, value.name])));
-        });
+        try {
+            const assets = await APIService.getOpenRemoteAssets(this.realm);
+            assets.forEach((asset) => {
+                this.assetSelectList.set(asset.id, asset.name);
+                this.attributeSelectList.set(asset.id, new Map(Object.entries(asset.attributes).map(([key, value]) => [key, value.name])));
+            });
+        } catch (err) {
+            console.error(err);
+            this.error = `Failed to retrieve assets needed for the forecast configuration`;
+        }
     }
 
     // Try to load the config from the API
@@ -261,6 +269,7 @@ export class PageConfigEditor extends LitElement {
         } catch (err) {
             this.loading = false;
             console.error(err);
+            this.error = `Failed to retrieve the forecast configuration`;
         }
     }
 
@@ -441,6 +450,19 @@ export class PageConfigEditor extends LitElement {
     protected render() {
         if (this.loading) {
             return html`<loading-spinner></loading-spinner>`;
+        }
+
+        // Display any errors that prevent the editor from being used
+        if (this.error) {
+            return html`
+                <or-panel>
+                    <div class="column">
+                        <div class="row">
+                            <alert-message .alert="${this.error}"></alert-message>
+                        </div>
+                    </div>
+                </or-panel>
+            `;
         }
 
         return html`

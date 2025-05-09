@@ -26,7 +26,7 @@ import { showSnackbar } from '@openremote/or-mwc-components/or-mwc-snackbar';
 import { APIService } from '../services/api-service';
 import { consume } from '@lit/context';
 import { realmContext } from './app-layout';
-
+import { when } from 'lit/directives/when.js';
 @customElement('page-config-list')
 export class PageConfigList extends LitElement {
     @consume({ context: realmContext })
@@ -76,6 +76,9 @@ export class PageConfigList extends LitElement {
     @state()
     protected loading: boolean = true;
 
+    @state()
+    protected error: string | null = null;
+
     // Lifecycle, when component is connected to the DOM
     connectedCallback() {
         super.connectedCallback();
@@ -92,7 +95,8 @@ export class PageConfigList extends LitElement {
             );
             this.loading = false;
         } catch (error) {
-            console.error('PageConfigList: Failed to fetch model configs:', error);
+            console.error('Failed to fetch model configs:', error);
+            this.error = `Failed to retrieve forecast configurations`;
             this.modelConfigs = [];
             this.configAssets = [];
             this.loading = false;
@@ -109,7 +113,7 @@ export class PageConfigList extends LitElement {
     protected async handleDeleteConfig(e: CustomEvent<ModelConfig>) {
         const config = e.detail;
         if (!config.id) {
-            console.error('PageConfigList: Config ID is required');
+            console.error('Config ID is required');
             return;
         }
 
@@ -122,7 +126,7 @@ export class PageConfigList extends LitElement {
                 this.modelConfigs = this.modelConfigs?.filter((c) => c.id !== config.id);
             } catch (error) {
                 showSnackbar(undefined, `Failed to delete config: ${error}`);
-                console.error('PageConfigList: Failed to delete config:', error);
+                console.error('Failed to delete config:', error);
             }
         }
     }
@@ -156,6 +160,7 @@ export class PageConfigList extends LitElement {
                         <or-icon icon="chart-bell-curve"></or-icon>
                         <span class="title">Forecast Configurations</span>
                     </div>
+
                     <or-mwc-input
                         type="${InputType.BUTTON}"
                         icon="plus"
@@ -163,7 +168,12 @@ export class PageConfigList extends LitElement {
                         @click="${this.handleAddConfig}"
                     ></or-mwc-input>
                 </div>
-                ${this.getConfigsTableTemplate()}
+
+                ${when(
+                    this.error,
+                    () => html`<alert-message .alert="${this.error}"></alert-message>`,
+                    () => this.getConfigsTableTemplate()
+                )}
             </or-panel>
         `;
     }

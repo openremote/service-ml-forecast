@@ -15,25 +15,27 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// Component Imports
-import '@openremote/or-mwc-components/or-mwc-input';
-import '@openremote/or-panel';
-import '@openremote/or-icon';
-import './components/custom-duration-input';
-import './components/configs-table';
-import './components/loading-spinner';
-import './components/breadcrumb-nav';
-import './components/alert-message';
-import { setupORIcons } from './common/theme';
-import { setupRouter } from './router';
+import { css, html, LitElement } from 'lit';
+import { customElement, property } from 'lit/decorators.js';
 
-function init() {
-    // Setup OR icons
-    setupORIcons();
+@customElement('alert-message')
+export class AlertMessage extends LitElement {
+    static get styles() {
+        return css`
+            .alert-message {
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                gap: 10px;
+                color: var(--or-app-color3);
+            }
+        `;
+    }
 
-    // Setup the router
-    setupRouter();
+    @property({ type: String })
+    alert: string | null = null;
+
+    render() {
+        return html`<span class="alert-message"><or-icon icon="alert-circle-outline"></or-icon> ${this.alert}</span>`;
+    }
 }
-
-// Entry point
-init();
