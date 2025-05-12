@@ -15,43 +15,43 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { AuthService } from './services/auth-service'
-import { html, render } from 'lit'
-import { setupORIcons } from './common/theme'
-import { setupRouter } from './router'
-import { APP_OUTLET } from './common/constants'
-import { isEmbedded, setupConsoleLogging, getRealmParam } from './common/util'
+import { AuthService } from './services/auth-service';
+import { html, render } from 'lit';
+import { setupORIcons } from './common/theme';
+import { setupRouter } from './router';
+import { APP_OUTLET } from './common/constants';
+import { isEmbedded, setupConsoleLogging, getRealmParam } from './common/util';
 
 // Override default log statements with service prefix
-setupConsoleLogging()
+setupConsoleLogging();
 
 async function init() {
-    console.log('Context:', isEmbedded() ? 'iframe embedded' : 'browser standalone')
+    console.log('Context:', isEmbedded() ? 'iframe embedded' : 'browser standalone');
 
     try {
-        render(html`<loading-spinner></loading-spinner>`, APP_OUTLET)
-        await initAuthService()
+        render(html`<loading-spinner></loading-spinner>`, APP_OUTLET);
+        await initAuthService();
     } catch (error) {
-        console.error('Failed to initialize auth service:', error)
+        console.error('Failed to initialize auth service:', error);
     } finally {
-        render(null, APP_OUTLET)
+        render(null, APP_OUTLET);
     }
 
     // Setup OR icons
-    setupORIcons()
+    setupORIcons();
 
     // Setup the router
-    setupRouter()
+    setupRouter();
 }
 
 async function initAuthService() {
     // Initialize the auth service - This will trigger a login if required, prefers SSO if available
-    const authenticated = await AuthService.init(getRealmParam() ?? 'master')
+    const authenticated = await AuthService.init(getRealmParam() ?? 'master');
     if (!authenticated) {
-        AuthService.login()
-        return
+        AuthService.login();
+        return;
     }
 }
 
 // Entry point
-await init()
+await init();

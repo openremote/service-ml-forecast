@@ -15,27 +15,27 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { css, html, LitElement, PropertyValues } from 'lit'
-import { customElement, property, state } from 'lit/decorators.js'
-import { ModelTypeEnum, ProphetSeasonalityModeEnum } from '../services/models'
-import type { ProphetModelConfig } from '../services/models'
-import { Router, RouterLocation } from '@vaadin/router'
-import '@openremote/or-icon'
-import '@openremote/or-panel'
-import { InputType, OrInputChangedEvent } from '@openremote/or-mwc-components/or-mwc-input'
-import '../components/loading-spinner'
-import { showSnackbar } from '@openremote/or-mwc-components/or-mwc-snackbar'
-import { getRootPath } from '../common/util'
-import '../components/custom-duration-input'
-import { DurationInputType } from '../components/custom-duration-input'
-import { consume } from '@lit/context'
-import { context } from './app-layout'
-import { APIService } from '../services/api-service'
+import { css, html, LitElement, PropertyValues } from 'lit';
+import { customElement, property, state } from 'lit/decorators.js';
+import { ModelTypeEnum, ProphetSeasonalityModeEnum } from '../services/models';
+import type { ProphetModelConfig } from '../services/models';
+import { Router, RouterLocation } from '@vaadin/router';
+import '@openremote/or-icon';
+import '@openremote/or-panel';
+import { InputType, OrInputChangedEvent } from '@openremote/or-mwc-components/or-mwc-input';
+import '../components/loading-spinner';
+import { showSnackbar } from '@openremote/or-mwc-components/or-mwc-snackbar';
+import { getRootPath } from '../common/util';
+import '../components/custom-duration-input';
+import { DurationInputType } from '../components/custom-duration-input';
+import { consume } from '@lit/context';
+import { context } from './app-layout';
+import { APIService } from '../services/api-service';
 
 @customElement('page-config-editor')
 export class PageConfigEditor extends LitElement {
     @consume({ context })
-    realm = ''
+    realm = '';
 
     static get styles() {
         return css`
@@ -97,31 +97,31 @@ export class PageConfigEditor extends LitElement {
                 width: 100%;
                 gap: 20px;
             }
-        `
+        `;
     }
 
     @property({ type: String })
-    configId?: string
+    configId?: string;
 
     @state()
-    protected modelConfig: ProphetModelConfig | null = null
+    protected modelConfig: ProphetModelConfig | null = null;
 
     @state()
-    protected assetSelectList: Map<string, string> = new Map()
+    protected assetSelectList: Map<string, string> = new Map();
 
     @state()
-    protected attributeSelectList: Map<string, Map<string, string>> = new Map()
+    protected attributeSelectList: Map<string, Map<string, string>> = new Map();
 
     @state()
-    protected loading: boolean = true
+    protected loading: boolean = true;
 
     @state()
-    protected isValid: boolean = false
+    protected isValid: boolean = false;
 
     @state()
-    protected modified: boolean = false
+    protected modified: boolean = false;
 
-    protected readonly rootPath = getRootPath()
+    protected readonly rootPath = getRootPath();
 
     @state()
     protected formData: ProphetModelConfig = {
@@ -145,36 +145,36 @@ export class PageConfigEditor extends LitElement {
         changepoint_range: 0.8,
         changepoint_prior_scale: 0.05,
         seasonality_mode: ProphetSeasonalityModeEnum.ADDITIVE
-    }
+    };
 
     // Handle basic form field updates
     protected handleBasicInput(ev: OrInputChangedEvent | CustomEvent<{ value: string }>) {
-        const value = 'detail' in ev ? ev.detail?.value : undefined
-        const target = ev.target as HTMLInputElement
+        const value = 'detail' in ev ? ev.detail?.value : undefined;
+        const target = ev.target as HTMLInputElement;
 
         if (!target || value === undefined) {
-            return
+            return;
         }
 
         this.formData = {
             ...this.formData,
             [target.name]: value
-        }
+        };
     }
 
     // Handle target-specific updates
     protected handleTargetInput(ev: OrInputChangedEvent) {
-        const value = ev.detail?.value
-        const target = ev.target as HTMLInputElement
+        const value = ev.detail?.value;
+        const target = ev.target as HTMLInputElement;
 
         if (!target || value === undefined) {
-            return
+            return;
         }
 
-        const [, field] = target.name.split('.')
+        const [, field] = target.name.split('.');
         if (!field) {
-            console.error('Invalid target input name:', target.name)
-            return
+            console.error('Invalid target input name:', target.name);
+            return;
         }
 
         // Auto-select first attribute when asset changes
@@ -183,7 +183,7 @@ export class PageConfigEditor extends LitElement {
                 this.attributeSelectList
                     .get(value as string)
                     ?.values()
-                    .next().value ?? ''
+                    .next().value ?? '';
         }
 
         this.formData = {
@@ -192,16 +192,16 @@ export class PageConfigEditor extends LitElement {
                 ...this.formData.target,
                 [field]: value
             }
-        }
+        };
     }
 
     // Handle regressor-specific updates
     protected handleRegressorInput(ev: OrInputChangedEvent, index: number) {
-        const value = ev.detail?.value
-        const target = ev.target as HTMLInputElement
+        const value = ev.detail?.value;
+        const target = ev.target as HTMLInputElement;
 
         if (!target || value === undefined || !this.formData.regressors) {
-            return
+            return;
         }
 
         // Auto-select first attribute when asset changes
@@ -210,89 +210,89 @@ export class PageConfigEditor extends LitElement {
                 this.attributeSelectList
                     .get(value as string)
                     ?.values()
-                    .next().value ?? ''
+                    .next().value ?? '';
         }
 
         this.formData.regressors[index] = {
             ...this.formData.regressors[index],
             [target.name]: value
-        }
-        this.requestUpdate()
+        };
+        this.requestUpdate();
     }
 
     // Update lifecycle
     updated(_changedProperties: PropertyValues): void {
-        void _changedProperties // Explicitly acknowledge unused parameter
-        this.isValid = this.isFormValid()
-        this.modified = this.isFormModified()
+        void _changedProperties; // Explicitly acknowledge unused parameter
+        this.isValid = this.isFormValid();
+        this.modified = this.isFormModified();
     }
 
     // Set up all the data for the editor
     protected async setupEditor() {
         // Set the realm from the context provider
-        this.formData.realm = this.realm
+        this.formData.realm = this.realm;
 
-        await this.loadAssets()
-        await this.loadConfig()
+        await this.loadAssets();
+        await this.loadConfig();
     }
 
     // Loads valid assets and their attributes from the API
     protected async loadAssets() {
-        this.assetSelectList.clear()
-        const assets = await APIService.getOpenRemoteAssets(this.realm)
+        this.assetSelectList.clear();
+        const assets = await APIService.getOpenRemoteAssets(this.realm);
         assets.forEach((asset) => {
-            this.assetSelectList.set(asset.id, asset.name)
-            this.attributeSelectList.set(asset.id, new Map(Object.entries(asset.attributes).map(([key, value]) => [key, value.name])))
-        })
+            this.assetSelectList.set(asset.id, asset.name);
+            this.attributeSelectList.set(asset.id, new Map(Object.entries(asset.attributes).map(([key, value]) => [key, value.name])));
+        });
     }
 
     // Try to load the config from the API
     protected async loadConfig() {
-        this.loading = true
-        this.isValid = false
+        this.loading = true;
+        this.isValid = false;
 
         if (!this.configId) {
-            this.loading = false
-            return
+            this.loading = false;
+            return;
         }
         try {
-            this.modelConfig = await APIService.getModelConfig(this.realm, this.configId)
+            this.modelConfig = await APIService.getModelConfig(this.realm, this.configId);
             // Create a deep copy of the model config for the form data
-            this.formData = JSON.parse(JSON.stringify(this.modelConfig))
-            this.loading = false
-            return
+            this.formData = JSON.parse(JSON.stringify(this.modelConfig));
+            this.loading = false;
+            return;
         } catch (err) {
-            this.loading = false
-            console.error(err)
+            this.loading = false;
+            console.error(err);
         }
     }
 
     // Handle the Vaadin Router location change event
     onAfterEnter(location: RouterLocation) {
-        this.configId = location.params.id as string
-        return this.setupEditor()
+        this.configId = location.params.id as string;
+        return this.setupEditor();
     }
 
     // Handle the save button click
     async onSave() {
-        const isExistingConfig = this.modelConfig !== null
+        const isExistingConfig = this.modelConfig !== null;
 
         // Switch between update and create -- based on whether the config exists
         const saveRequest =
             isExistingConfig && this.configId
                 ? APIService.updateModelConfig(this.realm, this.configId, this.formData)
-                : APIService.createModelConfig(this.realm, this.formData)
+                : APIService.createModelConfig(this.realm, this.formData);
 
         try {
-            const modelConfig = await saveRequest
+            const modelConfig = await saveRequest;
             if (isExistingConfig) {
-                await this.loadConfig()
+                await this.loadConfig();
             } else {
-                Router.go(`${this.rootPath}/${modelConfig.realm}/configs/${modelConfig.id}`)
+                Router.go(`${this.rootPath}/${modelConfig.realm}/configs/${modelConfig.id}`);
             }
         } catch (error) {
-            console.error(error)
-            showSnackbar(undefined, 'Failed to save the config')
+            console.error(error);
+            showSnackbar(undefined, 'Failed to save the config');
         }
     }
 
@@ -300,66 +300,66 @@ export class PageConfigEditor extends LitElement {
     isFormValid() {
         // check target properties
         if (!this.formData.target.asset_id || !this.formData.target.attribute_name) {
-            return false
+            return false;
         }
 
         // check all regressors
         if (this.formData.regressors) {
             for (const regressor of this.formData.regressors) {
                 if (!regressor.asset_id || !regressor.attribute_name) {
-                    return false
+                    return false;
                 }
             }
         }
 
         // Check other inputs
-        const inputs = this.shadowRoot?.querySelectorAll('or-mwc-input') as NodeListOf<HTMLInputElement>
+        const inputs = this.shadowRoot?.querySelectorAll('or-mwc-input') as NodeListOf<HTMLInputElement>;
         if (inputs) {
-            return Array.from(inputs).every((input) => input.checkValidity())
+            return Array.from(inputs).every((input) => input.checkValidity());
         }
-        return false
+        return false;
     }
 
     // Check if the form has been modified
     isFormModified() {
-        return JSON.stringify(this.formData) !== JSON.stringify(this.modelConfig)
+        return JSON.stringify(this.formData) !== JSON.stringify(this.modelConfig);
     }
 
     // Handle adding a regressor
     handleAddRegressor() {
-        this.formData.regressors = this.formData.regressors ?? []
+        this.formData.regressors = this.formData.regressors ?? [];
 
         this.formData.regressors.push({
             asset_id: '',
             attribute_name: '',
             cutoff_timestamp: new Date().getTime()
-        })
-        this.requestUpdate()
+        });
+        this.requestUpdate();
     }
 
     // Handle deleting a regressor
     handleDeleteRegressor(index: number) {
         if (!this.formData.regressors) {
-            return
+            return;
         }
 
-        this.formData.regressors.splice(index, 1)
+        this.formData.regressors.splice(index, 1);
 
         // Clean up regressors if all are deleted
         if (this.formData.regressors?.length === 0) {
-            this.formData.regressors = null
+            this.formData.regressors = null;
         }
 
-        this.requestUpdate()
+        this.requestUpdate();
     }
 
     // Get the regressor template
     getRegressorTemplate(index: number) {
         if (!this.formData.regressors) {
-            return
+            return;
         }
 
-        const regressor = this.formData.regressors[index]
+        const regressor = this.formData.regressors[index];
         return html`
             <or-panel heading="REGRESSOR ${index + 1}">
                 <div class="column">
@@ -410,7 +410,7 @@ export class PageConfigEditor extends LitElement {
                     </div>
                 </div>
             </or-panel>
-        `
+        `;
     }
 
     // Get the add regressor template
@@ -428,23 +428,23 @@ export class PageConfigEditor extends LitElement {
                     </div>
                 </div>
             </or-panel>
-        `
+        `;
     }
 
     // Search provider for the asset select list
     protected async searchAssets(search?: string): Promise<[any, string][]> {
-        const options = [...this.assetSelectList.entries()]
+        const options = [...this.assetSelectList.entries()];
         if (!search) {
-            return options
+            return options;
         }
-        const searchTerm = search.toLowerCase()
-        return options.filter(([, label]) => label.toLowerCase().includes(searchTerm))
+        const searchTerm = search.toLowerCase();
+        return options.filter(([, label]) => label.toLowerCase().includes(searchTerm));
     }
 
     // Render the editor
     protected render() {
         if (this.loading) {
-            return html`<loading-spinner></loading-spinner>`
+            return html`<loading-spinner></loading-spinner>`;
         }
 
         return html`
@@ -679,6 +679,6 @@ export class PageConfigEditor extends LitElement {
                 ${this.formData.regressors ? this.formData.regressors.map((_regressor, index) => this.getRegressorTemplate(index)) : html``}
                 ${this.getAddRegressorTemplate()}
             </form>
-        `
+        `;
     }
 }

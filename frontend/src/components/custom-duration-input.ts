@@ -15,10 +15,10 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { css, html, LitElement } from 'lit'
-import { customElement, property, state } from 'lit/decorators.js'
-import '@openremote/or-mwc-components/or-mwc-input'
-import { InputType, OrInputChangedEvent } from '@openremote/or-mwc-components/or-mwc-input'
+import { css, html, LitElement } from 'lit';
+import { customElement, property, state } from 'lit/decorators.js';
+import '@openremote/or-mwc-components/or-mwc-input';
+import { InputType, OrInputChangedEvent } from '@openremote/or-mwc-components/or-mwc-input';
 
 // Duration Input Type
 export enum DurationInputType {
@@ -46,100 +46,100 @@ export class CustomDurationInput extends LitElement {
             :host {
                 display: block;
             }
-        `
+        `;
     }
 
     connectedCallback() {
-        super.connectedCallback()
+        super.connectedCallback();
 
         switch (this.type) {
             case DurationInputType.ISO_8601:
-                this.number = this.getNumberFromDuration(this.value)
-                this.unit = this.getUnitFromDuration(this.value)
-                break
+                this.number = this.getNumberFromDuration(this.value);
+                this.unit = this.getUnitFromDuration(this.value);
+                break;
             case DurationInputType.PANDAS_FREQ:
-                this.number = this.getNumberFromPandasFrequency(this.value)
-                this.unit = this.getUnitFromPandasFrequency(this.value)
+                this.number = this.getNumberFromPandasFrequency(this.value);
+                this.unit = this.getUnitFromPandasFrequency(this.value);
         }
     }
 
     onInput(e: OrInputChangedEvent) {
-        const value = e.detail.value
-        const target = e.target as HTMLInputElement
+        const value = e.detail.value;
+        const target = e.target as HTMLInputElement;
 
         if (!target || value === undefined) {
-            return
+            return;
         }
 
         switch (target.name) {
             case 'value':
-                this.number = value
-                break
+                this.number = value;
+                break;
             case 'unit':
-                this.unit = value
-                break
+                this.unit = value;
+                break;
         }
 
         switch (this.type) {
             case DurationInputType.ISO_8601:
-                this.value = `PT${this.number}${this.unit}`
-                break
+                this.value = `PT${this.number}${this.unit}`;
+                break;
             case DurationInputType.PANDAS_FREQ:
-                this.value = `${this.number}${this.unit}`
+                this.value = `${this.number}${this.unit}`;
         }
 
         // Fire event to notify parent component that the value has changed
-        this.dispatchEvent(new CustomEvent('value-changed', { detail: { value: this.value, name: this.name } }))
+        this.dispatchEvent(new CustomEvent('value-changed', { detail: { value: this.value, name: this.name } }));
     }
 
     @property({ type: String })
-    public label: string = ''
+    public label: string = '';
 
     @property({ type: String })
-    public name: string = ''
+    public name: string = '';
 
     // Passed in from the parent component
     @property({ type: String })
-    public type: DurationInputType = DurationInputType.ISO_8601
+    public type: DurationInputType = DurationInputType.ISO_8601;
 
     // The value passed should be PT1H or 1h for example, the unit will be inferred from the value
     @property({ type: String })
-    public value: string = ''
+    public value: string = '';
 
     @state()
-    protected number: number | null = null
+    protected number: number | null = null;
 
     @state()
-    protected unit: TimeDurationUnit | PandasTimeUnit | null = null
+    protected unit: TimeDurationUnit | PandasTimeUnit | null = null;
 
     // Extract the number from the ISO 8601 Duration string
     getNumberFromDuration(duration: string): number | null {
-        const match = /PT(\d+)([HM])/.exec(duration)
-        return match ? parseInt(match[1], 10) : null
+        const match = /PT(\d+)([HM])/.exec(duration);
+        return match ? parseInt(match[1], 10) : null;
     }
 
     // Extract the unit from the ISO 8601 Duration string
     getUnitFromDuration(duration: string): TimeDurationUnit | null {
-        const match = /PT(\d+)([HM])/.exec(duration)
-        return match ? (match[2] as TimeDurationUnit) : null
+        const match = /PT(\d+)([HM])/.exec(duration);
+        return match ? (match[2] as TimeDurationUnit) : null;
     }
 
     // Extract the number from the Pandas Frequency string
     getNumberFromPandasFrequency(freq: string): number | null {
-        const match = /(\d+)(min|h)/.exec(freq)
-        return match ? parseInt(match[1], 10) : null
+        const match = /(\d+)(min|h)/.exec(freq);
+        return match ? parseInt(match[1], 10) : null;
     }
 
     // Extract the unit from the Pandas Frequency string
     getUnitFromPandasFrequency(freq: string): PandasTimeUnit | null {
-        const match = /(\d+)(min|h)/.exec(freq)
-        return match ? (match[2] as PandasTimeUnit) : null
+        const match = /(\d+)(min|h)/.exec(freq);
+        return match ? (match[2] as PandasTimeUnit) : null;
     }
 
     render() {
         // if type is unknown, render unsupported type message
         if (!(this.type in DurationInputType)) {
-            return html`<div>Unsupported type</div>`
+            return html`<div>Unsupported type</div>`;
         }
 
         return html`
@@ -168,6 +168,6 @@ export class CustomDurationInput extends LitElement {
                           ]}"
                 ></or-mwc-input>
             </div>
-        `
+        `;
     }
 }

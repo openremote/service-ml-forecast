@@ -15,11 +15,11 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { IconSet, IconSets, OrIconSet, createSvgIconSet } from '@openremote/or-icon'
-import { html } from 'lit'
-import * as Core from '@openremote/core'
-import { APIService } from '../services/api-service'
-import { getRootPath } from './util'
+import { IconSet, IconSets, OrIconSet, createSvgIconSet } from '@openremote/or-icon';
+import { html } from 'lit';
+import * as Core from '@openremote/core';
+import { APIService } from '../services/api-service';
+import { getRootPath } from './util';
 
 /**
  * Base theme settings
@@ -31,7 +31,7 @@ const BASE_THEME = {
     color4: Core.DefaultColor4,
     color5: Core.DefaultColor5,
     color6: Core.DefaultColor6
-}
+};
 
 /**
  * Setup the OR icons
@@ -42,13 +42,13 @@ export function setupORIcons() {
     function createMdiIconSet(): IconSet {
         return {
             getIconTemplate(icon: string) {
-                return html`<span style="font-family: 'Material Design Icons';" class="mdi-${icon}"></span>`
+                return html`<span style="font-family: 'Material Design Icons';" class="mdi-${icon}"></span>`;
             },
             onAdd(): void {
-                const style = document.createElement('style')
-                const rootPath = getRootPath()
+                const style = document.createElement('style');
+                const rootPath = getRootPath();
 
-                style.id = 'mdiFontStyle'
+                style.id = 'mdiFontStyle';
                 style.textContent = `
                     @font-face {
                         font-family: "Material Design Icons";
@@ -59,26 +59,26 @@ export function setupORIcons() {
                         font-weight: normal;
                         font-style: normal;
                     }
-                `
-                document.head.appendChild(style)
+                `;
+                document.head.appendChild(style);
             }
-        }
+        };
     }
 
-    IconSets.addIconSet('mdi', createMdiIconSet())
-    IconSets.addIconSet('or', createSvgIconSet(OrIconSet.size, OrIconSet.icons))
+    IconSets.addIconSet('mdi', createMdiIconSet());
+    IconSets.addIconSet('or', createSvgIconSet(OrIconSet.size, OrIconSet.icons));
 }
 
 /**
  * Theme settings
  */
 interface ThemeSettings {
-    color1: string
-    color2: string
-    color3: string
-    color4: string
-    color5: string
-    color6: string
+    color1: string;
+    color2: string;
+    color3: string;
+    color4: string;
+    color5: string;
+    color6: string;
 }
 
 /**
@@ -86,52 +86,52 @@ interface ThemeSettings {
  * @param realm - The realm to set the theme for
  */
 export async function setRealmTheme(realm: string) {
-    const theme = BASE_THEME
+    const theme = BASE_THEME;
 
     if (!realm || realm === 'undefined') {
-        setTheme(theme)
-        return
+        setTheme(theme);
+        return;
     }
 
     try {
-        const config = await APIService.getOpenRemoteRealmConfig(realm)
+        const config = await APIService.getOpenRemoteRealmConfig(realm);
         if (config && config.styles) {
-            const cssString = config.styles
-            const colorRegex = /--or-app-color(\d+):\s*(#[0-9a-fA-F]{6})/g
-            let match: RegExpExecArray | null
+            const cssString = config.styles;
+            const colorRegex = /--or-app-color(\d+):\s*(#[0-9a-fA-F]{6})/g;
+            let match: RegExpExecArray | null;
 
             while ((match = colorRegex.exec(cssString)) !== null) {
-                const colorIndex = parseInt(match[1], 10)
-                const colorValue = match[2]
+                const colorIndex = parseInt(match[1], 10);
+                const colorValue = match[2];
 
                 // Set the color value based on the index
                 switch (colorIndex) {
                     case 1:
-                        theme.color1 = colorValue
-                        break
+                        theme.color1 = colorValue;
+                        break;
                     case 2:
-                        theme.color2 = colorValue
-                        break
+                        theme.color2 = colorValue;
+                        break;
                     case 3:
-                        theme.color3 = colorValue
-                        break
+                        theme.color3 = colorValue;
+                        break;
                     case 4:
-                        theme.color4 = colorValue
-                        break
+                        theme.color4 = colorValue;
+                        break;
                     case 5:
-                        theme.color5 = colorValue
-                        break
+                        theme.color5 = colorValue;
+                        break;
                     case 6:
-                        theme.color6 = colorValue
-                        break
+                        theme.color6 = colorValue;
+                        break;
                 }
             }
         }
     } catch {
-        console.warn('Was unable to retrieve realm specific theme settings, falling back to default')
+        console.warn('Was unable to retrieve realm specific theme settings, falling back to default');
     }
 
-    setTheme(theme)
+    setTheme(theme);
 }
 
 /**
@@ -139,10 +139,10 @@ export async function setRealmTheme(realm: string) {
  * @param theme - The theme to set
  */
 export function setTheme(theme: ThemeSettings) {
-    document.body.style.setProperty('--or-app-color1', theme.color1 || Core.DefaultColor1)
-    document.body.style.setProperty('--or-app-color2', theme.color2 || Core.DefaultColor2)
-    document.body.style.setProperty('--or-app-color3', theme.color3 || Core.DefaultColor3)
-    document.body.style.setProperty('--or-app-color4', theme.color4 || Core.DefaultColor4)
-    document.body.style.setProperty('--or-app-color5', theme.color5 || Core.DefaultColor5)
-    document.body.style.setProperty('--or-app-color6', theme.color6 || Core.DefaultColor6)
+    document.body.style.setProperty('--or-app-color1', theme.color1 || Core.DefaultColor1);
+    document.body.style.setProperty('--or-app-color2', theme.color2 || Core.DefaultColor2);
+    document.body.style.setProperty('--or-app-color3', theme.color3 || Core.DefaultColor3);
+    document.body.style.setProperty('--or-app-color4', theme.color4 || Core.DefaultColor4);
+    document.body.style.setProperty('--or-app-color5', theme.color5 || Core.DefaultColor5);
+    document.body.style.setProperty('--or-app-color6', theme.color6 || Core.DefaultColor6);
 }

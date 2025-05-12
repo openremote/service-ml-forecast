@@ -15,11 +15,11 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { AuthService } from './auth-service'
-import { CustomAsset, ModelConfig, RealmConfig } from './models'
+import { AuthService } from './auth-service';
+import { CustomAsset, ModelConfig, RealmConfig } from './models';
 
 // Use env variable, else fallback to relative URL (e.g. front-end on the same host as the ML service)
-const baseUrl: string = (process.env.ML_SERVICE_URL || '').replace(/\/$/, '')
+const baseUrl: string = (process.env.ML_SERVICE_URL || '').replace(/\/$/, '');
 
 class APIServiceClass {
     /**
@@ -28,15 +28,15 @@ class APIServiceClass {
      * @returns The headers
      */
     private async buildHeaders(): Promise<Record<string, string>> {
-        await AuthService.updateToken()
-        const token = AuthService.token
+        await AuthService.updateToken();
+        const token = AuthService.token;
         if (!token) {
-            console.error('Unable to build authorization headers: no token')
-            return {}
+            console.error('Unable to build authorization headers: no token');
+            return {};
         }
         return {
             Authorization: `Bearer ${token}`
-        }
+        };
     }
 
     /**
@@ -48,11 +48,11 @@ class APIServiceClass {
         const response = await fetch(`${baseUrl}/api/${realm}/configs`, {
             method: 'GET',
             headers: await this.buildHeaders()
-        })
+        });
         if (!response.ok) {
-            throw new Error(`Failed to get model configs: ${response.statusText}`)
+            throw new Error(`Failed to get model configs: ${response.statusText}`);
         }
-        return response.json()
+        return response.json();
     }
 
     /**
@@ -65,11 +65,11 @@ class APIServiceClass {
         const response = await fetch(`${baseUrl}/api/${realm}/configs/${id}`, {
             method: 'GET',
             headers: await this.buildHeaders()
-        })
+        });
         if (!response.ok) {
-            throw new Error(`Failed to get model config ${id}: ${response.statusText}`)
+            throw new Error(`Failed to get model config ${id}: ${response.statusText}`);
         }
-        return response.json()
+        return response.json();
     }
 
     /**
@@ -81,9 +81,9 @@ class APIServiceClass {
         const response = await fetch(`${baseUrl}/api/${realm}/configs/${id}`, {
             method: 'DELETE',
             headers: await this.buildHeaders()
-        })
+        });
         if (!response.ok) {
-            throw new Error(`Failed to delete model config ${id}: ${response.statusText}`)
+            throw new Error(`Failed to delete model config ${id}: ${response.statusText}`);
         }
     }
 
@@ -102,11 +102,11 @@ class APIServiceClass {
                 'Content-Type': 'application/json',
                 ...(await this.buildHeaders())
             }
-        })
+        });
         if (!response.ok) {
-            throw new Error(`Failed to update model config: ${response.statusText}`)
+            throw new Error(`Failed to update model config: ${response.statusText}`);
         }
-        return response.json()
+        return response.json();
     }
 
     /**
@@ -123,11 +123,11 @@ class APIServiceClass {
                 'Content-Type': 'application/json',
                 ...(await this.buildHeaders())
             }
-        })
+        });
         if (!response.ok) {
-            throw new Error(`Failed to create model config: ${response.statusText}`)
+            throw new Error(`Failed to create model config: ${response.statusText}`);
         }
-        return response.json()
+        return response.json();
     }
 
     /**
@@ -139,11 +139,11 @@ class APIServiceClass {
         const response = await fetch(`${baseUrl}/openremote/${realm}/realm/config`, {
             method: 'GET',
             headers: await this.buildHeaders()
-        })
+        });
         if (!response.ok) {
-            throw new Error(`Failed to get realm config: ${response.statusText}`)
+            throw new Error(`Failed to get realm config: ${response.statusText}`);
         }
-        return response.json()
+        return response.json();
     }
 
     /**
@@ -155,11 +155,11 @@ class APIServiceClass {
         const response = await fetch(`${baseUrl}/openremote/${realm}/assets`, {
             method: 'GET',
             headers: await this.buildHeaders()
-        })
+        });
         if (!response.ok) {
-            throw new Error(`Failed to get assets: ${response.statusText}`)
+            throw new Error(`Failed to get assets: ${response.statusText}`);
         }
-        return response.json()
+        return response.json();
     }
 
     /**
@@ -172,15 +172,15 @@ class APIServiceClass {
         const response = await fetch(`${baseUrl}/openremote/${realm}/assets/ids?ids=${ids.join(',')}`, {
             method: 'GET',
             headers: await this.buildHeaders()
-        })
+        });
         if (!response.ok) {
-            throw new Error(`Failed to get assets: ${response.statusText}`)
+            throw new Error(`Failed to get assets: ${response.statusText}`);
         }
-        return response.json()
+        return response.json();
     }
 }
 
 /**
  * Singleton for handling API calls
  */
-export const APIService = new APIServiceClass()
+export const APIService = new APIServiceClass();

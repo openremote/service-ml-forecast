@@ -15,14 +15,14 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { OrMwcTable, TableColumn, TableConfig, TableRow } from '@openremote/or-mwc-components/or-mwc-table'
-import { css, html, TemplateResult } from 'lit'
-import { customElement, property } from 'lit/decorators.js'
-import { CustomAsset, ModelConfig } from '../services/models'
-import '@openremote/or-mwc-components/or-mwc-input'
-import { getRootPath } from '../common/util'
-import { Router } from '@vaadin/router'
-import { InputType } from '@openremote/or-mwc-components/or-mwc-input'
+import { OrMwcTable, TableColumn, TableConfig, TableRow } from '@openremote/or-mwc-components/or-mwc-table';
+import { css, html, TemplateResult } from 'lit';
+import { customElement, property } from 'lit/decorators.js';
+import { CustomAsset, ModelConfig } from '../services/models';
+import '@openremote/or-mwc-components/or-mwc-input';
+import { getRootPath } from '../common/util';
+import { Router } from '@vaadin/router';
+import { InputType } from '@openremote/or-mwc-components/or-mwc-input';
 
 @customElement('configs-table')
 export class ConfigsTable extends OrMwcTable {
@@ -82,17 +82,17 @@ export class ConfigsTable extends OrMwcTable {
                     gap: 5px;
                 }
             `
-        ] as any // Cast to bypass strict type check by OrMwcTable extension
+        ] as any; // Cast to bypass strict type check by OrMwcTable extension
     }
 
     @property({ type: Array })
-    public modelConfigs: ModelConfig[] = []
+    public modelConfigs: ModelConfig[] = [];
 
     @property({ type: Array })
-    public configAssets: CustomAsset[] = []
+    public configAssets: CustomAsset[] = [];
 
     @property({ type: String })
-    public realm: string = ''
+    public realm: string = '';
 
     public columns: TableColumn[] = [
         { title: 'State', isSortable: true },
@@ -101,9 +101,9 @@ export class ConfigsTable extends OrMwcTable {
         { title: 'Asset', isSortable: true },
         { title: 'Attribute', isSortable: true },
         { title: 'Actions', isSortable: false }
-    ]
+    ];
 
-    protected readonly rootPath = getRootPath()
+    protected readonly rootPath = getRootPath();
 
     protected config: TableConfig = {
         fullHeight: true,
@@ -112,41 +112,41 @@ export class ConfigsTable extends OrMwcTable {
             enable: true,
             options: [10]
         }
-    }
+    };
 
-    protected sortIndex = 0
-    protected sortDirection: 'ASC' | 'DESC' = 'DESC'
+    protected sortIndex = 0;
+    protected sortDirection: 'ASC' | 'DESC' = 'DESC';
 
     // Construct the state row template
     protected getStateRowTemplate(config: ModelConfig): TemplateResult {
         return html` <span class="state-label ${config.enabled ? 'enabled' : 'disabled'}">
             ${config.enabled ? 'Enabled' : 'Disabled'}
-        </span>`
+        </span>`;
     }
 
     // Construct the actions row template
     protected getActionsRowTemplate(config: ModelConfig): TemplateResult {
         const handleEdit = (e: Event) => {
-            e.stopPropagation()
+            e.stopPropagation();
             this.dispatchEvent(
                 new CustomEvent('edit-config', {
                     detail: config,
                     bubbles: true,
                     composed: true
                 })
-            )
-        }
+            );
+        };
 
         const handleDelete = (e: Event) => {
-            e.stopPropagation()
+            e.stopPropagation();
             this.dispatchEvent(
                 new CustomEvent('delete-config', {
                     detail: config,
                     bubbles: true,
                     composed: true
                 })
-            )
-        }
+            );
+        };
 
         return html`
             <div class="actions-container">
@@ -160,20 +160,20 @@ export class ConfigsTable extends OrMwcTable {
                     @click="${handleDelete}"
                 ></or-mwc-input>
             </div>
-        `
+        `;
     }
 
     // Construct the asset name template
     protected getAssetNameTemplate(assetId: string): TemplateResult {
-        const asset = this.configAssets.find((a) => a.id === assetId)
+        const asset = this.configAssets.find((a) => a.id === assetId);
 
         if (!asset) {
             return html`<span title="Asset ID: ${assetId} could not be found" class="warning"
                 ><or-icon icon="alert-box-outline"></or-icon> Not found</span
-            >`
+            >`;
         }
 
-        return html`<span title="Asset ID: ${assetId}">${asset.name}</span>`
+        return html`<span title="Asset ID: ${assetId}">${asset.name}</span>`;
     }
 
     // Construct the table rows
@@ -187,7 +187,7 @@ export class ConfigsTable extends OrMwcTable {
                 config.target.attribute_name,
                 this.getActionsRowTemplate(config)
             ]
-        }))
+        }));
     }
 
     // Construct the no data section template
@@ -202,27 +202,27 @@ export class ConfigsTable extends OrMwcTable {
                     label="Configure new forecast"
                     @click="${this.handleAddConfig}"
                 ></or-mwc-input>
-            </div>`
+            </div>`;
         }
 
-        return html``
+        return html``;
     }
 
     // Handle the add config click
     protected handleAddConfig() {
-        Router.go(`${this.rootPath}/${this.realm}/configs/new`)
+        Router.go(`${this.rootPath}/${this.realm}/configs/new`);
     }
 
     // Render the table
     protected render() {
-        return html`<div class="table-container">${super.render()} ${this.getNoDataSectionTemplate()}</div>`
+        return html`<div class="table-container">${super.render()} ${this.getNoDataSectionTemplate()}</div>`;
     }
 
     // Update the table rows when the model configs change
     protected willUpdate(changedProperties: Map<string, any>): void {
         if (changedProperties.has('modelConfigs')) {
-            this.rows = this.getTableRows(this.modelConfigs)
+            this.rows = this.getTableRows(this.modelConfigs);
         }
-        super.willUpdate(changedProperties)
+        super.willUpdate(changedProperties);
     }
 }

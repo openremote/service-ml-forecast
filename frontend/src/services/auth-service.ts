@@ -15,24 +15,24 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import Keycloak from 'keycloak-js'
-import { isEmbedded } from '../common/util'
+import Keycloak from 'keycloak-js';
+import { isEmbedded } from '../common/util';
 
-const keycloakUrl: string = (process.env.ML_KEYCLOAK_URL || '').replace(/\/$/, '')
+const keycloakUrl: string = (process.env.ML_KEYCLOAK_URL || '').replace(/\/$/, '');
 
-type AuthChangeListener = () => void
+type AuthChangeListener = () => void;
 
 class AuthServiceClass {
-    token: string | undefined = ''
-    authenticated: boolean = false
-    user: string | undefined = ''
-    realm: string = ''
-    initializing: boolean = false
-    initPromise: Promise<boolean> | null = null
-    keycloak: Keycloak | undefined
+    token: string | undefined = '';
+    authenticated: boolean = false;
+    user: string | undefined = '';
+    realm: string = '';
+    initializing: boolean = false;
+    initPromise: Promise<boolean> | null = null;
+    keycloak: Keycloak | undefined;
 
-    private listeners: AuthChangeListener[] = []
-    private tokenRefreshInterval: NodeJS.Timeout | null = null
+    private listeners: AuthChangeListener[] = [];
+    private tokenRefreshInterval: NodeJS.Timeout | null = null;
 
     /**
      * Initialize the Keycloak instance
@@ -42,21 +42,21 @@ class AuthServiceClass {
      */
     async init(realm: string, force = false): Promise<boolean> {
         if (this.initializing && !force) {
-            console.warn('Already initializing', realm)
-            return this.initPromise!
+            console.warn('Already initializing', realm);
+            return this.initPromise!;
         }
         if (this.keycloak && this.realm === realm && !force) {
-            console.warn('Already initialized', realm)
-            return this.authenticated
+            console.warn('Already initialized', realm);
+            return this.authenticated;
         }
 
-        this.initializing = true
-        this.realm = realm
+        this.initializing = true;
+        this.realm = realm;
         const keycloakInstance = new Keycloak({
             url: keycloakUrl,
             realm: realm,
             clientId: 'openremote'
-        })
+        });
 
         this.initPromise = keycloakInstance
             .init({
@@ -65,59 +65,59 @@ class AuthServiceClass {
                 silentCheckSsoFallback: true
             })
             .then((auth) => {
-                this.keycloak = keycloakInstance
-                this.authenticated = auth
-                this.token = keycloakInstance.token
-                this.user = keycloakInstance.tokenParsed?.preferred_username
-                this.initializing = false
-                this.notify()
+                this.keycloak = keycloakInstance;
+                this.authenticated = auth;
+                this.token = keycloakInstance.token;
+                this.user = keycloakInstance.tokenParsed?.preferred_username;
+                this.initializing = false;
+                this.notify();
 
                 if (!isEmbedded()) {
-                    this.startUpdateTokenInterval()
+                    this.startUpdateTokenInterval();
                 }
 
-                return auth
+                return auth;
             })
             .catch((error) => {
-                console.error(`Keycloak initialization failed for realm ${realm}:`, error)
-                this.keycloak = undefined
-                this.authenticated = false
-                this.token = undefined
-                this.user = undefined
-                this.initializing = false
-                this.notify()
-                return false
-            })
+                console.error(`Keycloak initialization failed for realm ${realm}:`, error);
+                this.keycloak = undefined;
+                this.authenticated = false;
+                this.token = undefined;
+                this.user = undefined;
+                this.initializing = false;
+                this.notify();
+                return false;
+            });
 
-        return this.initPromise
+        return this.initPromise;
     }
 
     /**
      * Login to the Keycloak instance
      */
     login() {
-        this.keycloak?.login()
+        this.keycloak?.login();
     }
 
     /**
      * Logout from the Keycloak instance
      */
     logout() {
-        this.keycloak?.logout()
-        this.stopUpdateTokenInterval()
+        this.keycloak?.logout();
+        this.stopUpdateTokenInterval();
     }
 
     private startUpdateTokenInterval() {
         if (this.tokenRefreshInterval) {
-            clearInterval(this.tokenRefreshInterval)
+            clearInterval(this.tokenRefreshInterval);
         }
-        this.tokenRefreshInterval = setInterval(() => this.updateToken(), 5000)
+        this.tokenRefreshInterval = setInterval(() => this.updateToken(), 5000);
     }
 
     private stopUpdateTokenInterval() {
         if (this.tokenRefreshInterval) {
-            clearInterval(this.tokenRefreshInterval)
-            this.tokenRefreshInterval = null
+            clearInterval(this.tokenRefreshInterval);
+            this.tokenRefreshInterval = null;
         }
     }
 
@@ -127,18 +127,18 @@ class AuthServiceClass {
      */
     async updateToken(): Promise<boolean> {
         if (!this.keycloak) {
-            return false
+            return false;
         }
         try {
-            const refreshed = await this.keycloak.updateToken(20)
+            const refreshed = await this.keycloak.updateToken(20);
             if (refreshed) {
-                this.token = this.keycloak.token
-                this.notify()
+                this.token = this.keycloak.token;
+                this.notify();
             }
-            return refreshed
+            return refreshed;
         } catch (error) {
-            console.error('Token refresh failed.', error)
-            return false
+            console.error('Token refresh failed.', error);
+            return false;
         }
     }
 
@@ -148,18 +148,18 @@ class AuthServiceClass {
      * @returns A function to unsubscribe from the listener
      */
     subscribe(listener: AuthChangeListener): () => void {
-        this.listeners.push(listener)
+        this.listeners.push(listener);
         return () => {
-            this.listeners = this.listeners.filter((l) => l !== listener)
-        }
+            this.listeners = this.listeners.filter((l) => l !== listener);
+        };
     }
 
     private notify(): void {
-        this.listeners.forEach((listener) => listener())
+        this.listeners.forEach((listener) => listener());
     }
 }
 
 /**
  * Singleton for handling authentication
  */
-export const AuthService = new AuthServiceClass()
+export const AuthService = new AuthServiceClass();

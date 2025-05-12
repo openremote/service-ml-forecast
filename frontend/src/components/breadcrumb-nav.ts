@@ -15,17 +15,17 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { css, html, LitElement } from 'lit'
-import { customElement, property, state } from 'lit/decorators.js'
-import { Router, RouterLocation } from '@vaadin/router'
-import { getRootPath } from '../common/util'
+import { css, html, LitElement } from 'lit';
+import { customElement, property, state } from 'lit/decorators.js';
+import { Router, RouterLocation } from '@vaadin/router';
+import { getRootPath } from '../common/util';
 
 /**
  * Represents a part of the breadcrumb navigation
  */
 interface BreadcrumbPart {
-    path: string
-    name: string
+    path: string;
+    name: string;
 }
 
 /**
@@ -34,7 +34,7 @@ interface BreadcrumbPart {
 @customElement('breadcrumb-nav')
 export class BreadcrumbNav extends LitElement {
     @property({ type: String })
-    realm = ''
+    realm = '';
 
     static styles = css`
         nav {
@@ -79,21 +79,21 @@ export class BreadcrumbNav extends LitElement {
             text-overflow: ellipsis;
             white-space: nowrap;
         }
-    `
+    `;
 
     @state()
-    protected parts: BreadcrumbPart[] = []
+    protected parts: BreadcrumbPart[] = [];
 
-    protected readonly rootPath = getRootPath()
+    protected readonly rootPath = getRootPath();
 
     protected get HOME_LINK(): BreadcrumbPart {
         return {
             path: `${this.rootPath}/${this.realm}/configs`,
             name: 'ML Forecast Service'
-        }
+        };
     }
 
-    protected readonly MAX_TEXT_LENGTH = 20
+    protected readonly MAX_TEXT_LENGTH = 20;
 
     updated(changedProperties: Map<string, any>) {
         if (changedProperties.has('realm') && this.realm) {
@@ -103,10 +103,10 @@ export class BreadcrumbNav extends LitElement {
                 params: {
                     realm: this.realm
                 }
-            }
+            };
 
             // Update the breadcrumbs and title
-            this.updateBreadcrumbs(location as RouterLocation)
+            this.updateBreadcrumbs(location as RouterLocation);
         }
     }
 
@@ -114,34 +114,34 @@ export class BreadcrumbNav extends LitElement {
      * Handles location changes in the router
      */
     protected readonly handleLocationChange = (event: CustomEvent<{ location: RouterLocation }>) => {
-        const location = event.detail.location
+        const location = event.detail.location;
         // Update the breadcrumbs and title
-        this.updateBreadcrumbs(location)
-    }
+        this.updateBreadcrumbs(location);
+    };
 
     connectedCallback(): void {
-        super.connectedCallback()
-        window.addEventListener('vaadin-router-location-changed', this.handleLocationChange)
+        super.connectedCallback();
+        window.addEventListener('vaadin-router-location-changed', this.handleLocationChange);
     }
 
     disconnectedCallback(): void {
-        window.removeEventListener('vaadin-router-location-changed', this.handleLocationChange)
-        super.disconnectedCallback()
+        window.removeEventListener('vaadin-router-location-changed', this.handleLocationChange);
+        super.disconnectedCallback();
     }
 
     /**
      * Updates the breadcrumb parts based on the current location
      */
     protected updateBreadcrumbs(location: RouterLocation): void {
-        const parts: BreadcrumbPart[] = []
-        const { pathname, params } = location
+        const parts: BreadcrumbPart[] = [];
+        const { pathname, params } = location;
 
         // Add Smartcity part (realm)
         if (this.realm) {
             parts.push({
                 path: `${this.rootPath}/${this.realm}/configs`,
                 name: this.realm.charAt(0).toUpperCase() + this.realm.slice(1)
-            })
+            });
         }
 
         // Add Configs part
@@ -149,32 +149,32 @@ export class BreadcrumbNav extends LitElement {
             parts.push({
                 path: `${this.rootPath}/${this.realm}/configs`,
                 name: 'Configs'
-            })
+            });
 
             // Add specific config part if we're on a config page
             if (params.id) {
                 parts.push({
                     path: `${this.rootPath}/${this.realm}/configs/${params.id}`,
                     name: params.id === 'new' ? 'New Config' : `${params.id}`
-                })
+                });
             }
         }
 
-        this.parts = parts
+        this.parts = parts;
     }
 
     /**
      * Truncates text to a specified length
      */
     protected truncateText(text: string): string {
-        return text.length > this.MAX_TEXT_LENGTH ? `${text.substring(0, this.MAX_TEXT_LENGTH)}...` : text
+        return text.length > this.MAX_TEXT_LENGTH ? `${text.substring(0, this.MAX_TEXT_LENGTH)}...` : text;
     }
 
     /**
      * Renders a single breadcrumb item
      */
     protected renderBreadcrumbItem(part: BreadcrumbPart, isLast: boolean) {
-        const truncatedName = this.truncateText(part.name)
+        const truncatedName = this.truncateText(part.name);
 
         return html`
             <span aria-hidden="true">&gt;</span>
@@ -185,19 +185,19 @@ export class BreadcrumbNav extends LitElement {
                           <span class="truncate">${truncatedName}</span>
                       </a>
                   `}
-        `
+        `;
     }
 
     /**
      * Handles navigation clicks
      */
     protected handleNavigation(event: MouseEvent, path: string): void {
-        event.preventDefault()
-        Router.go(path)
+        event.preventDefault();
+        Router.go(path);
     }
 
     render() {
-        const truncatedHomeName = this.truncateText(this.HOME_LINK.name)
+        const truncatedHomeName = this.truncateText(this.HOME_LINK.name);
 
         return html`
             <nav aria-label="breadcrumb">
@@ -207,6 +207,6 @@ export class BreadcrumbNav extends LitElement {
                 </a>
                 ${this.parts.map((part, index) => this.renderBreadcrumbItem(part, index === this.parts.length - 1))}
             </nav>
-        `
+        `;
     }
 }

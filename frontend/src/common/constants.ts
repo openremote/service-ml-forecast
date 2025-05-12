@@ -15,5 +15,5 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-export const APP_OUTLET = document.querySelector('#outlet') as HTMLElement
-export const IS_DEVELOPMENT = process.env.NODE_ENV === 'development'
+export const APP_OUTLET = document.querySelector('#outlet') as HTMLElement;
+export const IS_DEVELOPMENT = process.env.NODE_ENV === 'development';

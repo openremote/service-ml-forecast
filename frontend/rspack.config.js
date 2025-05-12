@@ -1,15 +1,15 @@
-import path from 'path'
-import rspack from '@rspack/core'
-import { fileURLToPath } from 'url'
-import process from 'process'
+import path from 'path';
+import rspack from '@rspack/core';
+import { fileURLToPath } from 'url';
+import process from 'process';
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-const isProduction = process.env.NODE_ENV === 'production'
-const serviceUrl = process.env.ML_SERVICE_URL || 'http://localhost:8000' // Default to default service backend
-const keycloakUrl = process.env.ML_KEYCLOAK_URL || 'http://localhost:8081/auth' // Default to openremote keycloak address
-const rootPath = process.env.ML_WEB_ROOT_PATH
+const isProduction = process.env.NODE_ENV === 'production';
+const serviceUrl = process.env.ML_SERVICE_URL || 'http://localhost:8000'; // Default to default service backend
+const keycloakUrl = process.env.ML_KEYCLOAK_URL || 'http://localhost:8081/auth'; // Default to openremote keycloak address
+const rootPath = process.env.ML_WEB_ROOT_PATH;
 
 export default {
     mode: isProduction ? 'production' : 'development',
@@ -80,4 +80,4 @@ export default {
             Expires: '0'
         }
     }
-}
+};

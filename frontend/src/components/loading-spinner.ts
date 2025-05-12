@@ -15,9 +15,9 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { css, html, LitElement } from 'lit'
-import { customElement } from 'lit/decorators.js'
-import { getRootPath } from '../common/util'
+import { css, html, LitElement } from 'lit';
+import { customElement } from 'lit/decorators.js';
+import { getRootPath } from '../common/util';
 
 @customElement('loading-spinner')
 export class LoadingSpinner extends LitElement {
@@ -65,12 +65,12 @@ export class LoadingSpinner extends LitElement {
                     spin 1s linear infinite,
                     fade 0.5s ease-in-out;
             }
-        `
+        `;
     }
 
-    protected readonly rootPath = getRootPath()
+    protected readonly rootPath = getRootPath();
 
     render() {
-        return html`<span class="loading-spinner"><img src="${this.rootPath}/assets/images/logo.svg" alt="" /></span>`
+        return html`<span class="loading-spinner"><img src="${this.rootPath}/assets/images/logo.svg" alt="" /></span>`;
     }
 }
