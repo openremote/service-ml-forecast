@@ -15,7 +15,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// TODO: Automate the generation of these models using the OpenAPI spec from the backend
+// TODO: Automatically generate the Models via OpenAPI spec -- See https://github.com/openremote/service-ml-forecast/issues/31
 
 /**
  * Enum representing the different types of machine learning models available.
@@ -71,7 +71,7 @@ export interface RegressorFeature {
 /**
  * Represents an attribute of an asset.
  */
-export interface CustomAttribute {
+export interface BasicAttribute {
     /**
      * Name of the attribute.
      */
@@ -93,7 +93,7 @@ export interface CustomAttribute {
 /**
  * Represents a minimal asset from OpenRemote.
  */
-export interface CustomAsset {
+export interface BasicAsset {
     /**
      * ID of the asset.
      */
@@ -114,7 +114,7 @@ export interface CustomAsset {
     /**
      * Dictionary mapping attribute names to their corresponding AssetAttribute objects.
      */
-    attributes: { [key: string]: CustomAttribute };
+    attributes: { [key: string]: BasicAttribute };
 }
 
 /**

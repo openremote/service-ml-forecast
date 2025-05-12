@@ -16,8 +16,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { css, html, LitElement } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
-import '@openremote/or-mwc-components/or-mwc-input';
+import { customElement, property } from 'lit/decorators.js';
 import { InputType, OrInputChangedEvent } from '@openremote/or-mwc-components/or-mwc-input';
 
 // Duration Input Type
@@ -106,10 +105,8 @@ export class CustomDurationInput extends LitElement {
     @property({ type: String })
     public value: string = '';
 
-    @state()
     protected number: number | null = null;
 
-    @state()
     protected unit: TimeDurationUnit | PandasTimeUnit | null = null;
 
     // Extract the number from the ISO 8601 Duration string
@@ -143,31 +140,29 @@ export class CustomDurationInput extends LitElement {
         }
 
         return html`
-            <div>
-                <or-mwc-input
-                    type="${InputType.NUMBER}"
-                    name="value"
-                    .value=${this.number}
-                    @or-mwc-input-changed=${this.onInput}
-                    label=${this.label}
-                ></or-mwc-input>
-                <or-mwc-input
-                    type="${InputType.SELECT}"
-                    name="unit"
-                    label="Unit"
-                    .value=${this.unit}
-                    @or-mwc-input-changed=${this.onInput}
-                    .options="${this.type === DurationInputType.ISO_8601
-                        ? [
-                              [TimeDurationUnit.MINUTE, 'Minutes'],
-                              [TimeDurationUnit.HOUR, 'Hours']
-                          ]
-                        : [
-                              [PandasTimeUnit.MINUTE, 'Minutes'],
-                              [PandasTimeUnit.HOUR, 'Hours']
-                          ]}"
-                ></or-mwc-input>
-            </div>
+            <or-mwc-input
+                type="${InputType.NUMBER}"
+                name="value"
+                .value=${this.number}
+                @or-mwc-input-changed=${this.onInput}
+                label=${this.label}
+            ></or-mwc-input>
+            <or-mwc-input
+                type="${InputType.SELECT}"
+                name="unit"
+                label="Unit"
+                .value=${this.unit}
+                @or-mwc-input-changed=${this.onInput}
+                .options="${this.type === DurationInputType.ISO_8601
+                    ? [
+                          [TimeDurationUnit.MINUTE, 'Minutes'],
+                          [TimeDurationUnit.HOUR, 'Hours']
+                      ]
+                    : [
+                          [PandasTimeUnit.MINUTE, 'Minutes'],
+                          [PandasTimeUnit.HOUR, 'Hours']
+                      ]}"
+            ></or-mwc-input>
         `;
     }
 }

@@ -95,7 +95,7 @@ export class BreadcrumbNav extends LitElement {
 
     protected readonly MAX_TEXT_LENGTH = 20;
 
-    updated(changedProperties: Map<string, any>) {
+    willUpdate(changedProperties: Map<string, any>) {
         if (changedProperties.has('realm') && this.realm) {
             // Trigger location change event
             const location: Partial<RouterLocation> = {
@@ -173,12 +173,12 @@ export class BreadcrumbNav extends LitElement {
     /**
      * Renders a single breadcrumb item
      */
-    protected renderBreadcrumbItem(part: BreadcrumbPart, isLast: boolean) {
+    protected renderBreadcrumbItem(part: BreadcrumbPart, readonly: boolean) {
         const truncatedName = this.truncateText(part.name);
 
         return html`
             <span aria-hidden="true">&gt;</span>
-            ${isLast
+            ${readonly
                 ? html`<span aria-current="page">${truncatedName}</span>`
                 : html`
                       <a href="${part.path}" @click=${(e: MouseEvent) => this.handleNavigation(e, part.path)}>

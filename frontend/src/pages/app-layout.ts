@@ -16,55 +16,34 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { createContext, provide } from '@lit/context';
-import { Router, RouterLocation } from '@vaadin/router';
+import { RouterLocation } from '@vaadin/router';
 import { html, LitElement } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
-import { getRootPath } from '../common/util';
-import '../components/breadcrumb-nav';
-import '../components/loading-spinner';
-import { AuthService } from '../services/auth-service';
 import { setRealmTheme } from '../common/theme';
 
-export const context = createContext<string>(Symbol('realm'));
+export const realmContext = createContext<string>(Symbol('realm'));
 
 @customElement('app-layout')
 export class AppLayout extends LitElement {
-    @provide({ context })
+    // Use a context to provide the realm to all child elements
+    // Child elements can use the @consume decorator to receive the realm
+    // This is done in the parent layout to extract the realm from the route params on route change in a single place
+    @provide({ context: realmContext })
     @state()
     realm = '';
 
-    @state()
-    private authenticated = false;
+    // Called before the route is entered, this is called on every Vaadin Router location change
+    onBeforeEnter(location: RouterLocation) {
+        const hasRealmChanged = this.realm !== location.params.realm;
+        this.realm = location.params.realm as string;
 
-    private readonly rootPath = getRootPath();
-
-    async onBeforeEnter(location: RouterLocation) {
-        // Try and get realm via location params before entering the route
-        const realm = location.params.realm as string;
-        this.realm = realm;
-
-        // Fallback to authservice if param is not provided
-        if (!this.realm) {
-            this.realm = AuthService.realm;
-            console.log('No realm param provided, falling back to auth realm:', this.realm);
-            Router.go(`${this.rootPath}/${this.realm}`);
+        if (hasRealmChanged) {
+            setRealmTheme(this.realm);
         }
-
-        // Update the app with the realm theme
-        await setRealmTheme(this.realm);
-
-        // Listen for auth changes
-        this.authenticated = AuthService.authenticated;
-        AuthService.subscribe(() => {
-            this.authenticated = AuthService.authenticated;
-        });
     }
 
+    // Render the breadcrumb nav and slot
     render() {
-        if (!this.authenticated) {
-            return html` <loading-spinner></loading-spinner> `;
-        }
-
         return html`
             <breadcrumb-nav realm=${this.realm}></breadcrumb-nav>
             <slot></slot>

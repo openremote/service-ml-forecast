@@ -17,24 +17,22 @@
 
 import { css, html, LitElement, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { map } from 'lit/directives/map.js';
+import { when } from 'lit/directives/when.js';
 import { ModelTypeEnum, ProphetSeasonalityModeEnum } from '../services/models';
 import type { ProphetModelConfig } from '../services/models';
+import { APIService } from '../services/api-service';
 import { Router, RouterLocation } from '@vaadin/router';
-import '@openremote/or-icon';
-import '@openremote/or-panel';
 import { InputType, OrInputChangedEvent } from '@openremote/or-mwc-components/or-mwc-input';
-import '../components/loading-spinner';
 import { showSnackbar } from '@openremote/or-mwc-components/or-mwc-snackbar';
 import { getRootPath } from '../common/util';
-import '../components/custom-duration-input';
 import { DurationInputType } from '../components/custom-duration-input';
 import { consume } from '@lit/context';
-import { context } from './app-layout';
-import { APIService } from '../services/api-service';
+import { realmContext } from './app-layout';
 
 @customElement('page-config-editor')
 export class PageConfigEditor extends LitElement {
-    @consume({ context })
+    @consume({ context: realmContext })
     realm = '';
 
     static get styles() {
@@ -120,6 +118,9 @@ export class PageConfigEditor extends LitElement {
 
     @state()
     protected modified: boolean = false;
+
+    @state()
+    protected error: string | null = null;
 
     protected readonly rootPath = getRootPath();
 
@@ -220,8 +221,7 @@ export class PageConfigEditor extends LitElement {
         this.requestUpdate();
     }
 
-    // Update lifecycle
-    updated(_changedProperties: PropertyValues): void {
+    willUpdate(_changedProperties: PropertyValues): void {
         void _changedProperties; // Explicitly acknowledge unused parameter
         this.isValid = this.isFormValid();
         this.modified = this.isFormModified();
@@ -239,11 +239,16 @@ export class PageConfigEditor extends LitElement {
     // Loads valid assets and their attributes from the API
     protected async loadAssets() {
         this.assetSelectList.clear();
-        const assets = await APIService.getOpenRemoteAssets(this.realm);
-        assets.forEach((asset) => {
-            this.assetSelectList.set(asset.id, asset.name);
-            this.attributeSelectList.set(asset.id, new Map(Object.entries(asset.attributes).map(([key, value]) => [key, value.name])));
-        });
+        try {
+            const assets = await APIService.getOpenRemoteAssets(this.realm);
+            assets.forEach((asset) => {
+                this.assetSelectList.set(asset.id, asset.name);
+                this.attributeSelectList.set(asset.id, new Map(Object.entries(asset.attributes).map(([key, value]) => [key, value.name])));
+            });
+        } catch (err) {
+            console.error(err);
+            this.error = `Failed to retrieve assets needed for the forecast configuration`;
+        }
     }
 
     // Try to load the config from the API
@@ -264,6 +269,7 @@ export class PageConfigEditor extends LitElement {
         } catch (err) {
             this.loading = false;
             console.error(err);
+            this.error = `Failed to retrieve the forecast configuration`;
         }
     }
 
@@ -375,23 +381,22 @@ export class PageConfigEditor extends LitElement {
                         ></or-mwc-input>
 
                         <!-- Render the attribute select list if the asset is selected -->
-                        ${regressor.asset_id
-                            ? html`
-                                  <or-mwc-input
-                                      type="${InputType.SELECT}"
-                                      name="attribute_name"
-                                      @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.handleRegressorInput(e, index)}"
-                                      label="Attribute"
-                                      .value="${regressor.attribute_name}"
-                                      .options="${[...(this.attributeSelectList.get(regressor.asset_id) ?? new Map())]}"
-                                  ></or-mwc-input>
-                              `
-                            : html`<or-mwc-input
-                                  type="${InputType.SELECT}"
-                                  name="attribute_name"
-                                  label="Attribute"
-                                  disabled
-                              ></or-mwc-input>`}
+                        ${when(
+                            regressor.asset_id,
+                            () => html`
+                                <or-mwc-input
+                                    type="${InputType.SELECT}"
+                                    name="attribute_name"
+                                    @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.handleRegressorInput(e, index)}"
+                                    label="Attribute"
+                                    .value="${regressor.attribute_name}"
+                                    .options="${[...(this.attributeSelectList.get(regressor.asset_id) ?? new Map())]}"
+                                ></or-mwc-input>
+                            `,
+                            () => html`
+                                <or-mwc-input type="${InputType.SELECT}" name="attribute_name" label="Attribute" disabled></or-mwc-input>
+                            `
+                        )}
 
                         <or-mwc-input
                             type="${InputType.DATETIME}"
@@ -447,6 +452,19 @@ export class PageConfigEditor extends LitElement {
             return html`<loading-spinner></loading-spinner>`;
         }
 
+        // Display any errors that prevent the editor from being used
+        if (this.error) {
+            return html`
+                <or-panel>
+                    <div class="column">
+                        <div class="row">
+                            <alert-message .alert="${this.error}"></alert-message>
+                        </div>
+                    </div>
+                </or-panel>
+            `;
+        }
+
         return html`
             <form id="config-form" class="config-editor">
                 <div class="config-header">
@@ -475,15 +493,21 @@ export class PageConfigEditor extends LitElement {
 
                     <!-- Note: I know this is odd, but the disable state would not update properly via the disabled/.disabled/?disabled attribute -->
                     <div class="config-header-controls">
-                        ${this.isValid && this.modified
-                            ? html`<or-mwc-input
-                                  type="${InputType.BUTTON}"
-                                  id="save-btn"
-                                  label="save"
-                                  raised
-                                  @click="${this.onSave}"
-                              ></or-mwc-input>`
-                            : html`<or-mwc-input type="${InputType.BUTTON}" id="save-btn" label="save" raised disabled></or-mwc-input>`}
+                        ${when(
+                            this.isValid && this.modified,
+                            () => html`
+                                <or-mwc-input
+                                    type="${InputType.BUTTON}"
+                                    id="save-btn"
+                                    label="save"
+                                    raised
+                                    @click="${this.onSave}"
+                                ></or-mwc-input>
+                            `,
+                            () => html`
+                                <or-mwc-input type="${InputType.BUTTON}" id="save-btn" label="save" raised disabled></or-mwc-input>
+                            `
+                        )}
                     </div>
                 </div>
 
@@ -558,23 +582,27 @@ export class PageConfigEditor extends LitElement {
                             ></or-mwc-input>
 
                             <!-- Render the attribute select list if the asset is selected -->
-                            ${this.formData.target.asset_id
-                                ? html`
-                                      <or-mwc-input
-                                          type="${InputType.SELECT}"
-                                          name="target.attribute_name"
-                                          @or-mwc-input-changed="${this.handleTargetInput}"
-                                          label="Attribute"
-                                          .value="${this.formData.target.attribute_name}"
-                                          .options="${[...(this.attributeSelectList.get(this.formData.target.asset_id) ?? new Map())]}"
-                                      ></or-mwc-input>
-                                  `
-                                : html`<or-mwc-input
-                                      type="${InputType.SELECT}"
-                                      name="target.attribute_name"
-                                      label="Attribute"
-                                      disabled
-                                  ></or-mwc-input>`}
+                            ${when(
+                                this.formData.target.asset_id,
+                                () => html`
+                                    <or-mwc-input
+                                        type="${InputType.SELECT}"
+                                        name="target.attribute_name"
+                                        @or-mwc-input-changed="${this.handleTargetInput}"
+                                        label="Attribute"
+                                        .value="${this.formData.target.attribute_name}"
+                                        .options="${[...(this.attributeSelectList.get(this.formData.target.asset_id) ?? new Map())]}"
+                                    ></or-mwc-input>
+                                `,
+                                () => html`
+                                    <or-mwc-input
+                                        type="${InputType.SELECT}"
+                                        name="target.attribute_name"
+                                        label="Attribute"
+                                        disabled
+                                    ></or-mwc-input>
+                                `
+                            )}
 
                             <or-mwc-input
                                 type="${InputType.DATETIME}"
@@ -676,7 +704,11 @@ export class PageConfigEditor extends LitElement {
                 </or-panel>
                 <hr />
                 <!-- Regressors -->
-                ${this.formData.regressors ? this.formData.regressors.map((_regressor, index) => this.getRegressorTemplate(index)) : html``}
+                ${when(
+                    this.formData.regressors,
+                    () => map(this.formData.regressors ?? [], (_regressor, index) => this.getRegressorTemplate(index)),
+                    () => html``
+                )}
                 ${this.getAddRegressorTemplate()}
             </form>
         `;

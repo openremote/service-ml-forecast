@@ -18,8 +18,7 @@
 import { OrMwcTable, TableColumn, TableConfig, TableRow } from '@openremote/or-mwc-components/or-mwc-table';
 import { css, html, TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { CustomAsset, ModelConfig } from '../services/models';
-import '@openremote/or-mwc-components/or-mwc-input';
+import { BasicAsset, ModelConfig } from '../services/models';
 import { getRootPath } from '../common/util';
 import { Router } from '@vaadin/router';
 import { InputType } from '@openremote/or-mwc-components/or-mwc-input';
@@ -89,7 +88,7 @@ export class ConfigsTable extends OrMwcTable {
     public modelConfigs: ModelConfig[] = [];
 
     @property({ type: Array })
-    public configAssets: CustomAsset[] = [];
+    public configAssets: BasicAsset[] = [];
 
     @property({ type: String })
     public realm: string = '';
@@ -220,9 +219,9 @@ export class ConfigsTable extends OrMwcTable {
 
     // Update the table rows when the model configs change
     protected willUpdate(changedProperties: Map<string, any>): void {
+        super.willUpdate(changedProperties);
         if (changedProperties.has('modelConfigs')) {
             this.rows = this.getTableRows(this.modelConfigs);
         }
-        super.willUpdate(changedProperties);
     }
 }

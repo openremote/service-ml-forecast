@@ -22,6 +22,16 @@ import { setupRouter } from './router';
 import { APP_OUTLET } from './common/constants';
 import { isEmbedded, setupConsoleLogging, getRealmParam } from './common/util';
 
+// Component Imports
+import '@openremote/or-mwc-components/or-mwc-input';
+import '@openremote/or-panel';
+import '@openremote/or-icon';
+import './components/custom-duration-input';
+import './components/configs-table';
+import './components/loading-spinner';
+import './components/breadcrumb-nav';
+import './components/alert-message';
+
 // Override default log statements with service prefix
 setupConsoleLogging();
 
@@ -30,7 +40,7 @@ async function init() {
 
     try {
         render(html`<loading-spinner></loading-spinner>`, APP_OUTLET);
-        await initAuthService();
+        await setupAuth();
     } catch (error) {
         console.error('Failed to initialize auth service:', error);
     } finally {
@@ -44,8 +54,7 @@ async function init() {
     setupRouter();
 }
 
-async function initAuthService() {
-    // Initialize the auth service - This will trigger a login if required, prefers SSO if available
+async function setupAuth() {
     const authenticated = await AuthService.init(getRealmParam() ?? 'master');
     if (!authenticated) {
         AuthService.login();
@@ -54,4 +63,4 @@ async function initAuthService() {
 }
 
 // Entry point
-await init();
+init();

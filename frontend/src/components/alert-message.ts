@@ -15,6 +15,27 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-export const APP_OUTLET = document.querySelector('#outlet') as HTMLElement;
-export const IS_DEVELOPMENT = process.env.NODE_ENV === 'development';
-export const ML_SERVICE_URL = (process.env.ML_SERVICE_URL || '').replace(/\/$/, '');
+import { css, html, LitElement } from 'lit';
+import { customElement, property } from 'lit/decorators.js';
+
+@customElement('alert-message')
+export class AlertMessage extends LitElement {
+    static get styles() {
+        return css`
+            .alert-message {
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                gap: 10px;
+                color: var(--or-app-color3);
+            }
+        `;
+    }
+
+    @property({ type: String })
+    alert: string | null = null;
+
+    render() {
+        return html`<span class="alert-message"><or-icon icon="alert-circle-outline"></or-icon> ${this.alert}</span>`;
+    }
+}
