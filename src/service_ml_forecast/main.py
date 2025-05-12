@@ -25,7 +25,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 
 from service_ml_forecast import __app_info__
-from service_ml_forecast.api import model_config_route, openremote_route, system_route, web_route
+from service_ml_forecast.api import model_config_route, openremote_proxy_route, web_route
 from service_ml_forecast.api.route_exception_handlers import register_exception_handlers
 from service_ml_forecast.config import ENV
 from service_ml_forecast.dependencies import get_openremote_service
@@ -95,9 +95,8 @@ app.add_middleware(
 
 # --- Include Routers ---
 app.include_router(model_config_route.router)
-app.include_router(openremote_route.router)
+app.include_router(openremote_proxy_route.router)
 app.include_router(web_route.router)
-app.include_router(system_route.router)
 
 # --- Exception Handlers ---
 register_exception_handlers(app)

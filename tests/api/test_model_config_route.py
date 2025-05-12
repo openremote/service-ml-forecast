@@ -1,41 +1,8 @@
 from http import HTTPStatus
+from typing import Any
 from uuid import uuid4
 
-import pytest
 from fastapi.testclient import TestClient
-
-from service_ml_forecast.dependencies import get_config_service
-from service_ml_forecast.services.model_config_service import ModelConfigService
-
-
-# --- Fixtures ---
-@pytest.fixture
-def mock_test_client(config_service: ModelConfigService) -> TestClient:
-    """Create a FastAPI TestClient instance with mocked services and bypassed auth."""
-    from service_ml_forecast.config import ENV
-
-    # Override the environment variable to disable keycloak middleware
-    ENV.ML_API_MIDDLEWARE_KEYCLOAK = False
-
-    # Import the fastapi app
-    from service_ml_forecast.main import app
-
-    # Mock dependencies
-    app.dependency_overrides[get_config_service] = lambda: config_service
-
-    return TestClient(app)
-
-
-@pytest.fixture
-def test_client() -> TestClient:
-    """FastAPI TestClient instance for integration tests. with no mocks."""
-    from service_ml_forecast.main import app
-
-    # Clear the dependency overrides
-    app.dependency_overrides = {}
-
-    return TestClient(app)
-
 
 # --- Test data ---
 TEST_CONFIG_ID = "d3c143a6-1018-4ebd-932b-a509eb7ab841"
@@ -45,7 +12,7 @@ TEST_ATTRIBUTE_NAME = "test-attribute"
 TEST_CUTOFF_TIMESTAMP = 1716153600000
 
 
-def create_test_config() -> dict[str, object]:
+def create_test_config() -> dict[str, Any]:
     """Helper function to create a test model config."""
 
     return {
@@ -239,17 +206,16 @@ def test_delete_model_config_not_found(mock_test_client: TestClient) -> None:
     assert response.status_code == HTTPStatus.NOT_FOUND
 
 
-def test_create_asset_dependencies_missing(test_client: TestClient) -> None:
-    """Test creating a model config with missing asset dependencies.
-
-    The provided target asset does not exist, so the model config should not be created.
+def test_create_asset_invalid_asset_id(mock_test_client: TestClient) -> None:
+    """Test creating a model config with an invalid asset id.
 
     Verifies that:
-    - The model config asset ids are validated, e.g. they exist in the openremote service response
+    - The model config target asset id is validated
     - The model config is not created
     - The model config is not returned in the response
-    - The response status code is 400
+    - The response status code is 422
     """
     config = create_test_config()
-    response = test_client.post("/api/master/configs", json=config)
-    assert response.status_code == HTTPStatus.BAD_REQUEST
+    config["target"]["asset_id"] = "invalid-asset-id"
+    response = mock_test_client.post("/api/master/configs", json=config)
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY

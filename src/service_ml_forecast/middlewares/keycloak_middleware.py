@@ -154,7 +154,7 @@ async def _verify_jwt_token(token: str, keycloak_url: str) -> dict[str, Any]:
         unverified_header = jwt.get_unverified_header(token)
         if not unverified_header or "kid" not in unverified_header:
             raise jwt.exceptions.InvalidTokenError("Invalid token header: Missing kid")
-        
+
         kid = unverified_header["kid"]
 
         # Ensure the token uses the RS256 algorithm (Keycloak default)
@@ -242,6 +242,27 @@ def _has_required_roles(user_payload: KeycloakTokenUserPayload) -> bool:
     return set(REQUIRED_ROLES).issubset(set(resource_access.roles))
 
 
+def _is_excluded_route(path: str, excluded_routes: list[str], excluded_patterns: list[re.Pattern[str]]) -> bool:
+    """Check if the path matches any of the excluded routes."""
+    # Check exact matches first
+    if any(pattern.match(path) for pattern in excluded_patterns):
+        return True
+
+    for route in excluded_routes:
+        if route.startswith("/"):
+            full_route_with_prefix = ENV.ML_API_ROOT_PATH + route if ENV.ML_API_ROOT_PATH else route
+        if path.startswith(full_route_with_prefix):
+            return True
+
+        if path.startswith(route):
+            return True
+    # check relative to the root path
+    if path.startswith(route):
+        return True
+
+    return False
+
+
 class KeycloakMiddleware(BaseHTTPMiddleware):
     """
     Middleware that verifies Bearer token against OR_ML_KEYCLOAK_URL's JWKS endpoint.
@@ -250,20 +271,22 @@ class KeycloakMiddleware(BaseHTTPMiddleware):
 
     def __init__(self, app: ASGIApp, keycloak_url: str, excluded_routes: list[str] | None = None):
         super().__init__(app)
-        self.excluded_routes: set[str] = set(excluded_routes) if excluded_routes else set()
+        self.excluded_routes: list[str] = list(excluded_routes) if excluded_routes else []
         self.keycloak_url = keycloak_url
+
         # Precompile patterns for excluded routes
-        self.excluded_patterns = [
-            re.compile(f"^{re.escape(ENV.ML_API_ROOT_PATH + route)}.*")
-            if route
-            else re.compile(f"^{re.escape(route)}.*")
+        self.excluded_patterns: list[re.Pattern[str]] = [
+            re.compile(f"^{re.escape(ENV.ML_API_ROOT_PATH + route)}$")
+            if route.startswith("/")
+            else re.compile(f"^{re.escape(route)}$")
             for route in self.excluded_routes
         ]
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
-        # Skip excluded routes from authentication
         path = request.url.path
-        if any(pattern.match(path) for pattern in self.excluded_patterns):
+
+        # Skip excluded routes from authentication
+        if _is_excluded_route(path, self.excluded_routes, self.excluded_patterns):
             return await call_next(request)
 
         try:

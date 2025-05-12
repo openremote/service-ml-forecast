@@ -1,6 +1,8 @@
+import importlib
 import json
 import logging.config
 import shutil
+import sys
 import tempfile
 import types
 from collections.abc import Generator
@@ -9,10 +11,13 @@ from pathlib import Path
 
 import pytest
 import respx
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
 
 from service_ml_forecast.clients.openremote.models import AssetDatapoint
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 from service_ml_forecast.config import DIRS
+from service_ml_forecast.dependencies import get_config_service
 from service_ml_forecast.logging_config import LOGGING_CONFIG
 from service_ml_forecast.models.model_config import ProphetModelConfig
 from service_ml_forecast.services.model_config_service import ModelConfigService
@@ -155,3 +160,45 @@ def mock_openremote_service(mock_openremote_client: OpenRemoteClient) -> OpenRem
 
     service.get_assets_by_ids = types.MethodType(mock_get_assets_by_ids, service)  # type: ignore[method-assign]
     return service
+
+
+def get_fresh_app(keycloak_enabled: bool) -> FastAPI:
+    """Get a fresh instance of the app with the given keycloak setting."""
+    # Remove any cached modules to ensure we get a fresh app
+    for module in list(sys.modules.keys()):
+        if module.startswith("service_ml_forecast.main"):
+            del sys.modules[module]
+
+    # Set environment variable
+    from service_ml_forecast.config import ENV
+
+    ENV.ML_API_MIDDLEWARE_KEYCLOAK = keycloak_enabled
+
+    # Import the app fresh
+    import service_ml_forecast.main
+
+    importlib.reload(service_ml_forecast.main)
+
+    return service_ml_forecast.main.app
+
+
+@pytest.fixture
+def mock_test_client(config_service: ModelConfigService) -> TestClient:
+    """Create a FastAPI TestClient instance with mocked services and disabled auth."""
+    app = get_fresh_app(keycloak_enabled=False)
+
+    # Mock dependencies
+    app.dependency_overrides[get_config_service] = lambda: config_service
+
+    return TestClient(app)
+
+
+@pytest.fixture
+def mock_test_client_with_keycloak(config_service: ModelConfigService) -> TestClient:
+    """Create a FastAPI TestClient instance with mocked services and enabled auth."""
+    app = get_fresh_app(keycloak_enabled=True)
+
+    # Mock dependencies
+    app.dependency_overrides[get_config_service] = lambda: config_service
+
+    return TestClient(app)

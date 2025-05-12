@@ -24,7 +24,7 @@ function getBaseUrl(realm: string): string {
 }
 
 function getOpenRemoteBaseUrl(realm: string): string {
-    return ML_SERVICE_URL + '/openremote/' + realm;
+    return ML_SERVICE_URL + '/proxy/openremote/' + realm;
 }
 
 function buildHeaders(): Headers {
