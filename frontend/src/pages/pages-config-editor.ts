@@ -65,12 +65,16 @@ export class PageConfigEditor extends LitElement {
                 gap: 24px;
             }
 
+            .regressor-row {
+                padding: 10px 0px;
+            }
+
             .column {
                 display: flex;
                 flex-direction: column;
                 flex: 1 1 0;
                 gap: 20px;
-                padding: 10px 0px;
+                padding: 0px 0px 10px 0px;
             }
 
             or-mwc-input {
@@ -422,15 +426,13 @@ export class PageConfigEditor extends LitElement {
     getAddRegressorTemplate() {
         return html`
             <or-panel>
-                <div class="column">
-                    <div class="row">
-                        <or-mwc-input
-                            type="${InputType.BUTTON}"
-                            icon="plus"
-                            label="add regressor"
-                            @click="${this.handleAddRegressor}"
-                        ></or-mwc-input>
-                    </div>
+                <div class="row regressor-row">
+                    <or-mwc-input
+                        type="${InputType.BUTTON}"
+                        icon="plus"
+                        label="add regressor"
+                        @click="${this.handleAddRegressor}"
+                    ></or-mwc-input>
                 </div>
             </or-panel>
         `;
