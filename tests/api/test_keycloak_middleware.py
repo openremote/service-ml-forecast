@@ -12,11 +12,11 @@ def test_create_model_without_token(mock_test_client_with_keycloak: TestClient) 
     """Test creating a model config without a token.
 
     Verifies that:
-    - The request is rejected with a 400 Bad Request status code
+    - The request is rejected with a 401 Unauthorized status code
     """
     config = create_test_config()
     response = mock_test_client_with_keycloak.post("/api/master/configs", json=config)
-    assert response.status_code == HTTPStatus.BAD_REQUEST
+    assert response.status_code == HTTPStatus.UNAUTHORIZED
 
 
 def test_create_model_with_invalid_token(mock_test_client_with_keycloak: TestClient) -> None:
@@ -66,25 +66,25 @@ def test_malformed_authorization_header(mock_test_client_with_keycloak: TestClie
     """Test with malformed authorization headers.
 
     Verifies that:
-    - The request is rejected with a 400 Bad Request status code when the Authorization header is malformed
+    - The request is rejected with a 401 Unauthorized status code when the Authorization header is malformed
     """
     config = create_test_config()
 
     # Test with empty Authorization header
     response = mock_test_client_with_keycloak.post("/api/master/configs", json=config, headers={"Authorization": ""})
-    assert response.status_code == HTTPStatus.BAD_REQUEST
+    assert response.status_code == HTTPStatus.UNAUTHORIZED
 
     # Test with Authorization header without Bearer prefix
     response = mock_test_client_with_keycloak.post(
         "/api/master/configs", json=config, headers={"Authorization": "token-without-bearer-prefix"}
     )
-    assert response.status_code == HTTPStatus.BAD_REQUEST
+    assert response.status_code == HTTPStatus.UNAUTHORIZED
 
     # Test with Authorization header with wrong prefix
     response = mock_test_client_with_keycloak.post(
         "/api/master/configs", json=config, headers={"Authorization": "Basic some-token"}
     )
-    assert response.status_code == HTTPStatus.BAD_REQUEST
+    assert response.status_code == HTTPStatus.UNAUTHORIZED
 
 
 @patch("service_ml_forecast.middlewares.keycloak_middleware._verify_jwt_token")

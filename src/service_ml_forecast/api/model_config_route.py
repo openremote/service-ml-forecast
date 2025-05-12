@@ -22,12 +22,13 @@ These routes are used to create, retrieve, update and delete model configs.
 """
 
 from http import HTTPStatus
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 
-from service_ml_forecast.dependencies import get_config_service
+from service_ml_forecast.dependencies import get_config_service, oauth2_scheme
 from service_ml_forecast.models.model_config import ModelConfig
 from service_ml_forecast.services.model_config_service import ModelConfigService
 
@@ -40,10 +41,14 @@ router = APIRouter(prefix="/api/{realm}/configs", tags=["Forecast Configs"])
     responses={
         HTTPStatus.OK: {"description": "Model config has been created"},
         HTTPStatus.CONFLICT: {"description": "Model config already exists"},
+        HTTPStatus.UNAUTHORIZED: {"description": "Unauthorized"},
     },
 )
 async def create_model_config(
-    realm: str, model_config: ModelConfig, config_service: ModelConfigService = Depends(get_config_service)
+    token: Annotated[str, Depends(oauth2_scheme)],
+    realm: str,
+    model_config: ModelConfig,
+    config_service: ModelConfigService = Depends(get_config_service),
 ) -> ModelConfig:
     return config_service.create(realm, model_config)
 
@@ -54,10 +59,14 @@ async def create_model_config(
     responses={
         HTTPStatus.OK: {"description": "Model config has been retrieved"},
         HTTPStatus.NOT_FOUND: {"description": "Model config not found"},
+        HTTPStatus.UNAUTHORIZED: {"description": "Unauthorized"},
     },
 )
 async def get_model_config(
-    realm: str, id: UUID, config_service: ModelConfigService = Depends(get_config_service)
+    token: Annotated[str, Depends(oauth2_scheme)],
+    realm: str,
+    id: UUID,
+    config_service: ModelConfigService = Depends(get_config_service),
 ) -> ModelConfig:
     return config_service.get(realm, id)
 
@@ -67,10 +76,13 @@ async def get_model_config(
     summary="Retrieve all model configs for a given realm",
     responses={
         HTTPStatus.OK: {"description": "List of model configs has been retrieved"},
+        HTTPStatus.UNAUTHORIZED: {"description": "Unauthorized"},
     },
 )
 async def get_model_configs(
-    realm: str, config_service: ModelConfigService = Depends(get_config_service)
+    token: Annotated[str, Depends(oauth2_scheme)],
+    realm: str,
+    config_service: ModelConfigService = Depends(get_config_service),
 ) -> list[ModelConfig]:
     return config_service.get_all(realm)
 
@@ -81,10 +93,15 @@ async def get_model_configs(
     responses={
         HTTPStatus.OK: {"description": "Model config has been updated"},
         HTTPStatus.NOT_FOUND: {"description": "Model config not found"},
+        HTTPStatus.UNAUTHORIZED: {"description": "Unauthorized"},
     },
 )
 async def update_model_config(
-    realm: str, id: UUID, model_config: ModelConfig, config_service: ModelConfigService = Depends(get_config_service)
+    token: Annotated[str, Depends(oauth2_scheme)],
+    realm: str,
+    id: UUID,
+    model_config: ModelConfig,
+    config_service: ModelConfigService = Depends(get_config_service),
 ) -> ModelConfig:
     if model_config.realm != realm:
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Model does not match realm")
@@ -98,10 +115,14 @@ async def update_model_config(
     responses={
         HTTPStatus.OK: {"description": "Model config has been deleted"},
         HTTPStatus.NOT_FOUND: {"description": "Model config not found"},
+        HTTPStatus.UNAUTHORIZED: {"description": "Unauthorized"},
     },
 )
 async def delete_model_config(
-    realm: str, id: UUID, config_service: ModelConfigService = Depends(get_config_service)
+    token: Annotated[str, Depends(oauth2_scheme)],
+    realm: str,
+    id: UUID,
+    config_service: ModelConfigService = Depends(get_config_service),
 ) -> JSONResponse:
     config_service.delete(realm, id)
     return JSONResponse(status_code=HTTPStatus.OK, content={"message": "Model config deleted successfully"})

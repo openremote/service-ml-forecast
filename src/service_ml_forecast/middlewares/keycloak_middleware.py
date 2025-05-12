@@ -302,7 +302,9 @@ class KeycloakMiddleware(BaseHTTPMiddleware):
 
             if not token:
                 logger.warning("Authorization header missing or malformed")
-                raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Malformed authorization header")
+                raise HTTPException(
+                    status_code=HTTPStatus.UNAUTHORIZED, detail="Missing or malformed Authorization header"
+                )
 
             # Verify the token via the JWKS endpoint
             payload = await _verify_jwt_token(token, self.keycloak_url)
