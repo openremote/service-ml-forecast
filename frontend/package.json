@@ -13,8 +13,8 @@
     },
     "dependencies": {
         "@lit/context": "^1.1.5",
+        "@openremote/or-components": "^1.5.0",
         "@openremote/or-mwc-components": "^1.5.0",
-        "@openremote/or-panel": "^1.0.3",
         "@vaadin/router": "^2.0.0",
         "lit": "^3.2.1",
         "lodash": "^4.17.21",

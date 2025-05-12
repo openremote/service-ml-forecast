@@ -17,7 +17,7 @@
 
 // Component Imports
 import '@openremote/or-mwc-components/or-mwc-input';
-import '@openremote/or-panel';
+import '@openremote/or-components/or-panel';
 import '@openremote/or-icon';
 import './components/custom-duration-input';
 import './components/configs-table';
