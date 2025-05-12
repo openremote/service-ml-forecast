@@ -17,6 +17,7 @@
 
 import { BasicAsset, ModelConfig, RealmConfig } from './models';
 import { ML_SERVICE_URL } from '../common/constants';
+import { AuthService } from './auth-service';
 
 function getBaseUrl(realm: string): string {
     return ML_SERVICE_URL + '/api/' + realm;
@@ -26,6 +27,13 @@ function getOpenRemoteBaseUrl(realm: string): string {
     return ML_SERVICE_URL + '/openremote/' + realm;
 }
 
+function buildHeaders(): Headers {
+    return new Headers({
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${AuthService.token}`
+    });
+}
+
 export const APIService = {
     /**
      * Get all model configs for the current realm
@@ -33,7 +41,8 @@ export const APIService = {
      */
     async getModelConfigs(realm: string): Promise<ModelConfig[]> {
         const response = await fetch(getBaseUrl(realm) + '/configs', {
-            method: 'GET'
+            method: 'GET',
+            headers: buildHeaders()
         });
         if (!response.ok) {
             throw new Error(`Failed to get model configs: ${response.statusText}`);
@@ -49,7 +58,8 @@ export const APIService = {
      */
     async getModelConfig(realm: string, id: string): Promise<ModelConfig> {
         const response = await fetch(getBaseUrl(realm) + '/configs/' + id, {
-            method: 'GET'
+            method: 'GET',
+            headers: buildHeaders()
         });
         if (!response.ok) {
             throw new Error(`Failed to get model config ${id}: ${response.statusText}`);
@@ -64,7 +74,8 @@ export const APIService = {
      */
     async deleteModelConfig(realm: string, id: string): Promise<void> {
         const response = await fetch(getBaseUrl(realm) + '/configs/' + id, {
-            method: 'DELETE'
+            method: 'DELETE',
+            headers: buildHeaders()
         });
         if (!response.ok) {
             throw new Error(`Failed to delete model config ${id}: ${response.statusText}`);
@@ -82,9 +93,7 @@ export const APIService = {
         const response = await fetch(getBaseUrl(realm) + '/configs/' + id, {
             method: 'PUT',
             body: JSON.stringify(modelConfig),
-            headers: {
-                'Content-Type': 'application/json'
-            }
+            headers: buildHeaders()
         });
         if (!response.ok) {
             throw new Error(`Failed to update model config: ${response.statusText}`);
@@ -102,9 +111,7 @@ export const APIService = {
         const response = await fetch(getBaseUrl(realm) + '/configs', {
             method: 'POST',
             body: JSON.stringify(modelConfig),
-            headers: {
-                'Content-Type': 'application/json'
-            }
+            headers: buildHeaders()
         });
         if (!response.ok) {
             throw new Error(`Failed to create model config: ${response.statusText}`);
@@ -119,7 +126,8 @@ export const APIService = {
      */
     async getOpenRemoteRealmConfig(realm: string): Promise<RealmConfig> {
         const response = await fetch(getOpenRemoteBaseUrl(realm) + '/realm/config', {
-            method: 'GET'
+            method: 'GET',
+            headers: buildHeaders()
         });
         if (!response.ok) {
             throw new Error(`Failed to get realm config: ${response.statusText}`);
@@ -134,7 +142,8 @@ export const APIService = {
      */
     async getOpenRemoteAssets(realm: string): Promise<BasicAsset[]> {
         const response = await fetch(getOpenRemoteBaseUrl(realm) + '/assets', {
-            method: 'GET'
+            method: 'GET',
+            headers: buildHeaders()
         });
         if (!response.ok) {
             throw new Error(`Failed to get assets: ${response.statusText}`);
@@ -150,7 +159,8 @@ export const APIService = {
      */
     async getOpenRemoteAssetsById(realm: string, ids: string[]): Promise<BasicAsset[]> {
         const response = await fetch(getOpenRemoteBaseUrl(realm) + '/assets/ids?ids=' + ids.join(','), {
-            method: 'GET'
+            method: 'GET',
+            headers: buildHeaders()
         });
         if (!response.ok) {
             throw new Error(`Failed to get assets: ${response.statusText}`);

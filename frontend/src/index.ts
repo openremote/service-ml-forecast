@@ -36,7 +36,7 @@ import './components/alert-message';
 setupConsoleLogging();
 
 async function init() {
-    console.log('Context:', isEmbedded() ? 'iframe embedded' : 'browser standalone');
+    console.info('Context:', isEmbedded() ? 'iframe embedded' : 'browser standalone');
 
     try {
         render(html`<loading-spinner></loading-spinner>`, APP_OUTLET);
@@ -62,5 +62,4 @@ async function setupAuth() {
     }
 }
 
-// Entry point
 init();
