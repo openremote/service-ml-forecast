@@ -132,5 +132,5 @@ def test_excluded_route_bypasses_authentication(mock_test_client_with_keycloak: 
     - Requests to excluded routes are processed without authentication
     - No token is required for these routes
     """
-    response = mock_test_client_with_keycloak.get("/ui")
+    response = mock_test_client_with_keycloak.get("/docs")
     assert response.status_code == HTTPStatus.OK
