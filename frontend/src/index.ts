@@ -16,11 +16,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { AuthService } from './services/auth-service';
-import { html, render } from 'lit';
 import { setupORIcons } from './common/theme';
 import { setupRouter } from './router';
-import { APP_OUTLET } from './common/constants';
-import { isEmbedded, setupConsoleLogging, getRealmParam } from './common/util';
+import { IS_EMBEDDED } from './common/constants';
+import { setupConsoleLogging, getRealmParam } from './common/util';
 
 // Component Imports
 import '@openremote/or-mwc-components/or-mwc-input';
@@ -36,30 +35,17 @@ import './components/alert-message';
 setupConsoleLogging();
 
 async function init() {
-    console.info('Context:', isEmbedded() ? 'iframe embedded' : 'browser standalone');
+    console.info('Context:', IS_EMBEDDED ? 'iframe' : 'standalone');
 
-    try {
-        render(html`<loading-spinner></loading-spinner>`, APP_OUTLET);
-        await setupAuth();
-    } catch (error) {
-        console.error('Failed to initialize auth service:', error);
-    } finally {
-        render(null, APP_OUTLET);
+    const authenticated = await AuthService.init(getRealmParam() ?? 'master');
+    if (!authenticated) {
+        AuthService.login();
     }
-
     // Setup OR icons
     setupORIcons();
 
     // Setup the router
     setupRouter();
-}
-
-async function setupAuth() {
-    const authenticated = await AuthService.init(getRealmParam() ?? 'master');
-    if (!authenticated) {
-        AuthService.login();
-        return;
-    }
 }
 
 init();

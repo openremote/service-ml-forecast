@@ -46,10 +46,14 @@ class AppEnvironment(BaseSettings):
     # Application Settings
     ML_LOG_LEVEL: str = "INFO"  # log level to use
     ML_ENVIRONMENT: str = "development"  # environment to run the service in
-    ML_MIDDLEWARE_KEYCLOAK: bool = True  # whether to enable keycloak middleware
+    ML_VERIFY_SSL: bool = True  # whether to verify SSL certificates when making requests
 
     # FastAPI Settings
     ML_API_PUBLISH_DOCS: bool = True  # whether to make the openapi docs available
+    ML_API_ROOT_PATH: str = (
+        "/services/ml-forecast"  # when running behind a reverse proxy, the root path of the fastapi app
+    )
+    ML_API_MIDDLEWARE_KEYCLOAK: bool = True  # whether to enable keycloak middleware
 
     # Uvicorn Settings
     ML_WEBSERVER_HOST: str = "0.0.0.0"  # host to bind the web server (uvicorn) to
@@ -58,9 +62,6 @@ class AppEnvironment(BaseSettings):
         "http://localhost:8000",
         "http://localhost:8001",
     ]  # origins to allow
-    ML_API_ROOT_PATH: str = (
-        "/services/ml-forecast"  # when running behind a reverse proxy, the root path of the fastapi app
-    )
 
     # OpenRemote Settings
     ML_OR_URL: str = "http://localhost:8080"  # OpenRemote URL

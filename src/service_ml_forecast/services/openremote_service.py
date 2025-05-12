@@ -178,7 +178,6 @@ class OpenRemoteService:
         Returns:
             A list of all assets from OpenRemote.
         """
-        logger.info(f"Retrieving assets by ids: {asset_ids} for realm {realm}")
         assets = self.client.retrieve_assets_by_ids(asset_ids, realm)
         if assets is None:
             logger.warning(f"Unable to retrieve assets by ids for realm {realm}")

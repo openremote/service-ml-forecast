@@ -1,10 +1,50 @@
+# Copyright 2025, OpenRemote Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+"""Custom middleware for handling Keycloak authentication and authorization.
+
+Every request goes through this middleware and is verified against the Keycloak JWKS endpoint.
+Only endpoints that are excluded from authentication have their request forwarded to the next middleware.
+
+
+Authentication and Authorization Steps:
+1. Check if the request path matches any excluded routes
+2. Extract and validate the Bearer token from the Authorization header
+3. Validate token format before processing
+4. Extract and validate the Key ID (kid) from the token header
+5. Extract and validate the issuer URL from the token
+6. Validate the issuer URL against the expected pattern
+7. Extract and validate the realm name from the issuer URL
+8. Construct the JWKS URL using the validated realm name
+9. Get the JWKS from the JWKS endpoint with proper caching
+10. Validate JWKS keys structures
+11. Verify the token signature using the public key from JWKS
+12. Check if the user has the required roles (write:admin, read:admin)
+13. Inject the validated user payload into the request state
+"""
+
 import logging
+import re
 from http import HTTPStatus
 from typing import Any, cast
-from urllib.parse import urlparse
 
 import httpx
 import jwt
+from aiocache import Cache, cached
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 from fastapi import HTTPException
 from pydantic import BaseModel
@@ -32,70 +72,94 @@ class KeycloakTokenUserPayload(BaseModel):
     resource_access: dict[str, ResourceRoles]
 
 
-# Todo: Double check whether this is adequate for the current use case
 RESOURCE_ACCESS_KEY = "openremote"
-# Todo: These will most likely change in the future to e.g. write:service, read:service, etc.
 REQUIRED_ROLES = ["write:admin", "read:admin"]
 
 
-async def _pin_ssl_certificate(keycloak_url: str) -> None:
-    """
-    Pin the SSL certificate of the Keycloak server.
-    To validate the origin of the JWKS endpoint.
-    """
-
-    # TODO: Retrieve the SSL certificate from the keycloak server via HTTPX and verify the SSL.
-    # Return the certificate so that it can be pinned.
-    pass
+def _jwks_cache_key(f: Any, issuer: str, *args: Any, **kwargs: Any) -> str:
+    return issuer
 
 
+@cached(ttl=30, cache=Cache.MEMORY, key_builder=_jwks_cache_key)  # type: ignore[misc]
 async def _get_jwks(keycloak_url: str, issuer: str) -> dict[str, Any]:
-    """Get JWKS from Keycloak based on the issuer URL."""
+    """Get JWKS from Keycloak based on the issuer URL.
 
+    Args:
+        keycloak_url: The URL of the Keycloak server.
+        issuer: The issuer URL of the token.
+
+    Returns:
+        The JWKS as a dictionary.
+
+    Raises:
+        HTTPException: If the JWKS URL is invalid or the request fails.
+
+    Remarks:
+        The JWKS is cached for 30 seconds to reduce the number of requests to the Keycloak server.
+        The issuer URL must follow the pattern: <keycloak_url>/auth/realms/<realm_name>/
+    """
     try:
-        parsed_url = urlparse(issuer)
-        path_segments = [segment for segment in parsed_url.path.split("/") if segment]
+        # Pattern matches: http(s)://<domain>/auth/realms/<realm_name>(/optional-suffix)
+        pattern = r"^https?://[^/]+/auth/realms/([^/]+)/?.*$"
+        match = re.match(pattern, issuer)
 
-        realms_index = path_segments.index("realms")
-        if realms_index + 1 < len(path_segments):
-            realm_name = path_segments[realms_index + 1]
-        else:
-            raise ValueError("Path structure invalid: expected realm name after 'realms'")
+        if not match:
+            raise ValueError(f"Invalid issuer URL format: {issuer}")
 
-        if not realm_name:
-            raise ValueError("Realm name cannot be empty.")
+        realm_name = match.group(1)
 
-        # Construct the JWKS URL using the base URL from env and the extracted realm
-        # TODO: SSL Pinning - Avoid MITM
-        jwks_url = f"{keycloak_url}/realms/{realm_name}/protocol/openid-connect/certs"
+        # Additional validation for realm name to prevent path traversal
+        if not realm_name or ".." in realm_name:
+            raise ValueError("Invalid realm name in issuer URL")
 
-    except Exception as e:
+        # Construct JWKS URL using the provided keycloak_url
+        jwks_url = f"{keycloak_url.rstrip('/')}/realms/{realm_name}/protocol/openid-connect/certs"
+
+    except ValueError as e:
         logger.error(f"Error constructing JWKS URL from issuer '{issuer}': {e}", exc_info=True)
-        raise HTTPException(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail="An unexpected error occurred") from e
+        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail="Invalid token") from e
 
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(verify=ENV.ML_VERIFY_SSL) as client:
             response = await client.get(jwks_url)
             response.raise_for_status()
             return cast(dict[str, Any], response.json())
 
     except httpx.RequestError as e:
         logger.error(f"Error requesting JWKS from {jwks_url}: {e}", exc_info=True)
-        raise HTTPException(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail="Error fetching JWKS") from e
+        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail="Invalid token") from e
     except Exception as e:
         logger.error(f"Unexpected error processing JWKS response from {jwks_url}: {e}", exc_info=True)
-        raise HTTPException(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail="An unexpected error occurred") from e
+        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail="Invalid token") from e
 
 
 async def _verify_jwt_token(token: str, keycloak_url: str) -> dict[str, Any]:
-    """Verify the JWT token using the public key obtained from Keycloak's JWKS endpoint."""
+    """Verify the JWT token using the public key obtained from Keycloak's JWKS endpoint.
 
+    Args:
+        token: The JWT token to verify.
+        keycloak_url: The URL of the Keycloak server.
+
+    Returns:
+        The decoded payload of the JWT token.
+
+    Raises:
+        HTTPException: If the token is invalid.
+    """
     try:
+        # Basic token format validation
+        if not re.match(r"^[A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.[A-Za-z0-9-_.+/=]*$", token):
+            raise jwt.exceptions.InvalidTokenError("Token format is invalid")
+
         unverified_header = jwt.get_unverified_header(token)
         if not unverified_header or "kid" not in unverified_header:
             raise jwt.exceptions.InvalidTokenError("Invalid token header: Missing kid")
-
+        
         kid = unverified_header["kid"]
+
+        # Ensure the token uses the RS256 algorithm (Keycloak default)
+        if unverified_header.get("alg") != "RS256":
+            raise jwt.exceptions.InvalidTokenError("Invalid token algorithm: Expected RS256")
 
         # Decode the token without verifying (we don't have the public key yet)
         unverified_payload = jwt.decode(token, options={"verify_signature": False, "verify_aud": False})
@@ -108,9 +172,20 @@ async def _verify_jwt_token(token: str, keycloak_url: str) -> dict[str, Any]:
         if not audience:
             raise jwt.exceptions.InvalidTokenError("Audience claim missing in token")
 
-        # Ensure issuer begins with the OpenRemote URL
-        if not issuer.startswith(ENV.ML_OR_URL):
-            raise jwt.exceptions.InvalidTokenError(f"Issuer '{issuer}' does not match expected Keycloak URL")
+        # Ensure issuer matches expected pattern
+        expected_issuer_base = ENV.ML_OR_URL.rstrip("/")
+        pattern = f"^{re.escape(expected_issuer_base)}/auth/realms/([^/]+)/?.*$"
+        match = re.match(pattern, issuer)
+
+        if not match:
+            raise jwt.exceptions.InvalidTokenError(
+                f"Invalid issuer URL format. Expected pattern: {expected_issuer_base}/auth/realms/[realm_name]"
+            )
+
+        # Additional validation for realm name to prevent path traversal
+        realm_name = match.group(1)
+        if not realm_name or ".." in realm_name:
+            raise jwt.exceptions.InvalidTokenError("Invalid realm name in issuer URL")
 
         # Try and get the JWKS
         jwks = await _get_jwks(keycloak_url, issuer)
@@ -118,7 +193,13 @@ async def _verify_jwt_token(token: str, keycloak_url: str) -> dict[str, Any]:
 
         # Construct the public key from the JWKS
         for key in jwks.get("keys", []):
-            if key.get("kid") == kid and key.get("use") == "sig" and key.get("kty") == "RSA":
+            if (
+                key.get("kid") == kid
+                and key.get("use") == "sig"
+                and key.get("kty") == "RSA"
+                and re.match(r"^[A-Za-z0-9_-]+$", key.get("kid", ""))
+                and key.get("alg") == "RS256"
+            ):
                 try:
                     public_key_instance = jwt.algorithms.RSAAlgorithm.from_jwk(key)
                     if isinstance(public_key_instance, RSAPublicKey):
@@ -130,7 +211,7 @@ async def _verify_jwt_token(token: str, keycloak_url: str) -> dict[str, Any]:
         if not public_key_material:
             raise jwt.exceptions.InvalidTokenError(f"Public key not found for kid: {kid}")
 
-        # Decode the token with the public key
+        # Finally, verify the token with the public key, verify the audience and issuer
         payload = jwt.decode(
             token,
             public_key_material,
@@ -146,41 +227,44 @@ async def _verify_jwt_token(token: str, keycloak_url: str) -> dict[str, Any]:
         raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail="Token has expired") from e
     except jwt.exceptions.InvalidTokenError as e:
         logger.error(f"Token validation failed: {e}", exc_info=True)
-        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail=f"Invalid token: {e}") from e
+        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail="Invalid token") from e
     except HTTPException as e:
         raise e  # Propagate the HTTPException
     except Exception as e:
         logger.error(f"Unexpected error during token validation: {e}", exc_info=True)
-        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail="Failed to validate token") from e
+        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail="Invalid token") from e
 
 
 def _has_required_roles(user_payload: KeycloakTokenUserPayload) -> bool:
-    """Check if the user has all the required roles."""
+    """Check if the user has all the required roles. (write:admin, read:admin)"""
 
     resource_access = user_payload.resource_access.get(RESOURCE_ACCESS_KEY, ResourceRoles(roles=[]))
-    # Check if the set of required roles is a subset of the user's roles
     return set(REQUIRED_ROLES).issubset(set(resource_access.roles))
 
 
 class KeycloakMiddleware(BaseHTTPMiddleware):
     """
-    Verifies Bearer token against OR_ML_KEYCLOAK_URL's JWKS endpoint.
-    Attributes:
-        excluded_paths: A set of relative paths that do not require authentication.
+    Middleware that verifies Bearer token against OR_ML_KEYCLOAK_URL's JWKS endpoint.
+    Routes can be excluded from authentication by providing a list of route paths.
     """
 
-    def __init__(self, app: ASGIApp, keycloak_url: str, excluded_paths: list[str] | None = None):
+    def __init__(self, app: ASGIApp, keycloak_url: str, excluded_routes: list[str] | None = None):
         super().__init__(app)
-        self.excluded_paths: set[str] = set(excluded_paths) if excluded_paths else set()
+        self.excluded_routes: set[str] = set(excluded_routes) if excluded_routes else set()
         self.keycloak_url = keycloak_url
+        # Precompile patterns for excluded routes
+        self.excluded_patterns = [
+            re.compile(f"^{re.escape(ENV.ML_API_ROOT_PATH + route)}.*")
+            if route
+            else re.compile(f"^{re.escape(route)}.*")
+            for route in self.excluded_routes
+        ]
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
-        # Ensure the request path is not excluded from authentication
-        for excluded_path in self.excluded_paths:
-            if request.url.path.startswith(ENV.ML_API_ROOT_PATH + excluded_path) or request.url.path.startswith(
-                excluded_path
-            ):
-                return await call_next(request)
+        # Skip excluded routes from authentication
+        path = request.url.path
+        if any(pattern.match(path) for pattern in self.excluded_patterns):
+            return await call_next(request)
 
         try:
             # Prepare the token for verification
@@ -189,10 +273,9 @@ class KeycloakMiddleware(BaseHTTPMiddleware):
 
             # Extract the Bearer token from the Authorization header
             if auth_header:
-                parts = auth_header.split()
-                header_split_length = 2
-                if len(parts) == header_split_length and parts[0].lower() == "bearer":
-                    token = parts[1]
+                token_match = re.match(r"^bearer\s+(.+)$", auth_header, re.IGNORECASE)
+                if token_match:
+                    token = token_match.group(1)
 
             if not token:
                 logger.warning("Authorization header missing or malformed")

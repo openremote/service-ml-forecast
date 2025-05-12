@@ -74,15 +74,14 @@ if not ENV.ML_API_PUBLISH_DOCS:
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # Second to last in the chain -- Keycloak
-# Can be disabled via the ML_MIDDLEWARE_KEYCLOAK environment variable (which leaves the API unprotected)
-if ENV.ML_MIDDLEWARE_KEYCLOAK:
+if ENV.ML_API_MIDDLEWARE_KEYCLOAK:
     app.add_middleware(
         KeycloakMiddleware,
         keycloak_url=ENV.ML_OR_KEYCLOAK_URL,
-        excluded_paths=["/docs", "/redoc", "/openapi.json", "/ui", "/system"],
+        excluded_routes=["/docs", "/redoc", "/openapi.json", "/ui"],
     )
 else:
-    logger.warning("Keycloak middleware disabled")
+    logger.warning("Keycloak middleware disabled! This is NOT recommended in production!")
 
 # First in the chain -- CORS
 app.add_middleware(
@@ -115,7 +114,7 @@ def initialize_background_services() -> None:
 # Entrypoint for the service
 if __name__ == "__main__":
     if IS_DEV:
-        logger.warning("APPLICATION IS RUNNING IN DEVELOPMENT MODE -- DO NOT USE IN PRODUCTION")
+        logger.warning("Application is running in development mode -- DO NOT USE IN PRODUCTION")
 
     logger.info("Application details: %s", __app_info__)
 

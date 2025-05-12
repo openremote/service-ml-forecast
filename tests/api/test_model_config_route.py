@@ -15,7 +15,7 @@ def mock_test_client(config_service: ModelConfigService) -> TestClient:
     from service_ml_forecast.config import ENV
 
     # Override the environment variable to disable keycloak middleware
-    ENV.ML_MIDDLEWARE_KEYCLOAK = False
+    ENV.ML_API_MIDDLEWARE_KEYCLOAK = False
 
     # Import the fastapi app
     from service_ml_forecast.main import app

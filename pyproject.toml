@@ -25,6 +25,7 @@ dependencies = [
     "pyzmq>=26.3.0",
     "isodate>=0.7.2",
     "pyjwt>=2.10.1",
+    "aiocache>=0.12.3",
 ]
 
 [dependency-groups]

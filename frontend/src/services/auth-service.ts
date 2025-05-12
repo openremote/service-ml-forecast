@@ -16,7 +16,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import Keycloak from 'keycloak-js';
-import { isEmbedded } from '../common/util';
+import { IS_EMBEDDED } from '../common/constants';
 
 const keycloakUrl: string = (process.env.ML_KEYCLOAK_URL || '').replace(/\/$/, '');
 
@@ -64,7 +64,7 @@ class AuthServiceClass {
                 checkLoginIframe: false,
                 silentCheckSsoFallback: true
             })
-            .then((auth) => {
+            .then((auth: boolean) => {
                 this.keycloak = keycloakInstance;
                 this.authenticated = auth;
                 this.token = keycloakInstance.token;
@@ -72,13 +72,13 @@ class AuthServiceClass {
                 this.initializing = false;
                 this.notify();
 
-                if (!isEmbedded()) {
+                if (!IS_EMBEDDED) {
                     this.startUpdateTokenInterval();
                 }
 
                 return auth;
             })
-            .catch((error) => {
+            .catch((error: any) => {
                 console.error(`Keycloak initialization failed for realm ${realm}:`, error);
                 this.keycloak = undefined;
                 this.authenticated = false;
@@ -89,7 +89,7 @@ class AuthServiceClass {
                 return false;
             });
 
-        return this.initPromise;
+        return this.initPromise!;
     }
 
     /**
