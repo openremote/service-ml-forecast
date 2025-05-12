@@ -33,7 +33,7 @@ export class AppLayout extends LitElement {
     @state()
     realm = '';
 
-    // Called before the route is entered, this is called on every Vaadin Router location change
+    // Called before the initial Vaadin Router location is entered ('/'), only called once since its a parent route
     onBeforeEnter(location: RouterLocation) {
         if (!AuthService.authenticated) {
             AuthService.login();
