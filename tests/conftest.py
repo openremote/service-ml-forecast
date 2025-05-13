@@ -2,21 +2,25 @@ import json
 import logging.config
 import shutil
 import tempfile
+import types
 from collections.abc import Generator
 from http import HTTPStatus
 from pathlib import Path
 
 import pytest
 import respx
+from fastapi.testclient import TestClient
 
 from service_ml_forecast.clients.openremote.models import AssetDatapoint
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
-from service_ml_forecast.config import ENV
+from service_ml_forecast.config import DIRS
+from service_ml_forecast.dependencies import get_config_service
 from service_ml_forecast.logging_config import LOGGING_CONFIG
+from service_ml_forecast.main import app
 from service_ml_forecast.models.model_config import ProphetModelConfig
 from service_ml_forecast.services.model_config_service import ModelConfigService
 from service_ml_forecast.services.model_storage_service import ModelStorageService
-from service_ml_forecast.services.openremote_data_service import OpenRemoteDataService
+from service_ml_forecast.services.openremote_service import OpenRemoteService
 
 logging.config.dictConfig(LOGGING_CONFIG)
 
@@ -27,18 +31,23 @@ TEST_OLDEST_TIMESTAMP = 1716153600000  # 2024-05-20 00:00:00 UTC
 
 # Mock URLs and credentials
 MOCK_OPENREMOTE_URL = "https://openremote.local"
-MOCK_KEYCLOAK_URL = "https://keycloak.local"
+MOCK_KEYCLOAK_URL = "https://keycloak.local/auth"
 MOCK_SERVICE_USER = "service_user"
 MOCK_SERVICE_USER_SECRET = "service_user_secret"
 MOCK_ACCESS_TOKEN = "mock_access_token"
 MOCK_TOKEN_EXPIRY_SECONDS = 60
 
+# FASTAPI SERVER
+FASTAPI_TEST_HOST = "127.0.0.1"
+FASTAPI_TEST_PORT = 8007
+
 # Create a temporary directory for tests
 TEST_TMP_DIR: Path = Path(tempfile.mkdtemp(prefix="service_ml_forecast_test_"))
 
-ENV.ML_BASE_DIR = TEST_TMP_DIR
-ENV.ML_MODELS_DIR = TEST_TMP_DIR / "models"
-ENV.ML_CONFIGS_DIR = TEST_TMP_DIR / "configs"
+# Override directory constants for tests
+DIRS.ML_BASE_DIR = TEST_TMP_DIR
+DIRS.ML_MODELS_DIR = TEST_TMP_DIR / "models"
+DIRS.ML_CONFIGS_DIR = TEST_TMP_DIR / "configs"
 
 
 # Clean up temporary directory after each test call
@@ -74,7 +83,7 @@ def mock_openremote_client() -> OpenRemoteClient | None:
     """Create a mock OpenRemote client with mocked authentication."""
     with respx.mock(base_url=MOCK_KEYCLOAK_URL) as respx_mock:
         # Mock the authentication endpoint
-        respx_mock.post("/auth/realms/master/protocol/openid-connect/token").mock(
+        respx_mock.post("/realms/master/protocol/openid-connect/token").mock(
             return_value=respx.MockResponse(
                 HTTPStatus.OK,
                 json={
@@ -95,8 +104,8 @@ def mock_openremote_client() -> OpenRemoteClient | None:
 
 
 @pytest.fixture
-def config_service() -> ModelConfigService:
-    return ModelConfigService()
+def config_service(mock_openremote_service: OpenRemoteService) -> ModelConfigService:
+    return ModelConfigService(mock_openremote_service)
 
 
 @pytest.fixture
@@ -135,10 +144,38 @@ def tariff_mock_datapoints() -> list[AssetDatapoint]:
 
 
 @pytest.fixture
-def or_data_service(openremote_client: OpenRemoteClient) -> OpenRemoteDataService:
-    return OpenRemoteDataService(openremote_client)
+def openremote_service(openremote_client: OpenRemoteClient) -> OpenRemoteService:
+    return OpenRemoteService(openremote_client)
 
 
 @pytest.fixture
-def mock_or_data_service(mock_openremote_client: OpenRemoteClient) -> OpenRemoteDataService:
-    return OpenRemoteDataService(mock_openremote_client)
+def mock_openremote_service(mock_openremote_client: OpenRemoteClient) -> OpenRemoteService:
+    service = OpenRemoteService(mock_openremote_client)
+
+    # Mock get assets by ids, allows external validation to go through
+    def mock_get_assets_by_ids(self: OpenRemoteService, realm: str, asset_ids: list[str]) -> list[dict[str, str]]:
+        return [{"id": asset_id, "realm": realm} for asset_id in asset_ids]
+
+    service.get_assets_by_ids = types.MethodType(mock_get_assets_by_ids, service)  # type: ignore[method-assign]
+    return service
+
+
+# Create a TestClient instance for use in tests
+@pytest.fixture
+def mock_test_client(config_service: ModelConfigService) -> TestClient:
+    """Create a FastAPI TestClient instance with mocked services."""
+
+    # Mock dependencies
+    app.dependency_overrides[get_config_service] = lambda: config_service
+
+    return TestClient(app)
+
+
+@pytest.fixture
+def test_client() -> TestClient:
+    """FastAPI TestClient instance for integration tests. with no mocks."""
+
+    # Clear the dependency overrides
+    app.dependency_overrides = {}
+
+    return TestClient(app)

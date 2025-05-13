@@ -14,13 +14,14 @@ from tests.conftest import (
 )
 
 
-def test_retrieve_assets(mock_openremote_client: OpenRemoteClient) -> None:
+def test_retrieve_assets_with_historical_datapoints(mock_openremote_client: OpenRemoteClient) -> None:
     """Test retrieval of assets from OpenRemote using a mocked client.
 
     Verifies that:
     - The client can successfully retrieve assets from a specific realm
     - The returned assets have the expected ID
     - The response is properly parsed into Asset objects
+    - The assets are filtered to only include attributes with storeDataPoints=True in meta
     """
     mock_power_value = 100
 
@@ -35,10 +36,17 @@ def test_retrieve_assets(mock_openremote_client: OpenRemoteClient) -> None:
                     {
                         "id": TEST_ASSET_ID,
                         "realm": "master",
+                        "name": "Test Asset",
                         "attributes": {
                             TEST_ATTRIBUTE_NAME: {
                                 "name": TEST_ATTRIBUTE_NAME,
                                 "value": mock_power_value,
+                                "timestamp": timestamp,
+                                "meta": {"storeDataPoints": True},
+                            },
+                            "other_attribute": {
+                                "name": "other_attribute",
+                                "value": "other_value",
                                 "timestamp": timestamp,
                             },
                         },
@@ -46,10 +54,12 @@ def test_retrieve_assets(mock_openremote_client: OpenRemoteClient) -> None:
                 ],
             ),
         )
-        assets: list[Asset] | None = mock_openremote_client.retrieve_assets("master")
+        assets: list[Asset] | None = mock_openremote_client.retrieve_assets_with_historical_datapoints("master")
         assert assets is not None
         assert len(assets) > 0
         assert assets[0].id == TEST_ASSET_ID
+        assert TEST_ATTRIBUTE_NAME in assets[0].attributes
+        assert "other_attribute" not in assets[0].attributes
 
 
 def test_retrieve_assets_invalid_realm(mock_openremote_client: OpenRemoteClient) -> None:
@@ -62,7 +72,9 @@ def test_retrieve_assets_invalid_realm(mock_openremote_client: OpenRemoteClient)
     # Mock assets query endpoint
     with respx.mock(base_url=MOCK_OPENREMOTE_URL) as respx_mock:
         respx_mock.post("/api/master/asset/query").mock(return_value=respx.MockResponse(HTTPStatus.NOT_FOUND))
-        assets: list[Asset] | None = mock_openremote_client.retrieve_assets("invalid_realm_name")
+        assets: list[Asset] | None = mock_openremote_client.retrieve_assets_with_historical_datapoints(
+            "invalid_realm_name"
+        )
         assert assets is None
 
 

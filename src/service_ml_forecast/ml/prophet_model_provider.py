@@ -25,7 +25,7 @@ from prophet.serialize import model_from_json, model_to_json
 from service_ml_forecast.clients.openremote.models import AssetDatapoint
 from service_ml_forecast.common.time_util import TimeUtil
 from service_ml_forecast.ml.model_provider import ModelProvider
-from service_ml_forecast.models.feature_data_wrappers import ForecastFeatureSet, ForecastResult, TrainingFeatureSet
+from service_ml_forecast.models.feature_data_wrappers import ForecastDataSet, ForecastResult, TrainingDataSet
 from service_ml_forecast.models.model_config import ProphetModelConfig
 from service_ml_forecast.services.model_storage_service import ModelStorageService
 
@@ -42,10 +42,21 @@ class ProphetModelProvider(ModelProvider[Prophet]):
         self.config = config
         self.model_storage_service = ModelStorageService()
 
-    def train_model(self, training_dataset: TrainingFeatureSet) -> Prophet | None:
+    def train_model(self, training_dataset: TrainingDataSet) -> Prophet | None:
         if training_dataset.target.datapoints is None or len(training_dataset.target.datapoints) == 0:
             logger.error("No target data provided, cannot train Prophet model")
             return None
+
+        logger.info(f"Training model -- {self.config.id} with {len(training_dataset.target.datapoints)} datapoints")
+
+        # Add a warning if the dataset is very small
+        min_required_datapoints = 50
+        num_datapoints = len(training_dataset.target.datapoints)
+        if num_datapoints < min_required_datapoints:
+            logger.warning(
+                f"Training dataset for model {self.config.id} has only {num_datapoints} datapoints "
+                f"(minimum recommended: {min_required_datapoints}). The resulting model may be unreliable."
+            )
 
         dataframe = _prepare_training_dataframe(training_dataset)
 
@@ -62,9 +73,9 @@ class ProphetModelProvider(ModelProvider[Prophet]):
 
         # Add regressors to the model if provided
         if training_dataset.regressors is not None:
-            logger.info(f"Adding {len(training_dataset.regressors)} regressor(s) -- {self.config.id}")
+            logger.info(f"Training with {len(training_dataset.regressors)} regressor(s) -- {self.config.id}")
             for regressor in training_dataset.regressors:
-                model.add_regressor(regressor.attribute_name)
+                model.add_regressor(regressor.feature_name)
 
         # Train the model
         model.fit(dataframe)
@@ -72,15 +83,15 @@ class ProphetModelProvider(ModelProvider[Prophet]):
         return model
 
     def load_model(self, model_id: UUID) -> Prophet:
-        model_json = self.model_storage_service.get(model_id, "json")
+        model_json = self.model_storage_service.get(model_id)
         return model_from_json(model_json)
 
     def save_model(self, model: Prophet) -> None:
         model_json = model_to_json(model)
-        self.model_storage_service.save(model_json, self.config.id, "json")
+        self.model_storage_service.save(model_json, self.config.id)
         logger.info(f"Saved trained model -- {self.config.id}")
 
-    def generate_forecast(self, forecast_feature_set: ForecastFeatureSet | None = None) -> ForecastResult:
+    def generate_forecast(self, forecast_dataset: ForecastDataSet | None = None) -> ForecastResult:
         model = self.load_model(self.config.id)
 
         future = model.make_future_dataframe(
@@ -92,16 +103,17 @@ class ProphetModelProvider(ModelProvider[Prophet]):
         # round the future timestamps to the forecast frequency
         future["ds"] = future["ds"].dt.round(self.config.forecast_frequency)
 
-        if forecast_feature_set is not None:
-            for regressor in forecast_feature_set.regressors:
+        if forecast_dataset is not None:
+            logger.info(f"Forecasting with {len(forecast_dataset.regressors)} regressor(s) -- {self.config.id}")
+            for regressor in forecast_dataset.regressors:
                 regressor_dataframe = _convert_datapoints_to_dataframe(
                     regressor.datapoints,
-                    rename_y=regressor.attribute_name,
+                    rename_y=regressor.feature_name,
                 )
 
                 future = pd.merge_asof(
                     future,
-                    regressor_dataframe[["ds", regressor.attribute_name]],
+                    regressor_dataframe[["ds", regressor.feature_name]],
                     on="ds",
                     direction="nearest",
                 )
@@ -142,7 +154,7 @@ def _convert_datapoints_to_dataframe(datapoints: list[AssetDatapoint], rename_y:
     return dataframe
 
 
-def _prepare_training_dataframe(training_dataset: TrainingFeatureSet) -> pd.DataFrame:
+def _prepare_training_dataframe(training_dataset: TrainingDataSet) -> pd.DataFrame:
     target = training_dataset.target
     regressors = training_dataset.regressors
 
@@ -154,13 +166,13 @@ def _prepare_training_dataframe(training_dataset: TrainingFeatureSet) -> pd.Data
         for regressor in regressors:
             regressor_dataframe = _convert_datapoints_to_dataframe(
                 regressor.datapoints,
-                rename_y=regressor.attribute_name,
+                rename_y=regressor.feature_name,
             )
 
             # Interpolate the regressor values to the target data point timestamps
             dataframe = pd.merge_asof(
                 dataframe,
-                regressor_dataframe[["ds", regressor.attribute_name]],
+                regressor_dataframe[["ds", regressor.feature_name]],
                 on="ds",
                 direction="nearest",
             )

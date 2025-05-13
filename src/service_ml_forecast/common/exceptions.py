@@ -30,6 +30,12 @@ class ResourceAlreadyExistsError(Exception):
     pass
 
 
+class ResourceValidationError(Exception):
+    """Exception raised when a resource validation fails."""
+
+    pass
+
+
 class ExternalApiError(Exception):
     """Exception raised when an external API call fails."""
 

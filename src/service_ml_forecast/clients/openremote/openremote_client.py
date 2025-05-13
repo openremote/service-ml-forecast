@@ -28,6 +28,7 @@ from service_ml_forecast.clients.openremote.models import (
     AssetDatapoint,
     AssetDatapointPeriod,
     AssetDatapointQuery,
+    ManagerConfig,
 )
 
 
@@ -81,7 +82,7 @@ class OpenRemoteClient:
         return False
 
     def __get_token(self) -> OAuthTokenResponse | None:
-        url = f"{self.keycloak_url}/auth/realms/master/protocol/openid-connect/token"
+        url = f"{self.keycloak_url}/realms/master/protocol/openid-connect/token"
 
         data = OAuthTokenRequest(
             grant_type="client_credentials",
@@ -135,31 +136,6 @@ class OpenRemoteClient:
             except (httpx.HTTPStatusError, httpx.ConnectError) as e:
                 self.logger.error(f"OpenRemote API is not healthy: {e}")
                 return False
-
-    def retrieve_assets(self, realm: str) -> list[Asset] | None:
-        """Retrieve all assets for a given realm.
-
-        Args:
-            realm: The realm to retrieve assets from.
-
-        Returns:
-            list[Asset] | None: List of assets or None
-        """
-
-        url = f"{self.openremote_url}/api/master/asset/query"
-        asset_query = {"recursive": True, "realm": {"name": realm}}
-
-        request = self.__build_request("POST", url, data=asset_query)
-
-        with httpx.Client() as client:
-            try:
-                response = client.send(request)
-                response.raise_for_status()
-                assets = response.json()
-                return [Asset(**asset) for asset in assets]
-            except (httpx.HTTPStatusError, httpx.ConnectError) as e:
-                self.logger.error(f"Error retrieving assets: {e}")
-                return None
 
     def retrieve_asset_datapoint_period(self, asset_id: str, attribute_name: str) -> AssetDatapointPeriod | None:
         """Retrieve the datapoints timestamp period of a given asset attribute.
@@ -290,4 +266,118 @@ class OpenRemoteClient:
                 return [AssetDatapoint(**datapoint) for datapoint in datapoints]
             except (httpx.HTTPStatusError, httpx.ConnectError) as e:
                 self.logger.error(f"Error retrieving predicted datapoints: {e}")
+                return None
+
+    def retrieve_assets_with_historical_datapoints(self, realm: str) -> list[Asset] | None:
+        """Retrieve all assets for a given realm that store historical datapoints.
+
+        Args:
+            realm: The realm to retrieve assets from.
+
+        Returns:
+            list[Asset] | None: List of assets or None
+        """
+
+        url = f"{self.openremote_url}/api/master/asset/query"
+
+        self.logger.info(f"Retrieving assets with storeDataPoints: {realm}")
+
+        # OR Asset Query to retrieve only assets that have attributes with "meta": {"storeDataPoints": true}
+        asset_query = {
+            "realm": {"name": realm},
+            "attributes": {
+                "operator": "AND",
+                "items": [
+                    {
+                        "meta": [
+                            {
+                                "name": {
+                                    "predicateType": "string",
+                                    "match": "EXACT",
+                                    "caseSensitive": True,
+                                    "value": "storeDataPoints",
+                                },
+                                "value": {
+                                    "predicateType": "boolean",
+                                    "match": "EXACT",
+                                    "value": True,
+                                },
+                            }
+                        ]
+                    }
+                ],
+            },
+        }
+
+        request = self.__build_request("POST", url, data=asset_query)
+
+        with httpx.Client() as client:
+            try:
+                response = client.send(request)
+                response.raise_for_status()
+                assets_data = response.json()
+
+                # Additional filtering to remove attributes that do not have "meta": {"storeDataPoints": true}
+                def _filter_asset_attributes(asset_obj: Asset) -> Asset:
+                    if hasattr(asset_obj, "attributes") and isinstance(asset_obj.attributes, dict):
+                        asset_obj.attributes = {
+                            k: v
+                            for k, v in asset_obj.attributes.items()
+                            if hasattr(v, "meta") and isinstance(v.meta, dict) and v.meta.get("storeDataPoints") is True
+                        }
+                    return asset_obj
+
+                parsed_assets = [_filter_asset_attributes(Asset(**asset_data)) for asset_data in assets_data]
+                return parsed_assets
+            except (httpx.HTTPStatusError, httpx.ConnectError) as e:
+                self.logger.error(f"Error retrieving assets with storeDataPoints: {e}")
+                return None
+
+    def retrieve_assets_by_ids(self, asset_ids: list[str], realm: str) -> list[Asset] | None:
+        """Retrieve assets by their IDs.
+
+        Args:
+            asset_ids: The IDs of the assets to retrieve.
+            realm: The realm to retrieve assets from.
+
+        Returns:
+            list[Asset] | None: List of assets or None
+        """
+
+        url = f"{self.openremote_url}/api/master/asset/query"
+        asset_query = {"recursive": False, "realm": {"name": realm}, "ids": asset_ids}
+
+        request = self.__build_request("POST", url, data=asset_query)
+
+        with httpx.Client() as client:
+            try:
+                response = client.send(request)
+                response.raise_for_status()
+                assets = response.json()
+                return [Asset(**asset) for asset in assets]
+            except (httpx.HTTPStatusError, httpx.ConnectError) as e:
+                self.logger.error(f"Error retrieving assets: {e}")
+                return None
+
+    def retrieve_manager_config(self) -> ManagerConfig | None:
+        """Retrieve the configuration of the manager.
+
+        Args:
+            realm: The realm to retrieve the configuration from.
+
+        Returns:
+            RealmConfig | None: The configuration of the realm or None
+        """
+
+        url = f"{self.openremote_url}/api/master/configuration/manager"
+        request = self.__build_request("GET", url)
+
+        with httpx.Client() as client:
+            try:
+                response = client.send(request)
+                response.raise_for_status()
+                return ManagerConfig(**response.json())
+
+            except (httpx.HTTPStatusError, httpx.ConnectError) as e:
+                self.logger.error(f"Error retrieving manager config: {e}")
                 return None

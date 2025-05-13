@@ -24,15 +24,42 @@ from pydantic import BaseModel, Field
 from service_ml_forecast.models.model_type import ModelTypeEnum
 
 
-class AssetAttributeFeature(BaseModel):
-    """Asset attribute feature with the asset id, attribute name and the cutoff timestamp."""
+class RegressorAssetDatapointsFeature(BaseModel):
+    """Asset regressor feature with the asset id, attribute name and the cutoff timestamp.
+
+    The asset regressor is a covariate that is used to predict the target asset.
+    """
 
     asset_id: str = Field(description="ID of the asset from OpenRemote.", min_length=22, max_length=22)
     attribute_name: str = Field(
         description="Name of the attribute of the asset.",
+        min_length=3,
     )
     cutoff_timestamp: int = Field(
         description="Timestamp in milliseconds since epoch, all data after this timestamp will be used.",
+        gt=0,
+    )
+
+    # Used for model training and forecasting -- requiring unique feature name
+    def get_feature_name(self) -> str:
+        """Get the feature name for the regressor feature."""
+        return f"{self.asset_id}.{self.attribute_name}"
+
+
+class TargetAssetDatapointsFeature(BaseModel):
+    """Asset target feature with the asset id, attribute name and the cutoff timestamp.
+
+    The asset target is the asset with an attribute that is being predicted.
+    """
+
+    asset_id: str = Field(description="ID of the asset from OpenRemote.", min_length=22, max_length=22)
+    attribute_name: str = Field(
+        description="Name of the attribute of the asset.",
+        min_length=3,
+    )
+    cutoff_timestamp: int = Field(
+        description="Timestamp in milliseconds since epoch, all data after this timestamp will be used.",
+        gt=0,
     )
 
 
@@ -50,21 +77,24 @@ class BaseModelConfig(BaseModel):
         description="Whether the model is enabled and will be scheduled for training and forecasting.",
     )
     type: ModelTypeEnum = Field(description="Which machine learning model to use.")
-    target: AssetAttributeFeature = Field(
+    target: TargetAssetDatapointsFeature = Field(
         description="The asset attribute to generate datapoints for. "
         "There must be historical data available for training.",
     )
-    regressors: list[AssetAttributeFeature] | None = Field(
+    regressors: list[RegressorAssetDatapointsFeature] | None = Field(
         default=None,
-        description="List of asset attributes that will be used as regressors. "
-        "There must be historical data available for training.",
+        description="List of optional asset attributes that will be used as regressors. "
+        "There must be historical data available for training. "
+        "There must also be future data available for forecasting.",
     )
     forecast_interval: str = Field(description="Forecast generation interval. Expects ISO 8601 duration strings.")
     training_interval: str = Field(description="Model training interval. Expects ISO 8601 duration strings.")
     forecast_periods: int = Field(description="Number of periods to forecast.")
     forecast_frequency: str = Field(
-        description="The frequency of each forecasted datapoint. Expects a pandas offset string. E.g. '30min' or '1h'. "
-        "Generated forecast datapoints are rounded to the nearest frequency. Example: 15:30 -> 16:00 -> 16:30 etc.",
+        description="The frequency of each forecasted datapoint. "
+        "Expects a pandas frequency string. E.g. '30min' or '1h'. "
+        "Generated forecast datapoints are rounded to the nearest frequency. "
+        "Example: 15:30 -> 16:00 -> 16:30 etc.",
     )
 
 
@@ -99,12 +129,16 @@ class ProphetModelConfig(BaseModelConfig):
         default=0.8,
         description="Proportion of historical data used for detecting changepoints. "
         "A higher value (e.g., 0.9-1.0) makes the model more responsive to recent trends.",
+        ge=0.0,
+        le=1.0,
     )
     changepoint_prior_scale: float = Field(
         default=0.05,
         description="Controls trend flexibility at changepoints. "
         "Lower values (e.g., 0.01) result in smoother trends, "
         "while higher values (e.g., 0.5) allow more abrupt changes.",
+        ge=0.0,
+        le=1.0,
     )
 
 

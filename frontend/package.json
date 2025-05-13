@@ -1,0 +1,39 @@
+{
+    "name": "ui",
+    "private": true,
+    "version": "0.0.0",
+    "type": "module",
+    "scripts": {
+        "serve": "cross-env rspack serve",
+        "build:dev": "cross-env rspack build --mode development",
+        "build:prod": "cross-env SERVICE_URL=${SERVICE_URL:-/services/ml-forecast} ML_WEB_ROOT_PATH=${ML_WEB_ROOT_PATH:-/services/ml-forecast/ui} rspack build --mode production",
+        "build:analyze": "rspack build --mode production --analyze",
+        "lint": "eslint && prettier . --check",
+        "format": "prettier . --write"
+    },
+    "dependencies": {
+        "@lit/context": "^1.1.5",
+        "@openremote/or-components": "^1.5.0",
+        "@openremote/or-mwc-components": "^1.5.0",
+        "@vaadin/router": "^2.0.0",
+        "lit": "^3.2.1",
+        "lodash": "^4.17.21",
+        "raw-loader": "^4.0.2",
+        "simplebar": "^6.3.0"
+    },
+    "devDependencies": {
+        "@eslint/js": "^9.24.0",
+        "@rspack/cli": "^1.3.10",
+        "@rspack/core": "^1.3.10",
+        "@rspack/dev-server": "^1.1.1",
+        "@typescript-eslint/eslint-plugin": "^8.29.1",
+        "@typescript-eslint/parser": "^8.29.1",
+        "cross-env": "^7.0.3",
+        "eslint": "^9.24.0",
+        "eslint-config-prettier": "^10.1.2",
+        "globals": "^16.0.0",
+        "prettier": "^3.5.3",
+        "typescript": "~5.7.2",
+        "typescript-eslint": "^8.29.1"
+    }
+}

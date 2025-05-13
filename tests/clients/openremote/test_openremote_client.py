@@ -6,16 +6,26 @@ from service_ml_forecast.common.time_util import TimeUtil
 from tests.conftest import TEST_ASSET_ID, TEST_ATTRIBUTE_NAME
 
 
-def test_retrieve_assets(openremote_client: OpenRemoteClient) -> None:
-    """Test retrieval of assets from a real OpenRemote instance.
+def test_retrieve_assets_with_historical_datapoints(openremote_client: OpenRemoteClient) -> None:
+    """Test retrieval of assets with historical datapoints from a real OpenRemote instance.
 
     Verifies that:
     - The client can successfully connect to and retrieve assets from OpenRemote
     - The response contains at least one valid asset
+    - The response contains only assets that have attributes with "meta": {"storeDataPoints": true}
     """
-    assets: list[Asset] | None = openremote_client.retrieve_assets("master")
+    assets: list[Asset] | None = openremote_client.retrieve_assets_with_historical_datapoints("smartcity")
     assert assets is not None
     assert len(assets) > 0
+
+    for asset in assets:
+        assert asset.attributes is not None
+        assert len(asset.attributes) > 0
+        # Check that each attribute has a meta field with storeDataPoints set to True
+        for attr_value in asset.attributes.values():
+            assert hasattr(attr_value, "meta")
+            assert isinstance(attr_value.meta, dict)
+            assert attr_value.meta.get("storeDataPoints")
 
 
 def test_retrieve_assets_invalid_realm(openremote_client: OpenRemoteClient) -> None:
@@ -25,7 +35,7 @@ def test_retrieve_assets_invalid_realm(openremote_client: OpenRemoteClient) -> N
     - The client properly handles errors when an invalid realm is specified
     - The method returns None for non-existent realms
     """
-    assets: list[Asset] | None = openremote_client.retrieve_assets("invalid_realm_name")
+    assets: list[Asset] | None = openremote_client.retrieve_assets_with_historical_datapoints("invalid_realm_name")
     assert assets is None
 
 

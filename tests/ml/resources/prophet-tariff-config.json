@@ -5,7 +5,7 @@
     "enabled": true,
     "type": "prophet",
     "target": {
-      "asset_id": "44ORIhkDVAlT97dYGUD9l9",
+      "asset_id": "41ORIhkDVAlT97dYGUD9n5",
       "attribute_name": "tariff",
       "cutoff_timestamp": 1716153600000
     },
@@ -15,7 +15,7 @@
     "forecast_frequency": "1h",
     "regressors": [
       {
-        "asset_id": "44ORIhkDVAlT97dYGUD9b8",
+        "asset_id": "49ORIhkDVAlT97dYGUD9p5",
         "attribute_name": "windSpeed",
         "cutoff_timestamp": 1716153600000
       }

@@ -21,10 +21,16 @@ from uuid import UUID
 
 from pydantic import TypeAdapter, ValidationError
 
-from service_ml_forecast.common.exceptions import ResourceAlreadyExistsError, ResourceNotFoundError
+from service_ml_forecast.common.exceptions import (
+    ResourceAlreadyExistsError,
+    ResourceNotFoundError,
+    ResourceValidationError,
+)
 from service_ml_forecast.common.fs_util import FsUtil
-from service_ml_forecast.config import ENV
+from service_ml_forecast.config import DIRS
 from service_ml_forecast.models.model_config import ModelConfig
+from service_ml_forecast.services.model_storage_service import ModelStorageService
+from service_ml_forecast.services.openremote_service import OpenRemoteService
 
 logger = logging.getLogger(__name__)
 
@@ -35,19 +41,35 @@ class ModelConfigService:
     CONFIG_FILE_PREFIX = "config"
     CONFIG_FILE_EXTENSION = "json"
 
-    def create(self, config: ModelConfig) -> ModelConfig:
-        """Create a new ML model configuration.
+    def __init__(self, openremote_service: OpenRemoteService):
+        self.openremote_service = openremote_service
+        self.model_storage_service = ModelStorageService()
+
+    def create(self, realm: str, config: ModelConfig) -> ModelConfig:
+        """Create a new model config.
 
         Args:
+            realm: The realm of the model config.
             config: The model config to create.
 
         Returns:
             The created model config.
 
         Raises:
-            ResourceAlreadyExistsError: Model config already exists.
+            ResourceValidationError: Mismatching realm | invalid asset dependencies
+            ResourceAlreadyExistsError: Config already exists
         """
+        # Check if the config has a matching realm
+        if config.realm != realm:
+            raise ResourceValidationError(f"Cannot create config: {config.id} - realm does not match")
+
         path = self._get_config_file_path(config.id)
+
+        if not self._has_valid_asset_dependencies(config):
+            raise ResourceValidationError(
+                f"Invalid model config: {config.id}! - some of the assets do not exist or are not in the correct realm"
+            )
+
         try:
             FsUtil.create_file(path, config.model_dump_json())
         except FileExistsError as e:
@@ -57,16 +79,15 @@ class ModelConfigService:
         return config
 
     def get_all(self, realm: str | None = None) -> list[ModelConfig]:
-        """Get a list of all previously saved ML model configurations.
+        """Get all model configs for a given realm.
 
         Args:
-            realm: The realm of the model configs to get.
+            realm: The realm of the model configs to get. If None, all configs will be returned.
 
         Returns:
-            A list of all previously saved model configurations.
+            A list of all model configs for the given realm.
         """
-        existing_config_files = FsUtil.get_files_in_dir(ENV.ML_CONFIGS_DIR, self.CONFIG_FILE_EXTENSION)
-
+        existing_config_files = FsUtil.get_files_in_dir(DIRS.ML_CONFIGS_DIR, self.CONFIG_FILE_EXTENSION)
         configs = []
 
         for file in existing_config_files:
@@ -78,69 +99,91 @@ class ModelConfigService:
                 logger.error(f"Invalid config file detected: {file}, skipping - details: {e}")
                 continue
 
-        # Filter the configs by realm if provided
-        return [config for config in configs if realm is None or config.realm == realm]
+        # Filter the configs by realm
+        filtered_configs = [config for config in configs if realm is None or config.realm == realm]
 
-    def get(self, config_id: UUID) -> ModelConfig:
-        """Get the ML model configuration based on the provided ID.
+        # Sort the configs by enabled status
+        return sorted(filtered_configs, key=lambda x: x.enabled, reverse=True)
+
+    def get(self, realm: str, config_id: UUID) -> ModelConfig:
+        """Get a model config by its ID and realm.
 
         Args:
+            realm: The realm of the model config to get.
             config_id: The ID of the model config to get.
 
         Returns:
             The model config.
 
         Raises:
-            ResourceNotFoundError: Model config was not found.
+            ResourceNotFoundError: Config does not exist
         """
         path = self._get_config_file_path(config_id)
 
         try:
             file_content = FsUtil.read_file(path)
+            config = self._parse(file_content)
+
+            # Check if the config has a matching realm
+            if not self._has_matching_realm(config, realm):
+                raise ResourceValidationError(f"Cannot get config: {config_id} - realm does not match")
+            return config
         except FileNotFoundError as e:
             logger.error(f"Cannot get config: {config_id} - does not exist: {e}")
             raise ResourceNotFoundError(f"Cannot get config: {config_id} - does not exist") from e
 
-        return self._parse(file_content)
-
-    def update(self, config: ModelConfig) -> ModelConfig:
-        """Update the ML model configuration.
+    def update(self, realm: str, config_id: UUID, updated_config: ModelConfig) -> ModelConfig:
+        """Update a model config.
 
         Args:
-            config: The model config to update.
+            realm: The realm of the model config to update.
+            config_id: The ID of the model config to update.
+            updated_config: The updated model config.
 
         Returns:
             The updated model config.
 
         Raises:
-            ResourceNotFoundError: Model config was not found.
+            ResourceValidationError: Mismatching realm | invalid asset dependencies
+            ResourceNotFoundError: Config does not exist
         """
-        path = self._get_config_file_path(config.id)
+        existing_config = self.get(realm, config_id)
 
-        try:
-            FsUtil.update_file(path, config.model_dump_json())
-        except FileNotFoundError as e:
-            logger.error(f"Cannot update config: {config.id} - does not exist: {e}")
-            raise ResourceNotFoundError(f"Cannot update config: {config.id} - does not exist") from e
+        # Check if the updated config has a matching realm
+        if not self._has_matching_realm(updated_config, realm):
+            raise ResourceValidationError(f"Cannot update config: {config_id} - realm does not match")
 
-        return config
+        path = self._get_config_file_path(existing_config.id)
+        FsUtil.update_file(path, updated_config.model_dump_json())
 
-    def delete(self, config_id: UUID) -> None:
-        """Delete the ML model configuration based on the provided ID.
+        return updated_config
+
+    def delete(self, realm: str, config_id: UUID) -> None:
+        """Delete a model config.
 
         Args:
+            realm: The realm of the model config to delete.
             config_id: The ID of the model config to delete.
 
         Raises:
-            ResourceNotFoundError: If the model config does not exist.
+            ResourceValidationError: Mismatching realm
+            ResourceNotFoundError: Config does not exist
         """
-        path = self._get_config_file_path(config_id)
+        existing_config = self.get(realm, config_id)
 
+        # Check if given realm matches the found config realm
+        if existing_config.realm != realm:
+            raise ResourceValidationError(f"Cannot delete config: {config_id} - realm does not match")
+
+        # Delete the config file
+        path = self._get_config_file_path(existing_config.id)
+        FsUtil.delete_file(path)
+
+        # Clean up any model files -- Handle not found errors gracefully
         try:
-            FsUtil.delete_file(path)
-        except FileNotFoundError as e:
-            logger.error(f"Cannot delete config: {config_id} - does not exist: {e}")
-            raise ResourceNotFoundError(f"Cannot delete config: {config_id} - does not exist") from e
+            self.model_storage_service.delete(config_id)
+        except ResourceNotFoundError as e:
+            logger.info(f"Config did not have a model file to delete: {config_id} - {e}")
 
     def _parse(self, json: str) -> ModelConfig:
         """Parse the provided ML model config JSON string into the concrete type."""
@@ -149,4 +192,31 @@ class ModelConfigService:
         return model_adapter.validate_json(json)
 
     def _get_config_file_path(self, config_id: UUID) -> Path:
-        return Path(f"{ENV.ML_CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config_id}.{self.CONFIG_FILE_EXTENSION}")
+        return Path(f"{DIRS.ML_CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config_id}.{self.CONFIG_FILE_EXTENSION}")
+
+    def _has_matching_realm(self, config: ModelConfig, realm: str) -> bool:
+        """Check whether the model config has a matching realm."""
+
+        if config.realm != realm:
+            return False
+
+        return True
+
+    def _has_valid_asset_dependencies(self, config: ModelConfig) -> bool:
+        """Check the asset dependencies of the model config."""
+
+        asset_ids_to_check: set[str] = set()
+
+        asset_ids_to_check.add(config.target.asset_id)
+
+        if config.regressors:
+            for regressor in config.regressors:
+                asset_ids_to_check.add(regressor.asset_id)
+
+        assets = self.openremote_service.get_assets_by_ids(config.realm, list(asset_ids_to_check))
+
+        if len(assets) != len(asset_ids_to_check):
+            logger.error(f"Invalid model config: {config.id} - some assets do not exist in the correct realm")
+            return False
+
+        return True

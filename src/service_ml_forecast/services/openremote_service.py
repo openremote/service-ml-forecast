@@ -17,16 +17,16 @@
 
 import logging
 
-from service_ml_forecast.clients.openremote.models import AssetDatapoint
+from service_ml_forecast.clients.openremote.models import Asset, AssetDatapoint, RealmConfig
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 from service_ml_forecast.common.time_util import TimeUtil
-from service_ml_forecast.models.feature_data_wrappers import FeatureDatapoints, ForecastFeatureSet, TrainingFeatureSet
+from service_ml_forecast.models.feature_data_wrappers import AssetFeatureDatapoints, ForecastDataSet, TrainingDataSet
 from service_ml_forecast.models.model_config import ModelConfig
 
 logger = logging.getLogger(__name__)
 
 
-class OpenRemoteDataService:
+class OpenRemoteService:
     """Service for interacting with the OpenRemote Manager API.
 
     Provides a wrapper around the OpenRemoteClient to provide a more convenient interface for the ML Forecast service.
@@ -51,8 +51,8 @@ class OpenRemoteDataService:
             asset_datapoints,
         )
 
-    def get_training_feature_set(self, config: ModelConfig) -> TrainingFeatureSet | None:
-        """Get the training feature set for a given model configuration.
+    def get_training_dataset(self, config: ModelConfig) -> TrainingDataSet | None:
+        """Get the training dataset for a given model configuration.
 
         Args:
             config: The model configuration
@@ -60,7 +60,7 @@ class OpenRemoteDataService:
         Returns:
             The training feature set or None if the training feature set could not be retrieved.
         """
-        target_feature_datapoints: FeatureDatapoints
+        target_feature_datapoints: AssetFeatureDatapoints
 
         # Retrieve target feature datapoints from OpenRemote
         datapoints = self.client.retrieve_historical_datapoints(
@@ -71,18 +71,18 @@ class OpenRemoteDataService:
         )
 
         if datapoints is None:
-            logger.error(
-                f"Failed to retrieve target datapoints for {config.target.asset_id} "
+            logger.warning(
+                f"Unable to retrieve target datapoints for {config.target.asset_id} "
                 f"{config.target.attribute_name} - skipping"
             )
             return None
 
-        target_feature_datapoints = FeatureDatapoints(
-            attribute_name=config.target.attribute_name,
+        target_feature_datapoints = AssetFeatureDatapoints(
+            feature_name=config.target.attribute_name,
             datapoints=datapoints,
         )
 
-        regressors: list[FeatureDatapoints] = []
+        regressors: list[AssetFeatureDatapoints] = []
 
         # Retrieve regressor historical feature datapoints if configured
         if config.regressors is not None:
@@ -95,36 +95,39 @@ class OpenRemoteDataService:
                 )
 
                 if regressor_datapoints is None:
-                    logger.error(
-                        f"Failed to retrieve regressor datapoints for {regressor.asset_id} "
-                        f"{regressor.attribute_name} - skipping"
+                    logger.warning(
+                        f"Unable to retrieve regressor datapoints for {regressor.asset_id} "
+                        f"{regressor.get_feature_name()} - skipping"
                     )
-                    continue
+                    raise ValueError(
+                        f"Unable to retrieve regressor datapoints for {regressor.asset_id} "
+                        f"{regressor.get_feature_name()}"
+                    )
 
                 regressors.append(
-                    FeatureDatapoints(
-                        attribute_name=regressor.attribute_name,
+                    AssetFeatureDatapoints(
+                        feature_name=regressor.get_feature_name(),
                         datapoints=regressor_datapoints,
                     ),
                 )
 
-        training_feature_set = TrainingFeatureSet(
+        training_dataset = TrainingDataSet(
             target=target_feature_datapoints,
             regressors=regressors if regressors else None,
         )
 
-        return training_feature_set
+        return training_dataset
 
-    def get_forecast_feature_set(self, config: ModelConfig) -> ForecastFeatureSet | None:
-        """Get the forecast feature set for a given model configuration.
+    def get_forecast_dataset(self, config: ModelConfig) -> ForecastDataSet | None:
+        """Get the forecast dataset for a given model configuration.
 
         Args:
             config: The model configuration
 
         Returns:
-            The forecast feature set or None if the forecast feature set could not be retrieved.
+            The forecast dataset or None if the forecast dataset could not be retrieved.
         """
-        regressors: list[FeatureDatapoints] = []
+        regressors: list[AssetFeatureDatapoints] = []
 
         # Retrieve regressor predicted feature datapoints if configured
         if config.regressors is not None:
@@ -137,20 +140,66 @@ class OpenRemoteDataService:
                 )
 
                 if regressor_datapoints is None:
-                    logger.error(
-                        f"No predicted datapoints found for {regressor.asset_id} {regressor.attribute_name} - skipping"
+                    logger.warning(
+                        f"Unable to retrieve predicted datapoints for {regressor.asset_id} "
+                        f"{regressor.get_feature_name()} - skipping"
                     )
-                    continue
+                    return None  # Return immediately, forecast will fail without regressor future data
 
                 regressors.append(
-                    FeatureDatapoints(
-                        attribute_name=regressor.attribute_name,
+                    AssetFeatureDatapoints(
+                        feature_name=regressor.get_feature_name(),
                         datapoints=regressor_datapoints,
                     ),
                 )
 
-        forecast_feature_set = ForecastFeatureSet(
+        forecast_dataset = ForecastDataSet(
             regressors=regressors,
         )
 
-        return forecast_feature_set
+        return forecast_dataset
+
+    def get_assets_with_historical_datapoints(self, realm: str) -> list[Asset]:
+        """Get all assets from OpenRemote with historical datapoints.
+
+        Returns:
+            A list of all assets from OpenRemote with historical datapoints.
+        """
+        assets = self.client.retrieve_assets_with_historical_datapoints(realm)
+        if assets is None:
+            logger.warning(f"Unable to retrieve assets with storeDataPoints for realm {realm}")
+            return []
+
+        return assets
+
+    def get_assets_by_ids(self, realm: str, asset_ids: list[str]) -> list[Asset]:
+        """Get all assets from OpenRemote.
+
+        Returns:
+            A list of all assets from OpenRemote.
+        """
+        logger.info(f"Retrieving assets by ids: {asset_ids} for realm {realm}")
+        assets = self.client.retrieve_assets_by_ids(asset_ids, realm)
+        if assets is None:
+            logger.warning(f"Unable to retrieve assets by ids for realm {realm}")
+            return []
+
+        return assets
+
+    def get_realm_config(self, realm: str) -> RealmConfig | None:
+        """Get the realm configuration for a given realm.
+
+        Returns:
+            The realm configuration or None if the realm configuration could not be retrieved.
+        """
+        config = self.client.retrieve_manager_config()
+
+        if config is None:
+            logger.warning("Unable to retrieve manager config")
+            return None
+
+        if realm not in config.realms:
+            logger.warning(f"Realm {realm} not found in manager config")
+            return None
+
+        return config.realms[realm]

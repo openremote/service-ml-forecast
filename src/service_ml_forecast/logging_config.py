@@ -35,21 +35,29 @@ LOGGING_CONFIG = {
         },
     },
     "loggers": {
+        # Service ML Forecast logs
         "": {
             "handlers": ["default"],
             "level": ENV.ML_LOG_LEVEL,
             "propagate": False,
         },
-        "uvicorn": {"handlers": ["default"], "level": ENV.ML_LOG_LEVEL, "propagate": False},
-        "uvicorn.error": {
-            "handlers": ["default"],
+        # Allow APScheduler to propagate logs (e.g. for logging from worker processes)
+        "apscheduler": {
+            "handlers": [],
             "level": ENV.ML_LOG_LEVEL,
-            "propagate": False,
+            "propagate": True,
+        },
+        # Uvicorn web server logs
+        "uvicorn": {"handlers": [], "level": ENV.ML_LOG_LEVEL, "propagate": True},
+        "uvicorn.error": {
+            "handlers": [],
+            "level": ENV.ML_LOG_LEVEL,
+            "propagate": True,
         },
         "uvicorn.access": {
-            "handlers": ["default"],
+            "handlers": [],
             "level": ENV.ML_LOG_LEVEL,
-            "propagate": False,
+            "propagate": True,
         },
     },
 }

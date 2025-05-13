@@ -21,7 +21,7 @@ from uuid import UUID
 
 from service_ml_forecast.common.exceptions import ResourceNotFoundError
 from service_ml_forecast.common.fs_util import FsUtil
-from service_ml_forecast.config import ENV
+from service_ml_forecast.config import DIRS
 
 logger = logging.getLogger(__name__)
 
@@ -30,8 +30,11 @@ class ModelStorageService:
     """Manages the persistence of ML models."""
 
     MODEL_FILE_PREFIX = "model"
+    DEFAULT_MODEL_FILE_EXTENSION = "json"
 
-    def save(self, model_content: str, model_id: UUID, model_file_extension: str) -> None:
+    def save(
+        self, model_content: str, model_id: UUID, model_file_extension: str = DEFAULT_MODEL_FILE_EXTENSION
+    ) -> None:
         """Save a model file. Will overwrite existing model file.
 
         Args:
@@ -44,7 +47,7 @@ class ModelStorageService:
         # Overwrite the existing model file
         FsUtil.create_file(path, model_content, overwrite=True)
 
-    def get(self, model_id: UUID, model_file_extension: str) -> str:
+    def get(self, model_id: UUID, model_file_extension: str = DEFAULT_MODEL_FILE_EXTENSION) -> str:
         """Get a model file.
 
         Args:
@@ -65,7 +68,7 @@ class ModelStorageService:
             logger.error(f"Cannot get model file: {model_id} - does not exist: {e}")
             raise ResourceNotFoundError(f"Cannot get model file: {model_id} - does not exist") from e
 
-    def delete(self, model_id: UUID, model_file_extension: str) -> None:
+    def delete(self, model_id: UUID, model_file_extension: str = DEFAULT_MODEL_FILE_EXTENSION) -> None:
         """Delete a model file.
 
         Args:
@@ -84,4 +87,4 @@ class ModelStorageService:
             raise ResourceNotFoundError(f"Cannot delete model file: {model_id} - does not exist") from e
 
     def _get_model_file_path(self, model_id: UUID, model_file_extension: str) -> Path:
-        return Path(f"{ENV.ML_MODELS_DIR}/{self.MODEL_FILE_PREFIX}-{model_id}.{model_file_extension}")
+        return Path(f"{DIRS.ML_MODELS_DIR}/{self.MODEL_FILE_PREFIX}-{model_id}.{model_file_extension}")

@@ -1,0 +1,160 @@
+// Copyright 2025, OpenRemote Inc.
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as
+// published by the Free Software Foundation, either version 3 of the
+// License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
+//
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+import { BasicAsset, ModelConfig, RealmConfig } from './models';
+import { ML_SERVICE_URL } from '../common/constants';
+
+function getBaseUrl(realm: string): string {
+    return ML_SERVICE_URL + '/api/' + realm;
+}
+
+function getOpenRemoteBaseUrl(realm: string): string {
+    return ML_SERVICE_URL + '/openremote/' + realm;
+}
+
+export const APIService = {
+    /**
+     * Get all model configs for the current realm
+     * @returns The list of model configs
+     */
+    async getModelConfigs(realm: string): Promise<ModelConfig[]> {
+        const response = await fetch(getBaseUrl(realm) + '/configs', {
+            method: 'GET'
+        });
+        if (!response.ok) {
+            throw new Error(`Failed to get model configs: ${response.statusText}`);
+        }
+        return response.json();
+    },
+
+    /**
+     * Get a model config by id
+     * @param realm The realm of the model config
+     * @param id The id of the model config
+     * @returns The model config
+     */
+    async getModelConfig(realm: string, id: string): Promise<ModelConfig> {
+        const response = await fetch(getBaseUrl(realm) + '/configs/' + id, {
+            method: 'GET'
+        });
+        if (!response.ok) {
+            throw new Error(`Failed to get model config ${id}: ${response.statusText}`);
+        }
+        return response.json();
+    },
+
+    /**
+     * Delete a model config by id
+     * @param realm The realm of the model config
+     * @param id The id of the model config
+     */
+    async deleteModelConfig(realm: string, id: string): Promise<void> {
+        const response = await fetch(getBaseUrl(realm) + '/configs/' + id, {
+            method: 'DELETE'
+        });
+        if (!response.ok) {
+            throw new Error(`Failed to delete model config ${id}: ${response.statusText}`);
+        }
+    },
+
+    /**
+     * Update a model config
+     * @param realm The realm of the model config
+     * @param id The id of the model config
+     * @param modelConfig The model config to update
+     * @returns The updated model config
+     */
+    async updateModelConfig(realm: string, id: string, modelConfig: ModelConfig): Promise<ModelConfig> {
+        const response = await fetch(getBaseUrl(realm) + '/configs/' + id, {
+            method: 'PUT',
+            body: JSON.stringify(modelConfig),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        if (!response.ok) {
+            throw new Error(`Failed to update model config: ${response.statusText}`);
+        }
+        return response.json();
+    },
+
+    /**
+     * Create a model config
+     * @param realm The realm of the model config
+     * @param modelConfig The model config to create
+     * @returns The created model config
+     */
+    async createModelConfig(realm: string, modelConfig: ModelConfig): Promise<ModelConfig> {
+        const response = await fetch(getBaseUrl(realm) + '/configs', {
+            method: 'POST',
+            body: JSON.stringify(modelConfig),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        if (!response.ok) {
+            throw new Error(`Failed to create model config: ${response.statusText}`);
+        }
+        return response.json();
+    },
+
+    /**
+     * Get the realm config for the current realm (for styling purposes)
+     * @param realm The realm of the realm config
+     * @returns The realm config
+     */
+    async getOpenRemoteRealmConfig(realm: string): Promise<RealmConfig> {
+        const response = await fetch(getOpenRemoteBaseUrl(realm) + '/realm/config', {
+            method: 'GET'
+        });
+        if (!response.ok) {
+            throw new Error(`Failed to get realm config: ${response.statusText}`);
+        }
+        return response.json();
+    },
+
+    /**
+     * Get all assets for the current realm with attributesthat store datapoints
+     * @param realm The realm of the assets
+     * @returns The list of assets
+     */
+    async getOpenRemoteAssets(realm: string): Promise<BasicAsset[]> {
+        const response = await fetch(getOpenRemoteBaseUrl(realm) + '/assets', {
+            method: 'GET'
+        });
+        if (!response.ok) {
+            throw new Error(`Failed to get assets: ${response.statusText}`);
+        }
+        return response.json();
+    },
+
+    /**
+     * Get assets by ids for the current realm
+     * @param realm The realm of the assets
+     * @param ids The list of asset ids
+     * @returns The list of assets
+     */
+    async getOpenRemoteAssetsById(realm: string, ids: string[]): Promise<BasicAsset[]> {
+        const response = await fetch(getOpenRemoteBaseUrl(realm) + '/assets/ids?ids=' + ids.join(','), {
+            method: 'GET'
+        });
+        if (!response.ok) {
+            throw new Error(`Failed to get assets: ${response.statusText}`);
+        }
+        return response.json();
+    }
+};

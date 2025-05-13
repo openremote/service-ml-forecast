@@ -3,9 +3,7 @@
 [![Open Source? Yes!](https://badgen.net/badge/Open%20Source%20%3F/Yes%21/blue?icon=github)](https://github.com/Naereen/badges/)
 
 ## Installation
-This project uses [uv](https://docs.astral.sh/uv/) for project management. `uv` is a Python package and project manager that simplifies dependency management, environment creation, and running commands.
-
-For more information about uv, visit the [official documentation](https://docs.astral.sh/uv/).
+Follow the steps below to run the project.
 
 ### Prerequisites
 [uv](https://docs.astral.sh/uv/) - Python package and project manager
@@ -14,27 +12,64 @@ For more information about uv, visit the [official documentation](https://docs.a
 - Or install with pip: `pip install uv`
 - Or with Homebrew (macOS): `brew install uv`
 
-### Setup python environment
-`uv venv` automatically creates a virtual environment with the python version specified in the `pyproject.toml` file.
+[node](https://nodejs.org/en/download/) - JavaScript runtime + npm (node package manager)
+- Install with Homebrew (macOS): `brew install node`
+- Install directly (Windows): https://nodejs.org/en/download/
+- Install via apt (Linux): `sudo apt install nodejs npm`
+- Install via dnf (Linux): `sudo dnf install nodejs npm`
+- Install via pacman (Linux): `sudo pacman -S nodejs npm`
 
+***
+
+### Run the back-end (Python)
+
+Create a virtual environment
 ```bash
-# Create a virtual environment
+# In project root
 uv venv
 source .venv/bin/activate # On Windows: .venv\Scripts\activate
-```
 
-### Install dependencies
-```bash
 uv sync
 ```
 
-### Helper Scripts
-*Make sure you have created a virtual environment via `uv venv`*
+Set the required environment variables -- See [config.py](https://github.com/openremote/service-ml-forecast/blob/main/src/service_ml_forecast/config.py) for all configuration options.
+```bash
+ML_OR_SERVICE_USER=serviceuser
+ML_OR_SERVICE_SECRET=secret
+```
+
+Start the back-end application
+```bash
+uv run start
+
+# Exposes the back-end on http://localhost:8000
+```
+
+***
+
+### Run the front-end (JavaScript)
+Serve the front-end
+```bash
+cd frontend
+npm run serve  # Automatically installs dependencies
+
+# Exposes the front-end on http://localhost:8001
+```
+
+***
+
+### UV Helper Scripts
+In project root
 - Run linting - `uv run lint`
 - Format code - `uv run format`
 - Run tests - `uv run test`
 - Run the application - `uv run start`
 
+### NPM Helper Scripts
+in `/frontend`
+- Run linting - `npm run lint`
+- Format code - `npm run format`
+- Run the application - `npm run serve`
 
 ## License
 

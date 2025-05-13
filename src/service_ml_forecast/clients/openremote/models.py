@@ -26,12 +26,14 @@ class AssetAttribute(BaseModel):
     name: str
     value: Any | None
     timestamp: int
+    meta: dict[str, Any] | None = None
 
 
 class Asset(BaseModel):
     """Minimal asset of OpenRemote."""
 
     id: str
+    name: str
     realm: str
     parentId: str | None = None
     attributes: dict[str, AssetAttribute]
@@ -72,3 +74,17 @@ class AssetDatapointQuery(BaseModel):
     toTimestamp: int
     fromTime: str = ""
     toTime: str = ""
+
+
+class RealmConfig(BaseModel):
+    """Realm configuration."""
+
+    styles: str | None = None
+    logo: str | None = None
+    logoMobile: str | None = None
+
+
+class ManagerConfig(BaseModel):
+    """Structure containing configurations for all realms."""
+
+    realms: dict[str, RealmConfig]
