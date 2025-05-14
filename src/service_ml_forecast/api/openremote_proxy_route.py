@@ -16,20 +16,22 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 """
-OpenRemote API routes.
+OpenRemote API Proxy routes.
 
-These routes are used to retrieve data from OpenRemote. E.g. proxy requests to the OpenRemote API.
+These routes are used to proxy requests to the OpenRemote API using the extracted user token.
 """
 
 from http import HTTPStatus
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from service_ml_forecast.clients.openremote.models import Asset, RealmConfig
-from service_ml_forecast.dependencies import get_openremote_service
-from service_ml_forecast.services.openremote_service import OpenRemoteService
+from service_ml_forecast.config import ENV
+from service_ml_forecast.dependencies import oauth2_scheme
+from service_ml_forecast.services.openremote_proxy_service import OpenRemoteProxyService
 
-router = APIRouter(prefix="/openremote/{realm}", tags=["OpenRemote Proxy API"])
+router = APIRouter(prefix="/proxy/openremote/{realm}", tags=["OpenRemote Proxy API"])
 
 
 @router.get(
@@ -37,12 +39,15 @@ router = APIRouter(prefix="/openremote/{realm}", tags=["OpenRemote Proxy API"])
     summary="Retrieve assets from an OpenRemote realm that store datapoints",
     responses={
         HTTPStatus.OK: {"description": "Assets have been retrieved"},
+        HTTPStatus.UNAUTHORIZED: {"description": "Unauthorized"},
     },
 )
 async def get_assets(
-    realm: str, openremote_service: OpenRemoteService = Depends(get_openremote_service)
+    token: Annotated[str, Depends(oauth2_scheme)],
+    realm: str,
 ) -> list[Asset]:
-    return openremote_service.get_assets_with_historical_datapoints(realm)
+    or_proxy_service = _build_proxy_service(token)
+    return or_proxy_service.get_assets_with_historical_datapoints(realm)
 
 
 @router.get(
@@ -50,15 +55,18 @@ async def get_assets(
     summary="Retrieve assets from an OpenRemote realm by a comma-separated list of Asset IDs",
     responses={
         HTTPStatus.OK: {"description": "Assets have been retrieved"},
+        HTTPStatus.UNAUTHORIZED: {"description": "Unauthorized"},
     },
 )
 async def get_assets_by_ids(
+    token: Annotated[str, Depends(oauth2_scheme)],
     realm: str,
     ids_str: str = Query(..., alias="ids", description="Comma-separated list of asset IDs"),
-    openremote_service: OpenRemoteService = Depends(get_openremote_service),
 ) -> list[Asset]:
     ids_list = [asset_id.strip() for asset_id in ids_str.split(",") if asset_id.strip()]
-    return openremote_service.get_assets_by_ids(realm, ids_list)
+
+    or_proxy_service = _build_proxy_service(token)
+    return or_proxy_service.get_assets_by_ids(realm, ids_list)
 
 
 @router.get(
@@ -67,14 +75,21 @@ async def get_assets_by_ids(
     responses={
         HTTPStatus.OK: {"description": "Realm configuration has been retrieved"},
         HTTPStatus.NOT_FOUND: {"description": "Realm configuration not found"},
+        HTTPStatus.UNAUTHORIZED: {"description": "Unauthorized"},
     },
 )
 async def get_realm_config(
-    realm: str, openremote_service: OpenRemoteService = Depends(get_openremote_service)
+    token: Annotated[str, Depends(oauth2_scheme)],
+    realm: str,
 ) -> RealmConfig:
-    config = openremote_service.get_realm_config(realm)
+    or_proxy_service = _build_proxy_service(token)
+    config = or_proxy_service.get_realm_config(realm)
 
     if config is None:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Realm configuration not found")
 
     return config
+
+
+def _build_proxy_service(token: str) -> OpenRemoteProxyService:
+    return OpenRemoteProxyService(openremote_url=ENV.ML_OR_URL, token=token)

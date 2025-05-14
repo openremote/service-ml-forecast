@@ -34,6 +34,8 @@ const BASE_THEME = {
 };
 
 /**
+ * Setup the OR icons
+ * Overrides the default createMdiIconSet with a function that uses the static fonts part of the build
  * Setup the MDI-Icons for or-icon element
  */
 export function setupORIcons() {

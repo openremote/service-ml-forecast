@@ -18,3 +18,4 @@
 export const APP_OUTLET = document.querySelector('#outlet') as HTMLElement;
 export const IS_DEVELOPMENT = process.env.NODE_ENV === 'development';
 export const ML_SERVICE_URL = (process.env.ML_SERVICE_URL || '').replace(/\/$/, '');
+export const IS_EMBEDDED = window.top !== window.self;

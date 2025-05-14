@@ -63,7 +63,13 @@ class OpenRemoteClient:
 
     logger = logging.getLogger(__name__)
 
-    def __init__(self, openremote_url: str, keycloak_url: str, service_user: str, service_user_secret: str):
+    def __init__(
+        self,
+        openremote_url: str,
+        keycloak_url: str,
+        service_user: str,
+        service_user_secret: str,
+    ):
         self.openremote_url: str = openremote_url
         self.keycloak_url: str = keycloak_url
         self.service_user: str = service_user
@@ -279,8 +285,6 @@ class OpenRemoteClient:
         """
 
         url = f"{self.openremote_url}/api/master/asset/query"
-
-        self.logger.info(f"Retrieving assets with storeDataPoints: {realm}")
 
         # OR Asset Query to retrieve only assets that have attributes with "meta": {"storeDataPoints": true}
         asset_query = {

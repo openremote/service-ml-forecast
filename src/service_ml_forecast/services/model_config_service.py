@@ -87,7 +87,7 @@ class ModelConfigService:
         Returns:
             A list of all model configs for the given realm.
         """
-        existing_config_files = FsUtil.get_files_in_dir(DIRS.ML_CONFIGS_DIR, self.CONFIG_FILE_EXTENSION)
+        existing_config_files = FsUtil.get_files_in_dir(DIRS.ML_CONFIGS_DATA_DIR, self.CONFIG_FILE_EXTENSION)
         configs = []
 
         for file in existing_config_files:
@@ -192,7 +192,7 @@ class ModelConfigService:
         return model_adapter.validate_json(json)
 
     def _get_config_file_path(self, config_id: UUID) -> Path:
-        return Path(f"{DIRS.ML_CONFIGS_DIR}/{self.CONFIG_FILE_PREFIX}-{config_id}.{self.CONFIG_FILE_EXTENSION}")
+        return Path(f"{DIRS.ML_CONFIGS_DATA_DIR}/{self.CONFIG_FILE_PREFIX}-{config_id}.{self.CONFIG_FILE_EXTENSION}")
 
     def _has_matching_realm(self, config: ModelConfig, realm: str) -> bool:
         """Check whether the model config has a matching realm."""

@@ -21,6 +21,8 @@ This module contains the dependency injectors for the service.
 The injectors are used to inject the services into the FastAPI app, or other dependencies.
 """
 
+from fastapi.security import OAuth2PasswordBearer
+
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 from service_ml_forecast.config import ENV
 from service_ml_forecast.services.model_config_service import ModelConfigService
@@ -36,10 +38,8 @@ __openremote_client = OpenRemoteClient(
 __openremote_service = OpenRemoteService(__openremote_client)
 __model_config_service = ModelConfigService(__openremote_service)
 
+
 # --- Dependencies ---
-# These can be monkeypatched for testing purposes
-
-
 def get_config_service() -> ModelConfigService:
     """
     Get the model config service dependency.
@@ -52,3 +52,16 @@ def get_openremote_service() -> OpenRemoteService:
     Get the openremote service dependency.
     """
     return __openremote_service
+
+
+# --- OAuth2 Scheme ---
+# This is used to allow authorization via the Docs and Redoc pages
+# Also allows us to extract the token easily from the Authorization header
+# Does not validate the token, this is done in the KeycloakMiddleware!
+__realm_name = "master"
+oauth2_scheme = OAuth2PasswordBearer(
+    tokenUrl=f"{ENV.ML_OR_KEYCLOAK_URL}/realms/{__realm_name}/protocol/openid-connect/token",
+    scopes={"openid": "OpenID Connect", "profile": "User profile", "email": "User email"},
+    description="Login into the OpenRemote Management -- Expected Client ID: 'openremote'",
+    auto_error=False,
+)

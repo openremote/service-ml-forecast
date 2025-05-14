@@ -6,6 +6,7 @@ services:
       context: ..
       dockerfile: docker/Dockerfile
       args:
+        ML_KEYCLOAK_URL: ${ML_KEYCLOAK_URL:-/auth} # OpenRemote Keycloak URL
         ML_SERVICE_URL: ${ML_SERVICE_URL:-/services/ml-forecast} # Url to reach the back-end service, should be the same as ML_API_ROOT_PATH
         ML_WEB_ROOT_PATH: ${ML_WEB_ROOT_PATH:-/services/ml-forecast/ui} # Public path for the front-end (e.g. when behind a reverse proxy)
     container_name: service-ml-forecast

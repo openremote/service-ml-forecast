@@ -15,6 +15,12 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import { AuthService } from './services/auth-service';
+import { setupORIcons } from './common/theme';
+import { setupRouter } from './router';
+import { IS_EMBEDDED } from './common/constants';
+import { setupConsoleLogging, getRealmParam } from './common/util';
+
 // Component Imports
 import '@openremote/or-mwc-components/or-mwc-input';
 import '@openremote/or-components/or-panel';
@@ -24,10 +30,17 @@ import './components/configs-table';
 import './components/loading-spinner';
 import './components/breadcrumb-nav';
 import './components/alert-message';
-import { setupORIcons } from './common/theme';
-import { setupRouter } from './router';
 
-function init() {
+// Override default log statements with service prefix
+setupConsoleLogging();
+
+async function init() {
+    console.info('Context:', IS_EMBEDDED ? 'iframe' : 'standalone');
+
+    const authenticated = await AuthService.init(getRealmParam() ?? 'master');
+    if (!authenticated) {
+        AuthService.login();
+    }
     // Setup OR icons
     setupORIcons();
 
@@ -35,5 +48,4 @@ function init() {
     setupRouter();
 }
 
-// Entry point
 init();

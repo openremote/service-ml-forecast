@@ -16,10 +16,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { createContext, provide } from '@lit/context';
-import { RouterLocation } from '@vaadin/router';
+import { Router, RouterLocation } from '@vaadin/router';
 import { html, LitElement } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { setRealmTheme } from '../common/theme';
+import { AuthService } from '../services/auth-service';
 
 export const realmContext = createContext<string>(Symbol('realm'));
 
@@ -34,7 +35,26 @@ export class AppLayout extends LitElement {
 
     // Called before the initial Vaadin Router location is entered ('/'), only called once since its a parent route
     onBeforeEnter(location: RouterLocation) {
-        this.realm = location.params.realm as string;
+        if (!AuthService.authenticated) {
+            AuthService.login();
+            return;
+        }
+
+        const paramRealm = location.params.realm as string;
+        const authRealm = AuthService.realm;
+
+        // Param realm takes precedence over auth realm
+        if (!paramRealm) {
+            this.realm = authRealm;
+        } else {
+            this.realm = paramRealm;
+        }
+
+        // Navigate to given auth realm if no param realm is provided
+        if (!paramRealm) {
+            Router.go(`/${this.realm}`);
+        }
+
         setRealmTheme(this.realm);
     }
 
