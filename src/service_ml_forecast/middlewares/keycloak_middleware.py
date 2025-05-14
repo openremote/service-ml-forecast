@@ -78,10 +78,13 @@ REQUIRED_ROLES = ["write:admin", "read:admin"]
 
 @cached(ttl=30, cache=Cache.MEMORY, key="valid_issuers")  # type: ignore[misc]
 async def _get_valid_issuers() -> list[str]:
-    """Construct the list of valid issuers based on the realms retrieved from OpenRemote.
+    """Construct the list of valid issuers based on the enabled realms retrieved from OpenRemote.
 
     Returns:
         The list of valid issuers.
+
+    Remarks:
+        The list of valid issuers is cached for 30 seconds to reduce the number of requests to the OpenRemote Manager.
     """
     openremote_service = get_openremote_service()
     realms = openremote_service.get_realms()
