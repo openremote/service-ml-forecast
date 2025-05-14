@@ -17,7 +17,7 @@
 
 import logging
 
-from service_ml_forecast.clients.openremote.models import Asset, AssetDatapoint
+from service_ml_forecast.clients.openremote.models import Asset, AssetDatapoint, Realm
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 from service_ml_forecast.common.time_util import TimeUtil
 from service_ml_forecast.models.feature_data_wrappers import AssetFeatureDatapoints, ForecastDataSet, TrainingDataSet
@@ -171,3 +171,11 @@ class OpenRemoteService:
             return []
 
         return assets
+
+    def get_realms(self) -> list[Realm] | None:
+        """Get all realms from OpenRemote that are enabled.
+
+        Returns:
+            A list of all enabled realms from OpenRemote.
+        """
+        return self.client.retrieve_all_realms()

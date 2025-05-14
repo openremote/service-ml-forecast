@@ -29,6 +29,7 @@ from service_ml_forecast.clients.openremote.models import (
     AssetDatapointPeriod,
     AssetDatapointQuery,
     ManagerConfig,
+    Realm,
 )
 
 
@@ -384,4 +385,25 @@ class OpenRemoteClient:
 
             except (httpx.HTTPStatusError, httpx.ConnectError) as e:
                 self.logger.error(f"Error retrieving manager config: {e}")
+                return None
+
+    def retrieve_all_realms(self) -> list[Realm] | None:
+        """Retrieves all realms and filters out disabled ones.
+
+        Returns:
+            list[Realm] | None: List of enabled realms or None
+        """
+
+        url = f"{self.openremote_url}/api/master/realm"
+        request = self.__build_request("GET", url)
+
+        with httpx.Client() as client:
+            try:
+                response = client.send(request)
+                response.raise_for_status()
+
+                all_realms = [Realm(**realm) for realm in response.json()]
+                return [realm for realm in all_realms if realm.enabled]
+            except (httpx.HTTPStatusError, httpx.ConnectError) as e:
+                self.logger.error(f"Error retrieving realms: {e}")
                 return None

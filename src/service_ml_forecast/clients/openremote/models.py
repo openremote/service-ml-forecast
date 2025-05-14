@@ -88,3 +88,12 @@ class ManagerConfig(BaseModel):
     """Structure containing configurations for all realms."""
 
     realms: dict[str, RealmConfig]
+
+
+class Realm(BaseModel):
+    """Realm model."""
+
+    id: str
+    name: str
+    displayName: str
+    enabled: bool
