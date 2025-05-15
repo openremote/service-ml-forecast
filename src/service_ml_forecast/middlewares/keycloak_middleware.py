@@ -106,7 +106,7 @@ def _jwks_cache_key(f: Any, issuer: str, *args: Any, **kwargs: Any) -> str:
     return issuer
 
 
-@cached(ttl=30, cache=Cache.MEMORY, key_builder=_jwks_cache_key)  # type: ignore[misc]
+@cached(ttl=300, cache=Cache.MEMORY, key_builder=_jwks_cache_key)  # type: ignore[misc]
 async def _get_jwks(issuer: str) -> dict[str, Any]:
     """Get JWKS from Keycloak based on the issuer URL.
 
@@ -121,7 +121,7 @@ async def _get_jwks(issuer: str) -> dict[str, Any]:
         HTTPException: If the JWKS URL is invalid or the request fails.
 
     Remarks:
-        The JWKS is cached for 30 seconds to reduce the number of requests to the Keycloak server.
+        The JWKS is cached for 5 minutes, allowing for local and offline token validation.
         The issuer URL must follow the pattern: <keycloak_url>/auth/realms/<realm_name>/
     """
     valid_issuers = await _get_valid_issuers()
