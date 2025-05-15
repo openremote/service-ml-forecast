@@ -72,6 +72,8 @@ class KeycloakTokenUserPayload(BaseModel):
     resource_access: dict[str, ResourceRoles]
 
 
+# TODO: Improve role checking and handling to enable more granular role-based access control
+# See issue: https://github.com/openremote/service-ml-forecast/issues/32
 RESOURCE_ACCESS_KEY = "openremote"
 REQUIRED_ROLES = ["write:admin", "read:admin"]
 
