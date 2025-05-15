@@ -45,6 +45,7 @@ def test_token_with_missing_required_roles(
     # Mock the token verification to return a valid payload but with insufficient roles
     mock_verify_jwt.return_value = {
         "name": "Test User",
+        "preferred_username": "test-user",
         "resource_access": {
             "openremote": {
                 "roles": ["some-other-role"]  # Missing required write:admin and read:admin roles
