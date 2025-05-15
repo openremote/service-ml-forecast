@@ -102,17 +102,17 @@ async def _get_valid_issuers() -> list[str]:
     return urls
 
 
-def _jwks_cache_key(f: Any, issuer: str, *args: Any, **kwargs: Any) -> str:
-    return issuer
+def _jwks_cache_key(f: Any, issuer: str, kid: str, *args: Any, **kwargs: Any) -> str:
+    return f"{issuer}:{kid}"
 
 
-@cached(ttl=300, cache=Cache.MEMORY, key_builder=_jwks_cache_key)  # type: ignore[misc]
-async def _get_jwks(issuer: str) -> dict[str, Any]:
+@cached(ttl=600, cache=Cache.MEMORY, key_builder=_jwks_cache_key)  # type: ignore[misc]
+async def _get_jwks(issuer: str, kid: str) -> dict[str, Any]:
     """Get JWKS from Keycloak based on the issuer URL.
 
     Args:
-        keycloak_url: The URL of the Keycloak server.
         issuer: The issuer URL of the token.
+        kid: The Key ID (kid) of the token used to identify the public key.
 
     Returns:
         The JWKS as a dictionary.
@@ -121,7 +121,7 @@ async def _get_jwks(issuer: str) -> dict[str, Any]:
         HTTPException: If the JWKS URL is invalid or the request fails.
 
     Remarks:
-        The JWKS is cached for 5 minutes, allowing for local and offline token validation.
+        The JWKS is cached for 10 minutes, allowing for local and offline token validation.
         The issuer URL must follow the pattern: <keycloak_url>/auth/realms/<realm_name>/
     """
     valid_issuers = await _get_valid_issuers()
@@ -182,7 +182,8 @@ async def _verify_jwt_token(token: str, keycloak_url: str) -> dict[str, Any]:
             raise jwt.exceptions.InvalidTokenError("Issuer missing in token")
 
         # Try and get the JWKS for the issuer
-        jwks = await _get_jwks(issuer)
+        jwks = await _get_jwks(issuer, kid)
+
         public_key_material: RSAPublicKey | None = None
 
         # Construct the public key from the JWKS
