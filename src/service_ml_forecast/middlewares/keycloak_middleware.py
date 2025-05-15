@@ -69,6 +69,7 @@ class KeycloakTokenUserPayload(BaseModel):
     """Partial payload of the JWT token for handling resource access."""
 
     name: str
+    preferred_username: str
     resource_access: dict[str, ResourceRoles]
 
 
@@ -300,6 +301,9 @@ class KeycloakMiddleware(BaseHTTPMiddleware):
 
             # Check if the user has the required roles
             if not _has_required_roles(user_payload):
+                logger.warning(
+                    f"Insufficient permissions: missing required roles for user: {user_payload.preferred_username}"
+                )
                 raise HTTPException(
                     status_code=HTTPStatus.FORBIDDEN, detail="Insufficient permissions: missing required roles"
                 )
@@ -322,5 +326,6 @@ class KeycloakMiddleware(BaseHTTPMiddleware):
             )
 
         # Sucessful, allow request to continue through the middleware
+        logger.info(f"Token verified successfully for user: {request.state.user.preferred_username}")
         response = await call_next(request)
         return response
