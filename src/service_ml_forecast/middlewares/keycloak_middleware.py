@@ -248,15 +248,11 @@ def _is_excluded_route(path: str, excluded_routes: list[str]) -> bool:
     for route in excluded_routes:
         if route.startswith("/"):
             full_route_with_prefix = ENV.ML_API_ROOT_PATH + route if ENV.ML_API_ROOT_PATH else route
-        if path.startswith(full_route_with_prefix):
-            return True
+            if path.startswith(full_route_with_prefix):
+                return True
 
         if path.startswith(route):
             return True
-
-    # check relative path
-    if path.startswith(route):
-        return True
 
     return False
 
