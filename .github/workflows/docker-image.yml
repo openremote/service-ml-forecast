@@ -79,7 +79,7 @@ jobs:
 
       - name: Build and push images
         run: |
-          docker build --build-arg GIT_COMMIT=${{ github.sha }} --push --platform $PLATFORM $TAG .
+          docker build --build-arg GIT_COMMIT=${{ github.sha }} --push --platform $PLATFORM $TAG -f docker/Dockerfile .
 
       - name: Scan docker image
         uses: anchore/scan-action@3343887d815d7b07465f6fdcd395bd66508d486a # v3
