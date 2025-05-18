@@ -1,0 +1,98 @@
+name: Release
+
+on:
+  # Manual trigger
+  workflow_dispatch:
+  
+  # # When a release is published
+  # release:
+  #   types: [published]
+
+  # # Push to main excluding tags and workflow changes
+  # push:
+  #   branches:
+  #     - main
+  #   tags-ignore:
+  #     - '*.*'
+  #   paths-ignore:
+  #     - '**/*.md'
+
+permissions:
+  actions: write
+  contents: write
+
+jobs:
+  # call ci.yml for quality checks
+  call-ci:
+    name: Quality checks
+    uses: ./.github/workflows/ci.yml
+
+  # Build and push docker image
+  release:
+    name: Docker Image
+    needs: call-ci
+    runs-on: ubuntu-latest
+    env:
+      PLATFORM: linux/amd64,linux/arm64
+    
+    steps:
+      - name: Cancel previous runs
+        uses: styfle/cancel-workflow-action@85880fa0301c86cca9da44039ee3bb12d3bedbfa # 0.12.1
+        with:
+          access_token: ${{ github.token }}
+
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Set tags
+        id: set-tags
+        run: |
+          if [ -z "$TAG" ]; then
+            echo "TAG=-t openremote/service-ml-forecast:develop" >> $GITHUB_ENV
+            echo "dockerImage=openremote/service-ml-forecast:develop" >> $GITHUB_OUTPUT
+          else
+            echo "TAG=-t openremote/service-ml-forecast:latest -t openremote/service-ml-forecast:$TAG" >> $GITHUB_ENV
+            echo "dockerImage=openremote/service-ml-forecast:$TAG" >> $GITHUB_OUTPUT
+          fi
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@27d0a4f181a40b142cce983c5393082c365d1480 # v1
+        with:
+          platforms: all
+
+      - name: Install buildx
+        id: buildx
+        uses: docker/setup-buildx-action@f211e3e9ded2d9377c8cadc4489a4e38014bc4c9 # v1
+        with:
+          version: latest
+          install: true
+
+      - name: Available platforms
+        run: echo ${{ steps.buildx.outputs.platforms }}
+
+      - name: Login to DockerHub
+        uses: docker/login-action@dd4fa0671be5250ee6f50aedf4cb05514abda2c7 # v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push images
+        run: |
+          docker build --build-arg GIT_COMMIT=${{ github.sha }} --push --platform $PLATFORM $TAG .
+
+      - name: Scan docker image
+        uses: anchore/scan-action@3343887d815d7b07465f6fdcd395bd66508d486a # v3
+        id: anchore-scan
+        with:
+          image: ${{ steps.set-tags.outputs.dockerImage }}
+          fail-build: false
+          severity-cutoff: critical
+
+      - name: Upload Anchore scan SARIF report
+        if: ${{ !cancelled() }}
+        uses: github/codeql-action/upload-sarif@e488e3c8239c26bf8e6704904a8cb59be658d450 # v3
+        with:
+          sarif_file: ${{ steps.anchore-scan.outputs.sarif }}
+          
