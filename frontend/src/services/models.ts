@@ -250,3 +250,14 @@ export interface RealmConfig {
      */
     logoMobile: string;
 }
+
+export interface BasicRealm {
+    /**
+     * ID of the realm.
+     */
+    name: string;
+    /**
+     * Display name of the realm.
+     */
+    displayName: string;
+}

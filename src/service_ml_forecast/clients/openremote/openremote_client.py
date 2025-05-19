@@ -28,6 +28,7 @@ from service_ml_forecast.clients.openremote.models import (
     AssetDatapoint,
     AssetDatapointPeriod,
     AssetDatapointQuery,
+    BasicRealm,
     ManagerConfig,
     Realm,
 )
@@ -365,13 +366,9 @@ class OpenRemoteClient:
                 return None
 
     def retrieve_manager_config(self) -> ManagerConfig | None:
-        """Retrieve the configuration of the manager.
+        """Retrieve the manager configuration.
 
-        Args:
-            realm: The realm to retrieve the configuration from.
-
-        Returns:
-            RealmConfig | None: The configuration of the realm or None
+        Returns: ManagerConfig | None: The manager configuration or None
         """
 
         url = f"{self.openremote_url}/api/master/configuration/manager"
@@ -379,12 +376,33 @@ class OpenRemoteClient:
 
         with httpx.Client() as client:
             try:
+                request.headers.pop("Authorization")
                 response = client.send(request)
                 response.raise_for_status()
                 return ManagerConfig(**response.json())
 
             except (httpx.HTTPStatusError, httpx.ConnectError) as e:
                 self.logger.error(f"Error retrieving manager config: {e}")
+                return None
+
+    def retrieve_accessible_realms(self, realm: str) -> list[BasicRealm] | None:
+        """Retrieves accessible realms for the current user.
+
+        Returns:
+            list[BasicRealm] | None: List of accessible realms or None
+        """
+
+        url = f"{self.openremote_url}/api/{realm}/realm/accessible"
+        request = self.__build_request("GET", url)
+
+        with httpx.Client() as client:
+            try:
+                response = client.send(request)
+                response.raise_for_status()
+                realms = response.json()
+                return [BasicRealm(**realm) for realm in realms]
+            except (httpx.HTTPStatusError, httpx.ConnectError) as e:
+                self.logger.error(f"Error retrieving accessible realms: {e}")
                 return None
 
     def retrieve_all_realms(self) -> list[Realm] | None:

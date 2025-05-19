@@ -26,10 +26,11 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from service_ml_forecast.clients.openremote.models import Asset, RealmConfig
+from service_ml_forecast.clients.openremote.models import Asset, BasicRealm, RealmConfig
+from service_ml_forecast.clients.openremote_proxy_client import OpenRemoteProxyClient
 from service_ml_forecast.config import ENV
 from service_ml_forecast.dependencies import oauth2_scheme
-from service_ml_forecast.services.openremote_proxy_service import OpenRemoteProxyService
+from service_ml_forecast.services.openremote_service import OpenRemoteService
 
 router = APIRouter(prefix="/proxy/openremote/{realm}", tags=["OpenRemote Proxy API"])
 
@@ -91,5 +92,36 @@ async def get_realm_config(
     return config
 
 
-def _build_proxy_service(token: str) -> OpenRemoteProxyService:
-    return OpenRemoteProxyService(openremote_url=ENV.ML_OR_URL, token=token)
+@router.get(
+    "/realm/accessible",
+    summary="Retrieve accessible realms",
+    responses={
+        HTTPStatus.OK: {"description": "Accessible realms have been retrieved"},
+        HTTPStatus.UNAUTHORIZED: {"description": "Unauthorized"},
+        HTTPStatus.INTERNAL_SERVER_ERROR: {"description": "Unable to retrieve realms"},
+    },
+)
+async def get_accessible_realms(
+    token: Annotated[str, Depends(oauth2_scheme)],
+    realm: str,
+) -> list[BasicRealm]:
+    or_proxy_service = _build_proxy_service(token)
+    realms = or_proxy_service.get_accessible_realms(realm)
+
+    if realms is None:
+        raise HTTPException(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail="Unable to retrieve realms")
+
+    return realms
+
+
+def _build_proxy_service(token: str) -> OpenRemoteService:
+    """Build the OpenRemote service that proxies the request with the given token.
+
+    Args:
+        token: The token to use for the OpenRemote service.
+
+    Returns:
+        The OpenRemote service with the proxy client.
+    """
+    proxy_client = OpenRemoteProxyClient(openremote_url=ENV.ML_OR_URL, token=token)
+    return OpenRemoteService(client=proxy_client)

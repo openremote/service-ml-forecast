@@ -15,7 +15,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { BasicAsset, ModelConfig, RealmConfig } from './models';
+import { BasicAsset, BasicRealm, ModelConfig, RealmConfig } from './models';
 import { ML_SERVICE_URL } from '../common/constants';
 import { AuthService } from './auth-service';
 
@@ -131,6 +131,21 @@ export const APIService = {
         });
         if (!response.ok) {
             throw new Error(`Failed to get realm config: ${response.statusText}`);
+        }
+        return response.json();
+    },
+
+    /**
+     * Get all accessible realms
+     * @returns The list of accessible realms
+     */
+    async getAccessibleRealms(): Promise<BasicRealm[]> {
+        const response = await fetch(getOpenRemoteBaseUrl(AuthService.realm) + '/realm/accessible', {
+            method: 'GET',
+            headers: buildHeaders()
+        });
+        if (!response.ok) {
+            throw new Error(`Failed to get accessible realms: ${response.statusText}`);
         }
         return response.json();
     },

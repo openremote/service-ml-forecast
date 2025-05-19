@@ -97,3 +97,10 @@ class Realm(BaseModel):
     name: str
     displayName: str
     enabled: bool
+
+
+class BasicRealm(BaseModel):
+    """Basic realm model."""
+
+    name: str
+    displayName: str

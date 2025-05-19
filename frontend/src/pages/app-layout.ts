@@ -21,6 +21,7 @@ import { html, LitElement } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { setRealmTheme } from '../common/theme';
 import { AuthService } from '../services/auth-service';
+import { APIService } from '../services/api-service';
 
 export const realmContext = createContext<string>(Symbol('realm'));
 
@@ -52,8 +53,15 @@ export class AppLayout extends LitElement {
 
         // Navigate to given auth realm if no param realm is provided
         if (!paramRealm) {
-            console.log('No realm provided, falling back to auth realm', this.realm);
-            Router.go(`/${this.realm}`);
+            console.log('No realm provided, falling back to auth realm');
+            Router.go(`/${authRealm}`);
+            return;
+        }
+
+        if (!(await APIService.getAccessibleRealms()).some((realm) => realm.name === this.realm)) {
+            console.log('Realm not accessible, falling back to auth realm');
+            Router.go(`/${authRealm}`);
+            return;
         }
 
         setRealmTheme(this.realm);

@@ -17,7 +17,7 @@
 
 import logging
 
-from service_ml_forecast.clients.openremote.models import Asset, AssetDatapoint, Realm
+from service_ml_forecast.clients.openremote.models import Asset, AssetDatapoint, BasicRealm, Realm, RealmConfig
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 from service_ml_forecast.common.time_util import TimeUtil
 from service_ml_forecast.models.feature_data_wrappers import AssetFeatureDatapoints, ForecastDataSet, TrainingDataSet
@@ -179,3 +179,48 @@ class OpenRemoteService:
             A list of all enabled realms from OpenRemote.
         """
         return self.client.retrieve_all_realms()
+
+    def get_assets_with_historical_datapoints(self, realm: str) -> list[Asset]:
+        """Get all assets from OpenRemote with historical datapoints.
+
+        Returns:
+            A list of all assets from OpenRemote with historical datapoints.
+        """
+        assets = self.client.retrieve_assets_with_historical_datapoints(realm)
+        if assets is None:
+            logger.warning(f"Unable to retrieve assets with storeDataPoints for realm {realm}")
+            return []
+
+        return assets
+
+    def get_realm_config(self, realm: str) -> RealmConfig | None:
+        """Get the realm configuration for a given realm.
+
+        Returns:
+            The realm configuration or None if the realm configuration could not be retrieved.
+        """
+        config = self.client.retrieve_manager_config()
+
+        if config is None:
+            logger.warning("Unable to retrieve manager config")
+            return None
+
+        if realm not in config.realms:
+            logger.warning(f"Realm {realm} not found in manager config")
+            return None
+
+        return config.realms[realm]
+
+    def get_accessible_realms(self, realm: str) -> list[BasicRealm] | None:
+        """Get all accessible realms.
+
+        Returns:
+            A list of all accessible realms or None if the accessible realms could not be retrieved.
+        """
+        realms = self.client.retrieve_accessible_realms(realm)
+
+        if realms is None:
+            logger.warning("Unable to retrieve accessible realms")
+            return None
+
+        return realms
