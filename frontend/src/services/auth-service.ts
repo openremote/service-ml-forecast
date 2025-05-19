@@ -95,15 +95,15 @@ class AuthServiceClass {
     /**
      * Login to the Keycloak instance
      */
-    login() {
-        this.keycloak?.login();
+    async login() {
+        await this.keycloak?.login();
     }
 
     /**
      * Logout from the Keycloak instance
      */
-    logout() {
-        this.keycloak?.logout();
+    async logout() {
+        await this.keycloak?.logout();
         this.stopUpdateTokenInterval();
     }
 
