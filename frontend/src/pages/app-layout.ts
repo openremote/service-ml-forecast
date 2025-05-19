@@ -52,6 +52,7 @@ export class AppLayout extends LitElement {
 
         // Navigate to given auth realm if no param realm is provided
         if (!paramRealm) {
+            console.log('No realm provided, falling back to auth realm', this.realm);
             Router.go(`/${this.realm}`);
         }
 
