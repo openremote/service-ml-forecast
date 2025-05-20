@@ -16,7 +16,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { createContext, provide } from '@lit/context';
-import { Router, RouterLocation } from '@vaadin/router';
+import { PreventAndRedirectCommands, RouterLocation } from '@vaadin/router';
 import { html, LitElement } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { setRealmTheme } from '../common/theme';
@@ -35,7 +35,7 @@ export class AppLayout extends LitElement {
     realm = '';
 
     // Called before the initial Vaadin Router location is entered ('/'), only called once since its a parent route
-    async onBeforeEnter(location: RouterLocation) {
+    async onBeforeEnter(location: RouterLocation, commands: PreventAndRedirectCommands) {
         if (!AuthService.authenticated) {
             await AuthService.login();
             return;
@@ -53,15 +53,13 @@ export class AppLayout extends LitElement {
 
         // Navigate to given auth realm if no param realm is provided
         if (!paramRealm) {
-            console.log('No realm provided, falling back to auth realm');
-            Router.go(`/${authRealm}`);
-            return;
+            console.log(`No realm provided, redirecting to ${authRealm}`);
+            return commands.redirect(authRealm);
         }
 
         if (!(await APIService.getAccessibleRealms()).some((realm) => realm.name === this.realm)) {
-            console.log('Realm not accessible, falling back to auth realm');
-            Router.go(`/${authRealm}`);
-            return;
+            console.log(`Realm ${this.realm} not accessible, redirecting to ${authRealm}`);
+            return commands.redirect(authRealm);
         }
 
         setRealmTheme(this.realm);
