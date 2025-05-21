@@ -143,7 +143,7 @@ export class PageConfigEditor extends LitElement {
         forecast_interval: 'PT1H',
         forecast_periods: 24,
         forecast_frequency: '1h',
-        training_interval: 'PT24H',
+        training_interval: 'PT1H',
         daily_seasonality: true,
         weekly_seasonality: true,
         yearly_seasonality: true,
