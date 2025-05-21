@@ -412,6 +412,7 @@ export class PageConfigEditor extends LitElement {
                         ></or-mwc-input>
 
                         <or-mwc-input
+                            style="max-width: 48px;"
                             type="${InputType.BUTTON}"
                             icon="delete"
                             @click="${() => this.handleDeleteRegressor(index)}"

@@ -1,3 +1,4 @@
+import httpx
 from service_ml_forecast.clients.openremote.openremote_client import OAuthTokenResponse, OpenRemoteClient
 
 
@@ -17,6 +18,7 @@ class OpenRemoteProxyClient(OpenRemoteClient):
         self.keycloak_url = ""  # Not used in proxy client
         self.service_user = ""  # Not used in proxy client
         self.service_user_secret = ""  # Not used in proxy client
+        self.timeout = httpx.Timeout(60.0)
 
         # Set up token directly
         self.oauth_token = OAuthTokenResponse(
