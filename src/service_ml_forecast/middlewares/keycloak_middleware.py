@@ -68,7 +68,6 @@ class ResourceRoles(BaseModel):
 class KeycloakTokenUserPayload(BaseModel):
     """Partial payload of the JWT token for handling resource access."""
 
-    name: str
     preferred_username: str
     resource_access: dict[str, ResourceRoles]
 
