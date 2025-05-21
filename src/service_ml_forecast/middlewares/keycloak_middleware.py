@@ -134,7 +134,7 @@ async def _get_jwks(issuer: str, kid: str) -> dict[str, Any]:
     jwks_url = f"{issuer}/protocol/openid-connect/certs"
 
     try:
-        async with httpx.AsyncClient(verify=ENV.ML_VERIFY_SSL) as client:
+        async with httpx.AsyncClient(verify=ENV.ML_VERIFY_SSL, timeout=10.0) as client:
             response = await client.get(jwks_url)
             response.raise_for_status()
             return cast(dict[str, Any], response.json())

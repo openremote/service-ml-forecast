@@ -58,6 +58,7 @@ class OpenRemoteClient:
         keycloak_url: The URL of the Keycloak API.
         service_user: The service user for the OpenRemote API.
         service_user_secret: The service user secret for the OpenRemote API.
+        timeout: Timeout in seconds for HTTP requests. Defaults to 30 seconds.
 
     Raises:
         Exception: If the authentication fails
@@ -71,6 +72,7 @@ class OpenRemoteClient:
         keycloak_url: str,
         service_user: str,
         service_user_secret: str,
+        timeout: float = 60.0,
     ):
         self.openremote_url: str = openremote_url
         self.keycloak_url: str = keycloak_url
@@ -78,6 +80,7 @@ class OpenRemoteClient:
         self.service_user_secret: str = service_user_secret
         self.oauth_token: OAuthTokenResponse | None = None
         self.token_expiration_timestamp: float | None = None
+        self.timeout: float = timeout
 
         self.__authenticate()
 
@@ -98,7 +101,7 @@ class OpenRemoteClient:
             client_secret=self.service_user_secret,
         )
 
-        with httpx.Client() as client:
+        with httpx.Client(timeout=self.timeout) as client:
             try:
                 response = client.post(url, data=data.model_dump())
                 response.raise_for_status()
@@ -136,7 +139,7 @@ class OpenRemoteClient:
         url = f"{self.openremote_url}/api/master/health"
 
         request = self.__build_request("GET", url)
-        with httpx.Client() as client:
+        with httpx.Client(timeout=self.timeout) as client:
             try:
                 response = client.send(request)
                 response.raise_for_status()
@@ -161,7 +164,7 @@ class OpenRemoteClient:
 
         request = self.__build_request("GET", url)
 
-        with httpx.Client() as client:
+        with httpx.Client(timeout=self.timeout) as client:
             try:
                 response = client.send(request)
                 response.raise_for_status()
@@ -199,7 +202,7 @@ class OpenRemoteClient:
 
         request = self.__build_request("POST", url, data=request_body.model_dump())
 
-        with httpx.Client() as client:
+        with httpx.Client(timeout=self.timeout) as client:
             try:
                 response = client.send(request)
                 response.raise_for_status()
@@ -228,7 +231,7 @@ class OpenRemoteClient:
 
         request = self.__build_request("PUT", url, data=datapoints_json)
 
-        with httpx.Client() as client:
+        with httpx.Client(timeout=self.timeout) as client:
             try:
                 response = client.send(request)
                 response.raise_for_status()
@@ -266,7 +269,7 @@ class OpenRemoteClient:
 
         request = self.__build_request("POST", url, data=request_body.model_dump())
 
-        with httpx.Client() as client:
+        with httpx.Client(timeout=self.timeout) as client:
             try:
                 response = client.send(request)
                 response.raise_for_status()
@@ -317,7 +320,7 @@ class OpenRemoteClient:
 
         request = self.__build_request("POST", url, data=asset_query)
 
-        with httpx.Client() as client:
+        with httpx.Client(timeout=self.timeout) as client:
             try:
                 response = client.send(request)
                 response.raise_for_status()
@@ -355,7 +358,7 @@ class OpenRemoteClient:
 
         request = self.__build_request("POST", url, data=asset_query)
 
-        with httpx.Client() as client:
+        with httpx.Client(timeout=self.timeout) as client:
             try:
                 response = client.send(request)
                 response.raise_for_status()
@@ -374,7 +377,7 @@ class OpenRemoteClient:
         url = f"{self.openremote_url}/api/master/configuration/manager"
         request = self.__build_request("GET", url)
 
-        with httpx.Client() as client:
+        with httpx.Client(timeout=self.timeout) as client:
             try:
                 request.headers.pop("Authorization")
                 response = client.send(request)
@@ -395,7 +398,7 @@ class OpenRemoteClient:
         url = f"{self.openremote_url}/api/{realm}/realm/accessible"
         request = self.__build_request("GET", url)
 
-        with httpx.Client() as client:
+        with httpx.Client(timeout=self.timeout) as client:
             try:
                 response = client.send(request)
                 response.raise_for_status()
@@ -415,7 +418,7 @@ class OpenRemoteClient:
         url = f"{self.openremote_url}/api/master/realm"
         request = self.__build_request("GET", url)
 
-        with httpx.Client() as client:
+        with httpx.Client(timeout=self.timeout) as client:
             try:
                 response = client.send(request)
                 response.raise_for_status()
