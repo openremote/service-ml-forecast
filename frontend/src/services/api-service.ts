@@ -23,7 +23,7 @@ function getBaseUrl(realm: string): string {
     return ML_SERVICE_URL + '/api/' + realm;
 }
 
-function getOpenRemoteBaseUrl(realm: string): string {
+function getOpenRemoteBaseUrl(realm: string = AuthService.realm): string {
     return ML_SERVICE_URL + '/proxy/openremote/' + realm;
 }
 
@@ -125,6 +125,7 @@ export const APIService = {
      * @returns The realm config
      */
     async getOpenRemoteRealmConfig(realm: string): Promise<RealmConfig> {
+        // Explicitly pass in the realm
         const response = await fetch(getOpenRemoteBaseUrl(realm) + '/realm/config', {
             method: 'GET',
             headers: buildHeaders()
@@ -140,7 +141,7 @@ export const APIService = {
      * @returns The list of accessible realms
      */
     async getAccessibleRealms(): Promise<BasicRealm[]> {
-        const response = await fetch(getOpenRemoteBaseUrl(AuthService.realm) + '/realm/accessible', {
+        const response = await fetch(getOpenRemoteBaseUrl() + '/realm/accessible', {
             method: 'GET',
             headers: buildHeaders()
         });
@@ -156,7 +157,7 @@ export const APIService = {
      * @returns The list of assets
      */
     async getOpenRemoteAssets(realm: string): Promise<BasicAsset[]> {
-        const response = await fetch(getOpenRemoteBaseUrl(realm) + '/assets', {
+        const response = await fetch(getOpenRemoteBaseUrl() + '/assets?realm_query=' + realm, {
             method: 'GET',
             headers: buildHeaders()
         });
@@ -173,7 +174,7 @@ export const APIService = {
      * @returns The list of assets
      */
     async getOpenRemoteAssetsById(realm: string, ids: string[]): Promise<BasicAsset[]> {
-        const response = await fetch(getOpenRemoteBaseUrl(realm) + '/assets/ids?ids=' + ids.join(','), {
+        const response = await fetch(getOpenRemoteBaseUrl() + '/assets/ids?realm_query=' + realm + '&ids=' + ids.join(','), {
             method: 'GET',
             headers: buildHeaders()
         });

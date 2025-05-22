@@ -27,33 +27,38 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from service_ml_forecast.clients.openremote.models import Asset, BasicRealm, RealmConfig
-from service_ml_forecast.clients.openremote_proxy_client import OpenRemoteProxyClient
+from service_ml_forecast.clients.openremote.openremote_proxy_client import OpenRemoteProxyClient
 from service_ml_forecast.config import ENV
 from service_ml_forecast.dependencies import oauth2_scheme
-from service_ml_forecast.services.openremote_service import OpenRemoteService
 
 router = APIRouter(prefix="/proxy/openremote/{realm}", tags=["OpenRemote Proxy API"])
 
 
 @router.get(
     "/assets",
-    summary="Retrieve assets from an OpenRemote realm that store datapoints",
+    summary="Retrieve assets that store datapoints",
     responses={
         HTTPStatus.OK: {"description": "Assets have been retrieved"},
         HTTPStatus.UNAUTHORIZED: {"description": "Unauthorized"},
     },
 )
-async def get_assets(
+async def get_assets_with_historical_data(
     token: Annotated[str, Depends(oauth2_scheme)],
     realm: str,
+    realm_query: str = Query(..., alias="realm_query", description="The realm used for the asset query"),
 ) -> list[Asset]:
-    or_proxy_service = _build_proxy_service(token)
-    return or_proxy_service.get_assets_with_historical_datapoints(realm)
+    proxy_client = _build_proxy_client(token)
+    assets = proxy_client.get_assets_with_historical_data(realm_query, realm)
+
+    if assets is None:
+        return []
+
+    return assets
 
 
 @router.get(
     "/assets/ids",
-    summary="Retrieve assets from an OpenRemote realm by a comma-separated list of Asset IDs",
+    summary="Retrieve assets by a comma-separated list of Asset IDs",
     responses={
         HTTPStatus.OK: {"description": "Assets have been retrieved"},
         HTTPStatus.UNAUTHORIZED: {"description": "Unauthorized"},
@@ -62,17 +67,23 @@ async def get_assets(
 async def get_assets_by_ids(
     token: Annotated[str, Depends(oauth2_scheme)],
     realm: str,
+    realm_query: str = Query(..., alias="realm_query", description="The realm used for the asset query"),
     ids_str: str = Query(..., alias="ids", description="Comma-separated list of asset IDs"),
 ) -> list[Asset]:
     ids_list = [asset_id.strip() for asset_id in ids_str.split(",") if asset_id.strip()]
 
-    or_proxy_service = _build_proxy_service(token)
-    return or_proxy_service.get_assets_by_ids(realm, ids_list)
+    proxy_client = _build_proxy_client(token)
+    assets = proxy_client.get_assets_by_ids(ids_list, realm_query, realm)
+
+    if assets is None:
+        return []
+
+    return assets
 
 
 @router.get(
     "/realm/config",
-    summary="Retrieve the realm configuration of an OpenRemote realm",
+    summary="Retrieve realm configuration",
     responses={
         HTTPStatus.OK: {"description": "Realm configuration has been retrieved"},
         HTTPStatus.NOT_FOUND: {"description": "Realm configuration not found"},
@@ -83,18 +94,23 @@ async def get_realm_config(
     token: Annotated[str, Depends(oauth2_scheme)],
     realm: str,
 ) -> RealmConfig:
-    or_proxy_service = _build_proxy_service(token)
-    config = or_proxy_service.get_realm_config(realm)
+    proxy_client = _build_proxy_client(token)
+    config = proxy_client.get_manager_config(realm)
 
-    if config is None:
+    if config is None or config.realms is None:
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Configuration not found")
+
+    realm_config = config.realms[realm]
+
+    if realm_config is None:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Realm configuration not found")
 
-    return config
+    return realm_config
 
 
 @router.get(
     "/realm/accessible",
-    summary="Retrieve accessible realms",
+    summary="Retrieve accessible realms for the current user",
     responses={
         HTTPStatus.OK: {"description": "Accessible realms have been retrieved"},
         HTTPStatus.UNAUTHORIZED: {"description": "Unauthorized"},
@@ -105,8 +121,8 @@ async def get_accessible_realms(
     token: Annotated[str, Depends(oauth2_scheme)],
     realm: str,
 ) -> list[BasicRealm]:
-    or_proxy_service = _build_proxy_service(token)
-    realms = or_proxy_service.get_accessible_realms(realm)
+    proxy_client = _build_proxy_client(token)
+    realms = proxy_client.get_accessible_realms(realm)
 
     if realms is None:
         raise HTTPException(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail="Unable to retrieve realms")
@@ -114,8 +130,8 @@ async def get_accessible_realms(
     return realms
 
 
-def _build_proxy_service(token: str) -> OpenRemoteService:
-    """Build the OpenRemote service that proxies the request with the given token.
+def _build_proxy_client(token: str) -> OpenRemoteProxyClient:
+    """Build the OpenRemote proxy client with the given token.
 
     Args:
         token: The token to use for the OpenRemote service.
@@ -123,5 +139,4 @@ def _build_proxy_service(token: str) -> OpenRemoteService:
     Returns:
         The OpenRemote service with the proxy client.
     """
-    proxy_client = OpenRemoteProxyClient(openremote_url=ENV.ML_OR_URL, token=token)
-    return OpenRemoteService(client=proxy_client)
+    return OpenRemoteProxyClient(openremote_url=ENV.ML_OR_URL, token=token)
