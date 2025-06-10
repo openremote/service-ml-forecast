@@ -100,7 +100,7 @@ async def get_realm_config(
     if config is None or config.realms is None:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Configuration not found")
 
-    realm_config = config.realms[realm]
+    realm_config = config.realms.get(realm)
 
     if realm_config is None:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Realm configuration not found")
