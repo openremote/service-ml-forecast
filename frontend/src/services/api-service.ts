@@ -19,14 +19,28 @@ import { BasicAsset, BasicRealm, ModelConfig, RealmConfig } from './models';
 import { ML_SERVICE_URL } from '../common/constants';
 import { AuthService } from './auth-service';
 
-function getBaseUrl(realm: string): string {
+/**
+ * Build the service url with the api path
+ * @param realm The realm for the API
+ * @returns The service url with the api path
+ */
+function buildServiceApiUrl(realm: string): string {
     return ML_SERVICE_URL + '/api/' + realm;
 }
 
-function getOpenRemoteBaseUrl(realm: string = AuthService.realm): string {
+/**
+ * Build the service url with the openremote proxy path
+ * @param realm The realm for the proxy (defaults to current realm)
+ * @returns The service url with the openremote proxy path
+ */
+function buildOpenRemoteProxyUrl(realm: string = AuthService.realm): string {
     return ML_SERVICE_URL + '/proxy/openremote/' + realm;
 }
 
+/**
+ * Build the headers for the API request
+ * @returns The headers for the API request
+ */
 function buildHeaders(): Headers {
     return new Headers({
         'Content-Type': 'application/json',
@@ -40,7 +54,7 @@ export const APIService = {
      * @returns The list of model configs
      */
     async getModelConfigs(realm: string): Promise<ModelConfig[]> {
-        const response = await fetch(getBaseUrl(realm) + '/configs', {
+        const response = await fetch(buildServiceApiUrl(realm) + '/configs', {
             method: 'GET',
             headers: buildHeaders()
         });
@@ -57,7 +71,7 @@ export const APIService = {
      * @returns The model config
      */
     async getModelConfig(realm: string, id: string): Promise<ModelConfig> {
-        const response = await fetch(getBaseUrl(realm) + '/configs/' + id, {
+        const response = await fetch(buildServiceApiUrl(realm) + '/configs/' + id, {
             method: 'GET',
             headers: buildHeaders()
         });
@@ -73,7 +87,7 @@ export const APIService = {
      * @param id The id of the model config
      */
     async deleteModelConfig(realm: string, id: string): Promise<void> {
-        const response = await fetch(getBaseUrl(realm) + '/configs/' + id, {
+        const response = await fetch(buildServiceApiUrl(realm) + '/configs/' + id, {
             method: 'DELETE',
             headers: buildHeaders()
         });
@@ -90,7 +104,7 @@ export const APIService = {
      * @returns The updated model config
      */
     async updateModelConfig(realm: string, id: string, modelConfig: ModelConfig): Promise<ModelConfig> {
-        const response = await fetch(getBaseUrl(realm) + '/configs/' + id, {
+        const response = await fetch(buildServiceApiUrl(realm) + '/configs/' + id, {
             method: 'PUT',
             body: JSON.stringify(modelConfig),
             headers: buildHeaders()
@@ -108,7 +122,7 @@ export const APIService = {
      * @returns The created model config
      */
     async createModelConfig(realm: string, modelConfig: ModelConfig): Promise<ModelConfig> {
-        const response = await fetch(getBaseUrl(realm) + '/configs', {
+        const response = await fetch(buildServiceApiUrl(realm) + '/configs', {
             method: 'POST',
             body: JSON.stringify(modelConfig),
             headers: buildHeaders()
@@ -126,7 +140,7 @@ export const APIService = {
      */
     async getOpenRemoteRealmConfig(realm: string): Promise<RealmConfig> {
         // Explicitly pass in the realm
-        const response = await fetch(getOpenRemoteBaseUrl(realm) + '/realm/config', {
+        const response = await fetch(buildOpenRemoteProxyUrl(realm) + '/realm/config', {
             method: 'GET',
             headers: buildHeaders()
         });
@@ -141,7 +155,7 @@ export const APIService = {
      * @returns The list of accessible realms
      */
     async getAccessibleRealms(): Promise<BasicRealm[]> {
-        const response = await fetch(getOpenRemoteBaseUrl() + '/realm/accessible', {
+        const response = await fetch(buildOpenRemoteProxyUrl() + '/realm/accessible', {
             method: 'GET',
             headers: buildHeaders()
         });
@@ -157,7 +171,7 @@ export const APIService = {
      * @returns The list of assets
      */
     async getOpenRemoteAssets(realm: string): Promise<BasicAsset[]> {
-        const response = await fetch(getOpenRemoteBaseUrl() + '/assets?realm_query=' + realm, {
+        const response = await fetch(buildOpenRemoteProxyUrl() + '/assets?realm_query=' + realm, {
             method: 'GET',
             headers: buildHeaders()
         });
@@ -174,7 +188,7 @@ export const APIService = {
      * @returns The list of assets
      */
     async getOpenRemoteAssetsById(realm: string, ids: string[]): Promise<BasicAsset[]> {
-        const response = await fetch(getOpenRemoteBaseUrl() + '/assets/ids?realm_query=' + realm + '&ids=' + ids.join(','), {
+        const response = await fetch(buildOpenRemoteProxyUrl() + '/assets/ids?realm_query=' + realm + '&ids=' + ids.join(','), {
             method: 'GET',
             headers: buildHeaders()
         });
