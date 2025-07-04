@@ -152,7 +152,7 @@ export const APIService = {
     },
 
     /**
-     * Get all assets for the current realm with attributesthat store datapoints
+     * Get all assets for the current realm with attributes that store datapoints
      * @param realm The realm of the assets
      * @returns The list of assets
      */
