@@ -287,8 +287,8 @@ class OpenRemoteClient:
                 self.logger.error(f"Error retrieving predicted datapoints: {e}")
                 return None
 
-    def get_assets_with_historical_data(self, query_realm: str, realm: str = MASTER_REALM) -> list[Asset] | None:
-        """Retrieve all assets for a given realm that store historical datapoints.
+    def asset_query(self, query: dict[str, Any], query_realm: str, realm: str = MASTER_REALM) -> list[Asset] | None:
+        """Execute an asset query.
 
         Args:
             query_realm: The realm for the asset query.
@@ -299,76 +299,7 @@ class OpenRemoteClient:
         """
 
         url = f"{self.openremote_url}/api/{realm}/asset/query"
-
-        # OR Asset Query to retrieve only assets that have attributes with "meta": {"storeDataPoints": true}
-        asset_query = {
-            "realm": {"name": query_realm},
-            "attributes": {
-                "operator": "AND",
-                "items": [
-                    {
-                        "meta": [
-                            {
-                                "name": {
-                                    "predicateType": "string",
-                                    "match": "EXACT",
-                                    "caseSensitive": True,
-                                    "value": "storeDataPoints",
-                                },
-                                "value": {
-                                    "predicateType": "boolean",
-                                    "match": "EXACT",
-                                    "value": True,
-                                },
-                            }
-                        ]
-                    }
-                ],
-            },
-        }
-
-        request = self.__build_request("POST", url, data=asset_query)
-
-        with httpx.Client(timeout=self.timeout) as client:
-            try:
-                response = client.send(request)
-                response.raise_for_status()
-                assets_data = response.json()
-
-                # Additional filtering to remove attributes that do not have "meta": {"storeDataPoints": true}
-                def _filter_asset_attributes(asset_obj: Asset) -> Asset:
-                    if hasattr(asset_obj, "attributes") and isinstance(asset_obj.attributes, dict):
-                        asset_obj.attributes = {
-                            k: v
-                            for k, v in asset_obj.attributes.items()
-                            if hasattr(v, "meta") and isinstance(v.meta, dict) and v.meta.get("storeDataPoints") is True
-                        }
-                    return asset_obj
-
-                parsed_assets = [_filter_asset_attributes(Asset(**asset_data)) for asset_data in assets_data]
-                return parsed_assets
-            except (httpx.HTTPStatusError, httpx.ConnectError) as e:
-                self.logger.error(f"Error retrieving assets with storeDataPoints: {e}")
-                return None
-
-    def get_assets_by_ids(
-        self, asset_ids: list[str], query_realm: str, realm: str = MASTER_REALM
-    ) -> list[Asset] | None:
-        """Retrieve assets by their IDs.
-
-        Args:
-            asset_ids: The IDs of the assets to retrieve.
-            query_realm: The realm for the asset query.
-            realm: The realm to retrieve assets from defaulting to MASTER_REALM.
-
-        Returns:
-            list[Asset] | None: List of assets or None
-        """
-
-        url = f"{self.openremote_url}/api/{realm}/asset/query"
-        asset_query = {"recursive": False, "realm": {"name": query_realm}, "ids": asset_ids}
-
-        request = self.__build_request("POST", url, data=asset_query)
+        request = self.__build_request("POST", url, data=query)
 
         with httpx.Client(timeout=self.timeout) as client:
             try:
@@ -377,7 +308,7 @@ class OpenRemoteClient:
                 assets = response.json()
                 return [Asset(**asset) for asset in assets]
             except (httpx.HTTPStatusError, httpx.ConnectError) as e:
-                self.logger.error(f"Error retrieving assets: {e}")
+                self.logger.error(f"Error executing asset query: {e}")
                 return None
 
     def get_manager_config(self, realm: str = MASTER_REALM) -> ManagerConfig | None:

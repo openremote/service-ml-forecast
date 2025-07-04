@@ -17,8 +17,15 @@
 
 import logging
 
-from service_ml_forecast.clients.openremote.models import Asset, AssetDatapoint, Realm
-from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
+from service_ml_forecast.clients.openremote.models import (
+    Asset,
+    AssetDatapoint,
+    BasicRealm,
+    ManagerConfig,
+    Realm,
+    RealmConfig,
+)
+from service_ml_forecast.clients.openremote.openremote_client import MASTER_REALM, OpenRemoteClient
 from service_ml_forecast.common.time_util import TimeUtil
 from service_ml_forecast.models.feature_data_wrappers import AssetFeatureDatapoints, ForecastDataSet, TrainingDataSet
 from service_ml_forecast.models.model_config import ModelConfig
@@ -159,18 +166,78 @@ class OpenRemoteService:
 
         return forecast_dataset
 
-    def get_assets_by_ids(self, realm: str, asset_ids: list[str]) -> list[Asset]:
+    def get_assets_by_ids(self, query_realm: str, realm: str, asset_ids: list[str]) -> list[Asset]:
         """Get assets by a comma-separated list of Asset IDs.
 
         Returns:
             A list of all assets from OpenRemote.
         """
-        assets = self.client.get_assets_by_ids(asset_ids, realm)
+
+        asset_query = {"recursive": False, "realm": {"name": query_realm}, "ids": asset_ids}
+        assets = self.client.asset_query(asset_query, realm)
+
         if assets is None:
             logger.warning(f"Unable to retrieve assets by ids for realm {realm}")
             return []
 
         return assets
+
+    def get_assets_with_historical_data(self, query_realm: str, realm: str = MASTER_REALM) -> list[Asset] | None:
+        """Retrieve all assets for a given realm that store historical datapoints.
+
+        Args:
+            query_realm: The realm for the asset query.
+            realm: The realm to retrieve assets from defaulting to MASTER_REALM.
+
+        Returns:
+            list[Asset] | None: List of assets or None
+        """
+
+        # OR Asset Query to retrieve only assets that have attributes with "meta": {"storeDataPoints": true}
+        asset_query = {
+            "realm": {"name": query_realm},
+            "attributes": {
+                "operator": "AND",
+                "items": [
+                    {
+                        "meta": [
+                            {
+                                "name": {
+                                    "predicateType": "string",
+                                    "match": "EXACT",
+                                    "caseSensitive": True,
+                                    "value": "storeDataPoints",
+                                },
+                                "value": {
+                                    "predicateType": "boolean",
+                                    "match": "EXACT",
+                                    "value": True,
+                                },
+                            }
+                        ]
+                    }
+                ],
+            },
+        }
+
+        # Execute the asset query
+        assets = self.client.asset_query(asset_query, query_realm)
+
+        if assets is None:
+            return None
+
+        # Filter the assets to only include attributes that have "meta": {"storeDataPoints": true}
+        def _filter_asset_attributes(asset_obj: Asset) -> Asset:
+            if hasattr(asset_obj, "attributes") and isinstance(asset_obj.attributes, dict):
+                asset_obj.attributes = {
+                    k: v
+                    for k, v in asset_obj.attributes.items()
+                    if hasattr(v, "meta") and isinstance(v.meta, dict) and v.meta.get("storeDataPoints") is True
+                }
+            return asset_obj
+
+        parsed_assets = [_filter_asset_attributes(asset) for asset in assets]
+        return parsed_assets
 
     def get_realms(self) -> list[Realm] | None:
         """Get all realms from OpenRemote that are enabled.
@@ -179,3 +246,40 @@ class OpenRemoteService:
             A list of all enabled realms from OpenRemote.
         """
         return self.client.get_all_enabled_realms()
+
+    def get_manager_config(self, realm: str = MASTER_REALM) -> ManagerConfig | None:
+        """Get the manager configuration.
+
+        Returns:
+            The manager configuration.
+        """
+        return self.client.get_manager_config(realm)
+
+    def get_realm_config(self, realm: str = MASTER_REALM) -> RealmConfig | None:
+        """Get the specific realm configuration from the manager configuration.
+
+        Returns:
+            The realm configuration or None if the realm configuration could not be retrieved.
+        """
+        config = self.get_manager_config(realm)
+
+        if config is None or config.realms is None:
+            return None
+
+        realm_config = config.realms.get(realm)
+
+        if realm_config is None:
+            return None
+
+        return realm_config
+
+    def get_accessible_realms(self, realm: str = MASTER_REALM) -> list[BasicRealm] | None:
+        """Retrieves accessible realms for the current user.
+
+        Args:
+            realm: The realm to retrieve realms from defaulting to MASTER_REALM.
+
+        Returns:
+            list[BasicRealm] | None: List of accessible realms or None
+        """
+        return self.client.get_accessible_realms(realm)

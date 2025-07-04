@@ -30,6 +30,7 @@ from service_ml_forecast.clients.openremote.models import Asset, BasicRealm, Rea
 from service_ml_forecast.clients.openremote.openremote_proxy_client import OpenRemoteProxyClient
 from service_ml_forecast.config import ENV
 from service_ml_forecast.dependencies import oauth2_scheme
+from service_ml_forecast.services.openremote_service import OpenRemoteService
 
 router = APIRouter(prefix="/proxy/openremote/{realm}", tags=["OpenRemote Proxy API"])
 
@@ -47,8 +48,8 @@ async def get_assets_with_historical_data(
     realm: str,
     realm_query: str = Query(..., alias="realm_query", description="The realm used for the asset query"),
 ) -> list[Asset]:
-    proxy_client = _build_proxy_client(token)
-    assets = proxy_client.get_assets_with_historical_data(realm_query, realm)
+    service = _build_proxied_openremote_service(token)
+    assets = service.get_assets_with_historical_data(realm_query, realm)
 
     if assets is None:
         return []
@@ -72,11 +73,11 @@ async def get_assets_by_ids(
 ) -> list[Asset]:
     ids_list = [asset_id.strip() for asset_id in ids_str.split(",") if asset_id.strip()]
 
-    proxy_client = _build_proxy_client(token)
-    assets = proxy_client.get_assets_by_ids(ids_list, realm_query, realm)
+    service = _build_proxied_openremote_service(token)
+    assets = service.get_assets_by_ids(realm_query, realm, ids_list)
 
     if assets is None:
-        return []
+        raise HTTPException(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail="Unable to retrieve assets")
 
     return assets
 
@@ -94,18 +95,13 @@ async def get_realm_config(
     token: Annotated[str, Depends(oauth2_scheme)],
     realm: str,
 ) -> RealmConfig:
-    proxy_client = _build_proxy_client(token)
-    config = proxy_client.get_manager_config(realm)
+    service = _build_proxied_openremote_service(token)
+    config = service.get_realm_config(realm)
 
-    if config is None or config.realms is None:
-        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Configuration not found")
-
-    realm_config = config.realms.get(realm)
-
-    if realm_config is None:
+    if config is None:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Realm configuration not found")
 
-    return realm_config
+    return config
 
 
 @router.get(
@@ -121,8 +117,8 @@ async def get_accessible_realms(
     token: Annotated[str, Depends(oauth2_scheme)],
     realm: str,
 ) -> list[BasicRealm]:
-    proxy_client = _build_proxy_client(token)
-    realms = proxy_client.get_accessible_realms(realm)
+    service = _build_proxied_openremote_service(token)
+    realms = service.get_accessible_realms(realm)
 
     if realms is None:
         raise HTTPException(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail="Unable to retrieve realms")
@@ -130,13 +126,14 @@ async def get_accessible_realms(
     return realms
 
 
-def _build_proxy_client(token: str) -> OpenRemoteProxyClient:
-    """Build the OpenRemote proxy client with the given token.
+def _build_proxied_openremote_service(token: str) -> OpenRemoteService:
+    """Build the OpenRemote service with a proxied client.
 
     Args:
         token: The token to use for the OpenRemote service.
 
     Returns:
-        The OpenRemote service with the proxy client.
+        The OpenRemote service using the proxied client.
     """
-    return OpenRemoteProxyClient(openremote_url=ENV.ML_OR_URL, token=token)
+    client = OpenRemoteProxyClient(openremote_url=ENV.ML_OR_URL, token=token)
+    return OpenRemoteService(client)
