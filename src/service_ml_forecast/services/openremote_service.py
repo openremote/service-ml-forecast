@@ -16,17 +16,21 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 import logging
+from apscheduler.schedulers.background import BackgroundScheduler
 
 from service_ml_forecast.clients.openremote.models import (
     Asset,
     AssetDatapoint,
     BasicRealm,
     ManagerConfig,
+    Microservice,
+    MicroserviceStatus,
     Realm,
     RealmConfig,
 )
 from service_ml_forecast.clients.openremote.openremote_client import MASTER_REALM, OpenRemoteClient
 from service_ml_forecast.common.time_util import TimeUtil
+from service_ml_forecast.config import ENV
 from service_ml_forecast.models.feature_data_wrappers import AssetFeatureDatapoints, ForecastDataSet, TrainingDataSet
 from service_ml_forecast.models.model_config import ModelConfig
 
@@ -348,3 +352,26 @@ class OpenRemoteService:
             list[BasicRealm] | None: List of accessible realms or None
         """
         return self.client.get_accessible_realms(realm)
+
+    def register_service(self) -> None:
+        """Register the ML Forecast service with OpenRemote.
+        
+        Additionally, the registration is updated every 30 seconds in the background.
+        """
+
+        service_descriptor: Microservice = Microservice(
+            label="ML Forecast Service",
+            serviceId="ml-forecast-service",
+            url=f"http://localhost:8001",
+            status=MicroserviceStatus.AVAILABLE,
+            multiTenancy=True,
+        )
+
+        # Start a simple background scheduler to register the service every 30 seconds
+        scheduler = BackgroundScheduler()
+        scheduler.max_instances = 1
+        scheduler.add_job(self.client.register_service, 'interval', seconds=30, args=(service_descriptor,))
+        scheduler.start()
+
+        # Initial call to register the service
+        scheduler.add_job(self.client.register_service, args=(service_descriptor,))

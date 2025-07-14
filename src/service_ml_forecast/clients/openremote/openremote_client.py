@@ -30,6 +30,7 @@ from service_ml_forecast.clients.openremote.models import (
     AssetDatapointQuery,
     BasicRealm,
     ManagerConfig,
+    Microservice,
     Realm,
 )
 
@@ -380,3 +381,23 @@ class OpenRemoteClient:
             except (httpx.HTTPStatusError, httpx.ConnectError) as e:
                 self.logger.error(f"Error retrieving realms: {e}")
                 return None
+
+    def register_service(self, service: Microservice, realm: str = MASTER_REALM) -> bool:
+        """Register a service.
+
+        Args:
+            service: The service to register.
+            realm: The realm to register the service in defaulting to MASTER_REALM.
+        """
+
+        url = f"{self.openremote_url}/api/{realm}/microservice/register"
+        request = self.__build_request("POST", url, data=service.model_dump())
+
+        with httpx.Client(timeout=self.timeout) as client:
+            try:
+                response = client.send(request)
+                response.raise_for_status()
+                return response.status_code == HTTPStatus.CREATED
+            except (httpx.HTTPStatusError, httpx.ConnectError) as e:
+                self.logger.error(f"Error registering service: {e}")
+                return False

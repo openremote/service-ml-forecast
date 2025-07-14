@@ -27,6 +27,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from service_ml_forecast import __app_info__
 from service_ml_forecast.api import model_config_route, openremote_proxy_route, web_route
 from service_ml_forecast.api.route_exception_handlers import register_exception_handlers
+from service_ml_forecast.clients.openremote.models import Microservice, MicroserviceStatus
 from service_ml_forecast.config import ENV
 from service_ml_forecast.dependencies import get_openremote_service
 from service_ml_forecast.logging_config import LOGGING_CONFIG
@@ -108,6 +109,10 @@ def initialize_background_services() -> None:
     # Setup the ML Model Scheduler
     model_scheduler = ModelScheduler(get_openremote_service())
     model_scheduler.start()
+
+    # Register the service with OpenRemote
+    openremote_service = get_openremote_service()
+    openremote_service.register_service()
 
 
 # Entrypoint for the service

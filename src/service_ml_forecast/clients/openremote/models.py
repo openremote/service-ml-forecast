@@ -15,9 +15,10 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
+from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class AssetAttribute(BaseModel):
@@ -104,3 +105,25 @@ class BasicRealm(BaseModel):
 
     name: str
     displayName: str
+
+
+class MicroserviceStatus(str, Enum):
+    """Status of a microservice."""
+
+    AVAILABLE = "AVAILABLE"
+    UNAVAILABLE = "UNAVAILABLE"
+    ERROR = "ERROR"
+    STARTING = "STARTING"
+    STOPPING = "STOPPING"
+
+
+class Microservice(BaseModel):
+    """Represents an external service's/microservice's metadata and status information."""
+
+    label: str = Field(description="The label of the service, e.g. 'Energy Service'")
+    serviceId: str = Field(description="The unique identifier of the service, e.g. 'energy-service'")
+    url: str = Field(description="The URL of the service's configuration Web UI")
+    status: MicroserviceStatus = Field(description="The status of the service, e.g. 'AVAILABLE'")
+    multiTenancy: bool | None = Field(
+        default=None, description="Indicates whether the service supports and uses multi-tenancy"
+    )
