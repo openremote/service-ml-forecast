@@ -32,7 +32,7 @@ export enum TimeDurationUnit {
     DAY = 'P%D',
     WEEK = 'P%W',
     MONTH = 'P%M',
-    YEAR = 'P%Y',
+    YEAR = 'P%Y'
 }
 
 // Display name for the ISO 8601 units
@@ -42,7 +42,7 @@ const TimeDurationUnitDisplay: Record<TimeDurationUnit, string> = {
     [TimeDurationUnit.DAY]: 'Days',
     [TimeDurationUnit.WEEK]: 'Weeks',
     [TimeDurationUnit.MONTH]: 'Months',
-    [TimeDurationUnit.YEAR]: 'Years',
+    [TimeDurationUnit.YEAR]: 'Years'
 };
 
 // Pandas Frequency
@@ -54,7 +54,7 @@ export enum PandasTimeUnit {
 // Display name for the Pandas units
 const PandasTimeUnitDisplay: Record<PandasTimeUnit, string> = {
     [PandasTimeUnit.MINUTE]: 'Minutes',
-    [PandasTimeUnit.HOUR]: 'Hours',
+    [PandasTimeUnit.HOUR]: 'Hours'
 };
 
 // This is a input component that renders both a number input and a dropdown for the unit of the duration
@@ -173,9 +173,9 @@ export class CustomDurationInput extends LitElement {
     // Get available unit options based on the units property or defaults
     getUnitOptions(): [string, string][] {
         if (this.type === DurationInputType.ISO_8601) {
-            return this.iso_units.map(unit => [unit, TimeDurationUnitDisplay[unit]]);
+            return this.iso_units.map((unit) => [unit, TimeDurationUnitDisplay[unit]]);
         } else if (this.type === DurationInputType.PANDAS_FREQ) {
-            return this.pandas_units.map(unit => [unit, PandasTimeUnitDisplay[unit]]);
+            return this.pandas_units.map((unit) => [unit, PandasTimeUnitDisplay[unit]]);
         }
 
         return [];
