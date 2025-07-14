@@ -41,10 +41,10 @@ export interface TargetFeature {
      */
     attribute_name: string;
     /**
-     * Timestamp in milliseconds since epoch. All data after this timestamp will be used for forecasting.
-     * Constraints: gt=0
+     * ISO 8601 duration string, this duration period will be used for retrieving training data.
+     * E.g. 'P6M' for data from the last 6 months.
      */
-    cutoff_timestamp: number;
+    training_data_period: string;
 }
 
 /**
@@ -62,10 +62,10 @@ export interface RegressorFeature {
      */
     attribute_name: string;
     /**
-     * Timestamp in milliseconds since epoch. All data after this timestamp will be used for forecasting.
-     * Constraints: gt=0
+     * ISO 8601 duration string, this duration period will be used for retrieving training data.
+     * E.g. 'P6M' for data from the last 6 months.
      */
-    cutoff_timestamp: number;
+    training_data_period: string;
 }
 
 /**

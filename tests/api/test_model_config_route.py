@@ -9,7 +9,7 @@ TEST_CONFIG_ID = "d3c143a6-1018-4ebd-932b-a509eb7ab841"
 TEST_REALM = "master"
 TEST_ASSET_ID = "41ORIplRVAlT97dYGUD9n5"
 TEST_ATTRIBUTE_NAME = "test-attribute"
-TEST_CUTOFF_TIMESTAMP = 1716153600000
+TEST_training_data_period = "P6M"
 
 
 def create_test_config() -> dict[str, Any]:
@@ -24,7 +24,7 @@ def create_test_config() -> dict[str, Any]:
         "target": {
             "asset_id": TEST_ASSET_ID,
             "attribute_name": TEST_ATTRIBUTE_NAME,
-            "cutoff_timestamp": TEST_CUTOFF_TIMESTAMP,
+            "training_data_period": TEST_training_data_period,
         },
         "forecast_interval": "PT1H",
         "training_interval": "PT1H",
