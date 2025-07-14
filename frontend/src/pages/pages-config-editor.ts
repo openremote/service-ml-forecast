@@ -26,7 +26,7 @@ import { Router, RouterLocation } from '@vaadin/router';
 import { InputType, OrInputChangedEvent } from '@openremote/or-mwc-components/or-mwc-input';
 import { showSnackbar } from '@openremote/or-mwc-components/or-mwc-snackbar';
 import { getRootPath } from '../common/util';
-import { DurationInputType } from '../components/custom-duration-input';
+import { DurationInputType, TimeDurationUnit } from '../components/custom-duration-input';
 import { consume } from '@lit/context';
 import { realmContext } from './app-layout';
 
@@ -137,7 +137,7 @@ export class PageConfigEditor extends LitElement {
         target: {
             asset_id: '',
             attribute_name: '',
-            cutoff_timestamp: new Date().getTime()
+            training_data_period: 'P6M'
         },
         regressors: null,
         forecast_interval: 'PT1H',
@@ -342,7 +342,7 @@ export class PageConfigEditor extends LitElement {
         this.formData.regressors.push({
             asset_id: '',
             attribute_name: '',
-            cutoff_timestamp: new Date().getTime()
+            training_data_period: 'P6M'
         });
         this.requestUpdate();
     }
@@ -402,14 +402,14 @@ export class PageConfigEditor extends LitElement {
                             `
                         )}
 
-                        <or-mwc-input
-                            type="${InputType.DATETIME}"
-                            name="cutoff_timestamp"
-                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.handleRegressorInput(e, index)}"
-                            label="Use datapoints since"
-                            .value="${regressor.cutoff_timestamp}"
-                            required
-                        ></or-mwc-input>
+                        <custom-duration-input
+                            name="training_data_period"
+                            .type="${DurationInputType.ISO_8601}"
+                            @value-changed="${(e: OrInputChangedEvent) => this.handleRegressorInput(e, index)}"
+                            label="Training data period"
+                            .iso_units="${[TimeDurationUnit.DAY, TimeDurationUnit.WEEK, TimeDurationUnit.MONTH, TimeDurationUnit.YEAR]}"
+                            .value="${regressor.training_data_period}"
+                        ></custom-duration-input>
 
                         <or-mwc-input
                             style="max-width: 48px;"
@@ -607,14 +607,15 @@ export class PageConfigEditor extends LitElement {
                                 `
                             )}
 
-                            <or-mwc-input
-                                type="${InputType.DATETIME}"
-                                name="target.cutoff_timestamp"
-                                @or-mwc-input-changed="${this.handleTargetInput}"
-                                label="Use datapoints since"
-                                .value="${this.formData.target.cutoff_timestamp}"
-                                required
-                            ></or-mwc-input>
+                            <!-- target.training_data_period -->
+                            <custom-duration-input
+                                name="target.training_data_period"
+                                .type="${DurationInputType.ISO_8601}"
+                                @value-changed="${this.handleTargetInput}"
+                                label="Training data period"
+                                .iso_units="${[TimeDurationUnit.DAY, TimeDurationUnit.WEEK, TimeDurationUnit.MONTH, TimeDurationUnit.YEAR]}"
+                                .value="${this.formData.target.training_data_period}"
+                            ></custom-duration-input>
                         </div>
                     </div>
                 </or-panel>

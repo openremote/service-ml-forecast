@@ -7,7 +7,7 @@
     "target": {
       "asset_id": "49ORIhkDVAlT97dYGUD9p5",
       "attribute_name": "windSpeed",
-      "cutoff_timestamp": 1716153600000
+      "training_data_period": "P6M"
     },
     "forecast_interval": "PT60S",
     "training_interval": "PT30S",

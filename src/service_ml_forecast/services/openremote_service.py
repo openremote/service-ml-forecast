@@ -69,12 +69,16 @@ class OpenRemoteService:
         """
         target_feature_datapoints: AssetFeatureDatapoints
 
-        # Retrieve target feature datapoints from OpenRemote
-        datapoints = self.client.get_historical_datapoints(
+        # Get the start timestamp for the target feature
+        start_timestamp = TimeUtil.get_period_start_timestamp_ms(config.target.training_data_period)
+        end_timestamp = TimeUtil.get_timestamp_ms()
+
+        # Retrieve target feature datapoints from OpenRemote with chunking if needed
+        datapoints = self.__get_historical_datapoints(
             config.target.asset_id,
             config.target.attribute_name,
-            config.target.cutoff_timestamp,
-            TimeUtil.get_timestamp_ms(),
+            start_timestamp,
+            end_timestamp,
         )
 
         if datapoints is None:
@@ -94,11 +98,14 @@ class OpenRemoteService:
         # Retrieve regressor historical feature datapoints if configured
         if config.regressors is not None:
             for regressor in config.regressors:
-                regressor_datapoints = self.client.get_historical_datapoints(
+                # Get the start timestamp for the regressor historical data
+                start_timestamp = TimeUtil.get_period_start_timestamp_ms(regressor.training_data_period)
+
+                regressor_datapoints = self.__get_historical_datapoints(
                     regressor.asset_id,
                     regressor.attribute_name,
-                    regressor.cutoff_timestamp,
-                    TimeUtil.get_timestamp_ms(),
+                    start_timestamp,
+                    end_timestamp,
                 )
 
                 if regressor_datapoints is None:
@@ -125,6 +132,61 @@ class OpenRemoteService:
 
         return training_dataset
 
+    def __get_historical_datapoints(
+        self, asset_id: str, attribute_name: str, from_timestamp: int, to_timestamp: int
+    ) -> list[AssetDatapoint] | None:
+        """Wrapper get_historical_datapoints to handle large datasets via chunking.
+
+        Args:
+            asset_id: The ID of the asset.
+            attribute_name: The name of the attribute.
+            from_timestamp: Epoch timestamp in milliseconds.
+            to_timestamp: Epoch timestamp in milliseconds.
+
+        Returns:
+            List of historical datapoints or None if failed.
+        """
+        months_diff = TimeUtil.months_between_timestamps(from_timestamp, to_timestamp)
+
+        # Make a single request for periods of 1 month or less
+        if months_diff <= 1:
+            return self.client.get_historical_datapoints(asset_id, attribute_name, from_timestamp, to_timestamp)
+        else:  # Split into monthly chunks if more than 1 month
+            all_datapoints = []
+            current_from = from_timestamp
+
+            logger.info(
+                f"Chunking datapoint retrieval into {months_diff} monthly chunks for {asset_id} {attribute_name}"
+            )
+            for i in range(months_diff):
+                # Calculate the end timestamp for this chunk (1 month from current_from)
+                current_to = TimeUtil.add_months_to_timestamp(current_from, 1)
+
+                # Don't exceed the original to_timestamp
+                current_to = min(current_to, to_timestamp)
+
+                chunk_datapoints = self.client.get_historical_datapoints(
+                    asset_id, attribute_name, current_from, current_to
+                )
+
+                if chunk_datapoints is None:
+                    logger.error(
+                        f"Failed to retrieve historical datapoints for {asset_id} {attribute_name} "
+                        f"for chunk {i + 1} of {months_diff}"
+                    )
+                    return None
+
+                all_datapoints.extend(chunk_datapoints)
+
+                # Move to the next chunk
+                current_from = current_to
+
+                # Break if we've reached the end
+                if current_from >= to_timestamp:
+                    break
+
+            return all_datapoints
+
     def get_forecast_dataset(self, config: ModelConfig) -> ForecastDataSet | None:
         """Get the forecast dataset for a given model configuration.
 
@@ -139,10 +201,13 @@ class OpenRemoteService:
         # Retrieve regressor predicted feature datapoints if configured
         if config.regressors is not None:
             for regressor in config.regressors:
+                # Get the start timestamp for the regressor
+                start_timestamp = TimeUtil.get_period_start_timestamp_ms(regressor.training_data_period)
+
                 regressor_datapoints = self.client.get_predicted_datapoints(
                     regressor.asset_id,
                     regressor.attribute_name,
-                    regressor.cutoff_timestamp,
+                    start_timestamp,
                     TimeUtil.pd_future_timestamp(config.forecast_periods, config.forecast_frequency),
                 )
 
