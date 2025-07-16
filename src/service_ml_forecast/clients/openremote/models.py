@@ -15,13 +15,12 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
-class AssetAttribute(BaseModel):
+class BasicAttribute(BaseModel):
     """Minimal attribute of an asset."""
 
     name: str
@@ -30,14 +29,14 @@ class AssetAttribute(BaseModel):
     meta: dict[str, Any] | None = None
 
 
-class Asset(BaseModel):
+class BasicAsset(BaseModel):
     """Minimal asset of OpenRemote."""
 
     id: str
     name: str
     realm: str
     parentId: str | None = None
-    attributes: dict[str, AssetAttribute]
+    attributes: dict[str, BasicAttribute]
 
     def get_attribute_value(self, attribute_name: str) -> Any | None:
         """Helper method to get an attribute value."""
@@ -77,20 +76,6 @@ class AssetDatapointQuery(BaseModel):
     toTime: str = ""
 
 
-class RealmConfig(BaseModel):
-    """Realm configuration."""
-
-    styles: str | None = None
-    logo: str | None = None
-    logoMobile: str | None = None
-
-
-class ManagerConfig(BaseModel):
-    """Structure containing configurations for all realms."""
-
-    realms: dict[str, RealmConfig]
-
-
 class Realm(BaseModel):
     """Realm model."""
 
@@ -98,32 +83,3 @@ class Realm(BaseModel):
     name: str
     displayName: str
     enabled: bool
-
-
-class BasicRealm(BaseModel):
-    """Basic realm model."""
-
-    name: str
-    displayName: str
-
-
-class MicroserviceStatus(str, Enum):
-    """Status of a microservice."""
-
-    AVAILABLE = "AVAILABLE"
-    UNAVAILABLE = "UNAVAILABLE"
-    ERROR = "ERROR"
-    STARTING = "STARTING"
-    STOPPING = "STOPPING"
-
-
-class Microservice(BaseModel):
-    """Represents an external service's/microservice's metadata and status information."""
-
-    label: str = Field(description="The label of the service, e.g. 'Energy Service'")
-    serviceId: str = Field(description="The unique identifier of the service, e.g. 'energy-service'")
-    url: str = Field(description="The URL of the service's configuration Web UI")
-    status: MicroserviceStatus = Field(description="The status of the service, e.g. 'AVAILABLE'")
-    multiTenancy: bool | None = Field(
-        default=None, description="Indicates whether the service supports and uses multi-tenancy"
-    )

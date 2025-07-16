@@ -38,11 +38,7 @@ async function init() {
     console.info('Context:', IS_EMBEDDED ? 'iframe' : 'standalone');
 
     await AuthService.init(getRealmParam() ?? 'master');
-
-    // Setup OR icons
     setupORIcons();
-
-    // Setup the router
     setupRouter();
 }
 

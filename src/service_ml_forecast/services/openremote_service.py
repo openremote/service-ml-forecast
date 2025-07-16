@@ -16,21 +16,10 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 import logging
-from apscheduler.schedulers.background import BackgroundScheduler
 
-from service_ml_forecast.clients.openremote.models import (
-    Asset,
-    AssetDatapoint,
-    BasicRealm,
-    ManagerConfig,
-    Microservice,
-    MicroserviceStatus,
-    Realm,
-    RealmConfig,
-)
-from service_ml_forecast.clients.openremote.openremote_client import MASTER_REALM, OpenRemoteClient
+from service_ml_forecast.clients.openremote.models import AssetDatapoint, BasicAsset, Realm
+from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 from service_ml_forecast.common.time_util import TimeUtil
-from service_ml_forecast.config import ENV
 from service_ml_forecast.models.feature_data_wrappers import AssetFeatureDatapoints, ForecastDataSet, TrainingDataSet
 from service_ml_forecast.models.model_config import ModelConfig
 
@@ -139,7 +128,7 @@ class OpenRemoteService:
     def __get_historical_datapoints(
         self, asset_id: str, attribute_name: str, from_timestamp: int, to_timestamp: int
     ) -> list[AssetDatapoint] | None:
-        """Wrapper get_historical_datapoints to handle large datasets via chunking.
+        """Wrapper get_historical_datapoints to split up requests into monthly chunks.
 
         Args:
             asset_id: The ID of the asset.
@@ -152,10 +141,11 @@ class OpenRemoteService:
         """
         months_diff = TimeUtil.months_between_timestamps(from_timestamp, to_timestamp)
 
-        # Make a single request for periods of 1 month or less
+        # Single requests for sub-monthly periods
         if months_diff <= 1:
             return self.client.get_historical_datapoints(asset_id, attribute_name, from_timestamp, to_timestamp)
-        else:  # Split into monthly chunks if more than 1 month
+        # Split into monthly chunks if more than 1 month to avoid hitting datapoint limits on the OpenRemote side
+        else:
             all_datapoints = []
             current_from = from_timestamp
 
@@ -235,143 +225,23 @@ class OpenRemoteService:
 
         return forecast_dataset
 
-    def get_assets_by_ids(self, query_realm: str, realm: str, asset_ids: list[str]) -> list[Asset]:
+    def get_assets_by_ids(self, realm: str, asset_ids: list[str]) -> list[BasicAsset]:
         """Get assets by a comma-separated list of Asset IDs.
 
         Returns:
             A list of all assets from OpenRemote.
         """
-
-        asset_query = {"recursive": False, "realm": {"name": query_realm}, "ids": asset_ids}
-        assets = self.client.asset_query(asset_query, realm)
-
+        assets = self.client.get_assets_by_ids(asset_ids, realm)
         if assets is None:
             logger.warning(f"Unable to retrieve assets by ids for realm {realm}")
             return []
 
         return assets
 
-    def get_assets_with_historical_data(self, query_realm: str, realm: str = MASTER_REALM) -> list[Asset] | None:
-        """Retrieve all assets for a given realm that store historical datapoints.
-
-        Args:
-            query_realm: The realm for the asset query.
-            realm: The realm to retrieve assets from defaulting to MASTER_REALM.
-
-        Returns:
-            list[Asset] | None: List of assets or None
-        """
-
-        # OR Asset Query to retrieve only assets that have attributes with "meta": {"storeDataPoints": true}
-        asset_query = {
-            "realm": {"name": query_realm},
-            "attributes": {
-                "operator": "AND",
-                "items": [
-                    {
-                        "meta": [
-                            {
-                                "name": {
-                                    "predicateType": "string",
-                                    "match": "EXACT",
-                                    "caseSensitive": True,
-                                    "value": "storeDataPoints",
-                                },
-                                "value": {
-                                    "predicateType": "boolean",
-                                    "match": "EXACT",
-                                    "value": True,
-                                },
-                            }
-                        ]
-                    }
-                ],
-            },
-        }
-
-        # Execute the asset query
-        assets = self.client.asset_query(asset_query, query_realm)
-
-        if assets is None:
-            return None
-
-        # Filter the assets to only include attributes that have "meta": {"storeDataPoints": true}
-        def _filter_asset_attributes(asset_obj: Asset) -> Asset:
-            if hasattr(asset_obj, "attributes") and isinstance(asset_obj.attributes, dict):
-                asset_obj.attributes = {
-                    k: v
-                    for k, v in asset_obj.attributes.items()
-                    if hasattr(v, "meta") and isinstance(v.meta, dict) and v.meta.get("storeDataPoints") is True
-                }
-            return asset_obj
-
-        parsed_assets = [_filter_asset_attributes(asset) for asset in assets]
-        return parsed_assets
-
     def get_realms(self) -> list[Realm] | None:
-        """Get all realms from OpenRemote that are enabled.
+        """Get all realms from OpenRemote.
 
         Returns:
-            A list of all enabled realms from OpenRemote.
+            A list of all realms from OpenRemote.
         """
-        return self.client.get_all_enabled_realms()
-
-    def get_manager_config(self, realm: str = MASTER_REALM) -> ManagerConfig | None:
-        """Get the manager configuration.
-
-        Returns:
-            The manager configuration.
-        """
-        return self.client.get_manager_config(realm)
-
-    def get_realm_config(self, realm: str = MASTER_REALM) -> RealmConfig | None:
-        """Get the specific realm configuration from the manager configuration.
-
-        Returns:
-            The realm configuration or None if the realm configuration could not be retrieved.
-        """
-        config = self.get_manager_config(realm)
-
-        if config is None or config.realms is None:
-            return None
-
-        realm_config = config.realms.get(realm)
-
-        if realm_config is None:
-            return None
-
-        return realm_config
-
-    def get_accessible_realms(self, realm: str = MASTER_REALM) -> list[BasicRealm] | None:
-        """Retrieves accessible realms for the current user.
-
-        Args:
-            realm: The realm to retrieve realms from defaulting to MASTER_REALM.
-
-        Returns:
-            list[BasicRealm] | None: List of accessible realms or None
-        """
-        return self.client.get_accessible_realms(realm)
-
-    def register_service(self) -> None:
-        """Register the ML Forecast service with OpenRemote.
-        
-        Additionally, the registration is updated every 30 seconds in the background.
-        """
-
-        service_descriptor: Microservice = Microservice(
-            label="ML Forecast Service",
-            serviceId="ml-forecast-service",
-            url=f"http://localhost:8001",
-            status=MicroserviceStatus.AVAILABLE,
-            multiTenancy=True,
-        )
-
-        # Start a simple background scheduler to register the service every 30 seconds
-        scheduler = BackgroundScheduler()
-        scheduler.max_instances = 1
-        scheduler.add_job(self.client.register_service, 'interval', seconds=30, args=(service_descriptor,))
-        scheduler.start()
-
-        # Initial call to register the service
-        scheduler.add_job(self.client.register_service, args=(service_descriptor,))
+        return self.client.get_realms()

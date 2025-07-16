@@ -17,7 +17,7 @@
 
 import { css, html, LitElement } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
-import { BasicAsset, ModelConfig } from '../services/models';
+import { ModelConfig } from '../services/models';
 import { Router } from '@vaadin/router';
 import { getRootPath } from '../common/util';
 import { InputType } from '@openremote/or-mwc-components/or-mwc-input';
@@ -27,6 +27,9 @@ import { APIService } from '../services/api-service';
 import { consume } from '@lit/context';
 import { realmContext } from './app-layout';
 import { when } from 'lit/directives/when.js';
+import * as Model from '@openremote/model';
+import { manager } from '@openremote/core';
+
 @customElement('page-config-list')
 export class PageConfigList extends LitElement {
     @consume({ context: realmContext })
@@ -71,7 +74,7 @@ export class PageConfigList extends LitElement {
     protected modelConfigs?: ModelConfig[] = [];
 
     @state()
-    protected configAssets?: BasicAsset[] = [];
+    protected configAssets?: Model.Asset[] = [];
 
     @state()
     protected loading: boolean = true;
@@ -89,10 +92,16 @@ export class PageConfigList extends LitElement {
     async loadModelConfigs() {
         try {
             this.modelConfigs = await APIService.getModelConfigs(this.realm);
-            this.configAssets = await APIService.getOpenRemoteAssetsById(
-                this.realm,
-                this.modelConfigs.map((c) => c.target.asset_id)
-            );
+
+            const assetIds = this.modelConfigs?.map((c) => c.target.asset_id) ?? [];
+            const assetQuery: Model.AssetQuery = {
+                ids: assetIds,
+                realm: {
+                    name: this.realm
+                }
+            };
+            const response = await manager.rest.api.AssetResource.queryAssets(assetQuery);
+            this.configAssets = response.data;
             this.loading = false;
         } catch (error) {
             console.error('Failed to fetch model configs:', error);

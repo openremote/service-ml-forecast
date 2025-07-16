@@ -17,6 +17,8 @@
 
 import Keycloak from 'keycloak-js';
 import { IS_EMBEDDED } from '../common/constants';
+import { manager } from '@openremote/core';
+import { AxiosRequestConfig } from 'axios';
 
 const keycloakUrl: string = (process.env.ML_KEYCLOAK_URL || '').replace(/\/$/, '');
 
@@ -75,6 +77,19 @@ class AuthServiceClass {
                 if (!IS_EMBEDDED) {
                     this.startUpdateTokenInterval();
                 }
+
+                // Add the interceptor for interacting with the OpenRemote manager rest api
+                manager.rest.addRequestInterceptor((config: AxiosRequestConfig) => {
+                    if (!config!.headers!.Authorization) {
+                        const authHeader = `Bearer ${this.token}`;
+
+                        if (authHeader) {
+                            config!.headers!.Authorization = authHeader;
+                        }
+                    }
+
+                    return config;
+                });
 
                 return auth;
             })

@@ -29,6 +29,8 @@ import { getRootPath } from '../common/util';
 import { DurationInputType, TimeDurationUnit } from '../components/custom-duration-input';
 import { consume } from '@lit/context';
 import { realmContext } from './app-layout';
+import { manager } from '@openremote/core';
+import * as Model from '@openremote/model';
 
 @customElement('page-config-editor')
 export class PageConfigEditor extends LitElement {
@@ -233,21 +235,61 @@ export class PageConfigEditor extends LitElement {
 
     // Set up all the data for the editor
     protected async setupEditor() {
-        // Set the realm from the context provider
         this.formData.realm = this.realm;
 
         await this.loadAssets();
         await this.loadConfig();
     }
 
-    // Loads valid assets and their attributes from the API
+    // Loads assets and attributes that store data points e.g. have history
     protected async loadAssets() {
         this.assetSelectList.clear();
         try {
-            const assets = await APIService.getOpenRemoteAssets(this.realm);
+            const assetQuery: Model.AssetQuery = {
+                realm: {
+                    name: this.realm
+                },
+                attributes: {
+                    operator: Model.LogicGroupOperator.AND,
+                    items: [
+                        {
+                            meta: [
+                                {
+                                    name: {
+                                        predicateType: 'string',
+                                        match: Model.AssetQueryMatch.EXACT,
+                                        caseSensitive: true,
+                                        value: 'storeDataPoints'
+                                    },
+                                    value: {
+                                        predicateType: 'boolean',
+                                        value: true
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            };
+
+            const response = await manager.rest.api.AssetResource.queryAssets(assetQuery);
+            const assets = response.data;
+
+            // remove attributes that do not have the meta attribute "storeDataPoints" set to true
             assets.forEach((asset) => {
-                this.assetSelectList.set(asset.id, asset.name);
-                this.attributeSelectList.set(asset.id, new Map(Object.entries(asset.attributes).map(([key, value]) => [key, value.name])));
+                Object.values(asset.attributes ?? {}).forEach((attribute) => {
+                    if (attribute.meta?.storeDataPoints !== true) {
+                        delete asset.attributes?.[attribute.name as keyof typeof asset.attributes];
+                    }
+                });
+            });
+
+            assets.forEach((asset) => {
+                this.assetSelectList.set(asset.id ?? '', asset.name ?? '');
+                this.attributeSelectList.set(
+                    asset.id ?? '',
+                    new Map(Object.entries(asset.attributes ?? {}).map(([key, value]) => [key, value.name ?? '']))
+                );
             });
         } catch (err) {
             console.error(err);

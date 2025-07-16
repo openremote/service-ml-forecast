@@ -18,8 +18,8 @@
 import { IconSet, IconSets, OrIconSet, createSvgIconSet } from '@openremote/or-icon';
 import { html } from 'lit';
 import * as Core from '@openremote/core';
-import { APIService } from '../services/api-service';
 import { getRootPath } from './util';
+import { manager } from '@openremote/core';
 
 /**
  * Base theme settings
@@ -94,9 +94,11 @@ export async function setRealmTheme(realm: string) {
     }
 
     try {
-        const config = await APIService.getOpenRemoteRealmConfig(realm);
-        if (config && config.styles) {
-            const cssString = config.styles;
+        const config = (await manager.rest.api.ConfigurationResource.getManagerConfig()).data;
+        const styles = config.realms?.[realm]?.styles;
+
+        if (styles) {
+            const cssString = styles;
             const colorRegex = /--or-app-color(\d+):\s*(#[0-9a-fA-F]{6})/g;
             let match: RegExpExecArray | null;
 
