@@ -21,7 +21,8 @@ import { html, LitElement } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { setRealmTheme } from '../common/theme';
 import { AuthService } from '../services/auth-service';
-import { APIService } from '../services/api-service';
+import { manager } from '@openremote/core';
+import { ML_OR_URL } from '../common/constants';
 
 export const realmContext = createContext<string>(Symbol('realm'));
 
@@ -57,10 +58,8 @@ export class AppLayout extends LitElement {
             return commands.redirect(authRealm);
         }
 
-        if (!(await APIService.getAccessibleRealms()).some((realm) => realm.name === this.realm)) {
-            console.log(`Realm ${this.realm} not accessible, redirecting to ${authRealm}`);
-            return commands.redirect(authRealm);
-        }
+        // Initialise the OpenRemote manager rest api with the auth realm of the user
+        manager.rest.initialise(ML_OR_URL + '/api/' + authRealm);
 
         setRealmTheme(this.realm);
     }

@@ -69,55 +69,6 @@ export interface RegressorFeature {
 }
 
 /**
- * Represents an attribute of an asset.
- */
-export interface BasicAttribute {
-    /**
-     * Name of the attribute.
-     */
-    name: string;
-    /**
-     * Value of the attribute. Can be any type or null.
-     */
-    value?: any | null; // Optional as it allows None
-    /**
-     * Timestamp of the attribute value in milliseconds since epoch.
-     */
-    timestamp: number;
-    /**
-     * Meta data of the attribute.
-     */
-    meta: { [key: string]: any };
-}
-
-/**
- * Represents a minimal asset from OpenRemote.
- */
-export interface BasicAsset {
-    /**
-     * ID of the asset.
-     */
-    id: string;
-    /**
-     * Realm of the asset.
-     */
-    realm: string;
-    /**
-     * Name of the asset.
-     */
-    name: string;
-    /**
-     * ID of the parent asset, if any.
-     * @default null
-     */
-    parentId?: string | null; // Optional as it has a default
-    /**
-     * Dictionary mapping attribute names to their corresponding AssetAttribute objects.
-     */
-    attributes: { [key: string]: BasicAttribute };
-}
-
-/**
  * Base configuration common to all ML models.
  */
 interface BaseModelConfig {
@@ -232,32 +183,3 @@ export interface ProphetModelConfig extends BaseModelConfig {
  * This uses a discriminated union based on the 'type' field.
  */
 export type ModelConfig = ProphetModelConfig;
-
-/**
- * Represents the configuration of a realm.
- */
-export interface RealmConfig {
-    /**
-     * Styles of the realm.
-     */
-    styles: string;
-    /**
-     * Logo of the realm.
-     */
-    logo: string;
-    /**
-     * Logo of the realm for mobile devices.
-     */
-    logoMobile: string;
-}
-
-export interface BasicRealm {
-    /**
-     * ID of the realm.
-     */
-    name: string;
-    /**
-     * Display name of the realm.
-     */
-    displayName: string;
-}

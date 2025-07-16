@@ -17,7 +17,7 @@
 
 import logging
 
-from service_ml_forecast.clients.openremote.models import Asset, AssetDatapoint, Realm
+from service_ml_forecast.clients.openremote.models import AssetDatapoint, BasicAsset, Realm
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 from service_ml_forecast.common.time_util import TimeUtil
 from service_ml_forecast.models.feature_data_wrappers import AssetFeatureDatapoints, ForecastDataSet, TrainingDataSet
@@ -128,7 +128,7 @@ class OpenRemoteService:
     def __get_historical_datapoints(
         self, asset_id: str, attribute_name: str, from_timestamp: int, to_timestamp: int
     ) -> list[AssetDatapoint] | None:
-        """Wrapper get_historical_datapoints to handle large datasets via chunking.
+        """Wrapper get_historical_datapoints to split up requests into monthly chunks.
 
         Args:
             asset_id: The ID of the asset.
@@ -141,10 +141,11 @@ class OpenRemoteService:
         """
         months_diff = TimeUtil.months_between_timestamps(from_timestamp, to_timestamp)
 
-        # Make a single request for periods of 1 month or less
+        # Single requests for sub-monthly periods
         if months_diff <= 1:
             return self.client.get_historical_datapoints(asset_id, attribute_name, from_timestamp, to_timestamp)
-        else:  # Split into monthly chunks if more than 1 month
+        # Split into monthly chunks if more than 1 month to avoid hitting datapoint limits on the OpenRemote side
+        else:
             all_datapoints = []
             current_from = from_timestamp
 
@@ -224,7 +225,7 @@ class OpenRemoteService:
 
         return forecast_dataset
 
-    def get_assets_by_ids(self, realm: str, asset_ids: list[str]) -> list[Asset]:
+    def get_assets_by_ids(self, realm: str, asset_ids: list[str]) -> list[BasicAsset]:
         """Get assets by a comma-separated list of Asset IDs.
 
         Returns:
@@ -238,9 +239,9 @@ class OpenRemoteService:
         return assets
 
     def get_realms(self) -> list[Realm] | None:
-        """Get all realms from OpenRemote that are enabled.
+        """Get all realms from OpenRemote.
 
         Returns:
-            A list of all enabled realms from OpenRemote.
+            A list of all realms from OpenRemote.
         """
-        return self.client.get_all_enabled_realms()
+        return self.client.get_realms()

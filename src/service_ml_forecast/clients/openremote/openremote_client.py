@@ -24,12 +24,10 @@ import httpx
 from pydantic import BaseModel
 
 from service_ml_forecast.clients.openremote.models import (
-    Asset,
     AssetDatapoint,
     AssetDatapointPeriod,
     AssetDatapointQuery,
-    BasicRealm,
-    ManagerConfig,
+    BasicAsset,
     Realm,
 )
 
@@ -187,6 +185,9 @@ class OpenRemoteClient:
     ) -> list[AssetDatapoint] | None:
         """Retrieve the historical data points of a given asset attribute.
 
+        Remarks:
+        - Note, request may fail if more than 100k datapoints are requested, depending on the OpenRemote instance.
+
         Args:
             asset_id: The ID of the asset.
             attribute_name: The name of the attribute.
@@ -287,73 +288,33 @@ class OpenRemoteClient:
                 self.logger.error(f"Error retrieving predicted datapoints: {e}")
                 return None
 
-    def get_assets_with_historical_data(self, query_realm: str, realm: str = MASTER_REALM) -> list[Asset] | None:
-        """Retrieve all assets for a given realm that store historical datapoints.
+    def asset_query(
+        self, asset_query: dict[str, Any], query_realm: str, realm: str = MASTER_REALM
+    ) -> list[BasicAsset] | None:
+        """Perform an asset query.
 
         Args:
+            asset_query: The asset query dict to send to the OpenRemote API.
             query_realm: The realm for the asset query.
             realm: The realm to retrieve assets from defaulting to MASTER_REALM.
-
         Returns:
             list[Asset] | None: List of assets or None
         """
-
         url = f"{self.openremote_url}/api/{realm}/asset/query"
-
-        # OR Asset Query to retrieve only assets that have attributes with "meta": {"storeDataPoints": true}
-        asset_query = {
-            "realm": {"name": query_realm},
-            "attributes": {
-                "operator": "AND",
-                "items": [
-                    {
-                        "meta": [
-                            {
-                                "name": {
-                                    "predicateType": "string",
-                                    "match": "EXACT",
-                                    "caseSensitive": True,
-                                    "value": "storeDataPoints",
-                                },
-                                "value": {
-                                    "predicateType": "boolean",
-                                    "match": "EXACT",
-                                    "value": True,
-                                },
-                            }
-                        ]
-                    }
-                ],
-            },
-        }
-
         request = self.__build_request("POST", url, data=asset_query)
-
         with httpx.Client(timeout=self.timeout) as client:
             try:
                 response = client.send(request)
                 response.raise_for_status()
-                assets_data = response.json()
-
-                # Additional filtering to remove attributes that do not have "meta": {"storeDataPoints": true}
-                def _filter_asset_attributes(asset_obj: Asset) -> Asset:
-                    if hasattr(asset_obj, "attributes") and isinstance(asset_obj.attributes, dict):
-                        asset_obj.attributes = {
-                            k: v
-                            for k, v in asset_obj.attributes.items()
-                            if hasattr(v, "meta") and isinstance(v.meta, dict) and v.meta.get("storeDataPoints") is True
-                        }
-                    return asset_obj
-
-                parsed_assets = [_filter_asset_attributes(Asset(**asset_data)) for asset_data in assets_data]
-                return parsed_assets
+                assets = response.json()
+                return [BasicAsset(**asset) for asset in assets]
             except (httpx.HTTPStatusError, httpx.ConnectError) as e:
-                self.logger.error(f"Error retrieving assets with storeDataPoints: {e}")
+                self.logger.error(f"Error retrieving assets: {e}")
                 return None
 
     def get_assets_by_ids(
         self, asset_ids: list[str], query_realm: str, realm: str = MASTER_REALM
-    ) -> list[Asset] | None:
+    ) -> list[BasicAsset] | None:
         """Retrieve assets by their IDs.
 
         Args:
@@ -365,75 +326,17 @@ class OpenRemoteClient:
             list[Asset] | None: List of assets or None
         """
 
-        url = f"{self.openremote_url}/api/{realm}/asset/query"
         asset_query = {"recursive": False, "realm": {"name": query_realm}, "ids": asset_ids}
+        return self.asset_query(asset_query, query_realm, realm)
 
-        request = self.__build_request("POST", url, data=asset_query)
-
-        with httpx.Client(timeout=self.timeout) as client:
-            try:
-                response = client.send(request)
-                response.raise_for_status()
-                assets = response.json()
-                return [Asset(**asset) for asset in assets]
-            except (httpx.HTTPStatusError, httpx.ConnectError) as e:
-                self.logger.error(f"Error retrieving assets: {e}")
-                return None
-
-    def get_manager_config(self, realm: str = MASTER_REALM) -> ManagerConfig | None:
-        """Retrieve the manager configuration.
-
-        Args:
-            realm: The realm to retrieve the manager configuration from defaulting to MASTER_REALM.
-
-        Returns: ManagerConfig | None: The manager configuration or None
-        """
-
-        url = f"{self.openremote_url}/api/{realm}/configuration/manager"
-        request = self.__build_request("GET", url)
-
-        with httpx.Client(timeout=self.timeout) as client:
-            try:
-                request.headers.pop("Authorization")
-                response = client.send(request)
-                response.raise_for_status()
-                return ManagerConfig(**response.json())
-
-            except (httpx.HTTPStatusError, httpx.ConnectError) as e:
-                self.logger.error(f"Error retrieving manager config: {e}")
-                return None
-
-    def get_accessible_realms(self, realm: str = MASTER_REALM) -> list[BasicRealm] | None:
-        """Retrieves accessible realms for the current user.
+    def get_realms(self, realm: str = MASTER_REALM) -> list[Realm] | None:
+        """Retrieves all realms.
 
         Args:
             realm: The realm to retrieve realms from defaulting to MASTER_REALM.
 
         Returns:
-            list[BasicRealm] | None: List of accessible realms or None
-        """
-
-        url = f"{self.openremote_url}/api/{realm}/realm/accessible"
-        request = self.__build_request("GET", url)
-
-        with httpx.Client(timeout=self.timeout) as client:
-            try:
-                response = client.send(request)
-                response.raise_for_status()
-                realms = response.json()
-                return [BasicRealm(**realm) for realm in realms]
-            except (httpx.HTTPStatusError, httpx.ConnectError) as e:
-                self.logger.error(f"Error retrieving accessible realms: {e}")
-                return None
-
-    def get_all_enabled_realms(self, realm: str = MASTER_REALM) -> list[Realm] | None:
-        """Retrieves all realms and filters out disabled ones.
-
-        Args:
-            realm: The realm to retrieve realms from defaulting to MASTER_REALM.
-
-        Returns:
-            list[Realm] | None: List of enabled realms or None
+            list[Realm] | None: List of realms or None
         """
 
         url = f"{self.openremote_url}/api/{realm}/realm"
@@ -444,8 +347,8 @@ class OpenRemoteClient:
                 response = client.send(request)
                 response.raise_for_status()
 
-                all_realms = [Realm(**realm) for realm in response.json()]
-                return [realm for realm in all_realms if realm.enabled]
+                return [Realm(**realm) for realm in response.json()]
+
             except (httpx.HTTPStatusError, httpx.ConnectError) as e:
                 self.logger.error(f"Error retrieving realms: {e}")
                 return None

@@ -18,10 +18,11 @@
 import { OrMwcTable, TableColumn, TableConfig, TableRow } from '@openremote/or-mwc-components/or-mwc-table';
 import { css, html, TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { BasicAsset, ModelConfig } from '../services/models';
+import { ModelConfig } from '../services/models';
 import { getRootPath } from '../common/util';
 import { Router } from '@vaadin/router';
 import { InputType } from '@openremote/or-mwc-components/or-mwc-input';
+import * as Model from '@openremote/model';
 
 @customElement('configs-table')
 export class ConfigsTable extends OrMwcTable {
@@ -88,7 +89,7 @@ export class ConfigsTable extends OrMwcTable {
     public modelConfigs: ModelConfig[] = [];
 
     @property({ type: Array })
-    public configAssets: BasicAsset[] = [];
+    public configAssets: Model.Asset[] = [];
 
     @property({ type: String })
     public realm: string = '';

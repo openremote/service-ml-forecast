@@ -37,7 +37,9 @@ setupConsoleLogging();
 async function init() {
     console.info('Context:', IS_EMBEDDED ? 'iframe' : 'standalone');
 
-    await AuthService.init(getRealmParam() ?? 'master');
+    const realm = getRealmParam() ?? 'master';
+
+    await AuthService.init(realm);
 
     // Setup OR icons
     setupORIcons();
