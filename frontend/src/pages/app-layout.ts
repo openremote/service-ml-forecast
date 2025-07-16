@@ -52,13 +52,13 @@ export class AppLayout extends LitElement {
             this.realm = paramRealm;
         }
 
-        // Navigate to given auth realm if no param realm is provided
+        // Navigate to the given auth realm if no param realm is provided
         if (!paramRealm) {
             console.log(`No realm provided, redirecting to ${authRealm}`);
             return commands.redirect(authRealm);
         }
 
-        // Initialise the OpenRemote manager rest api with the auth realm of the user
+        // Initialise the OpenRemote manager rest api
         manager.rest.initialise(ML_OR_URL + '/api/' + authRealm);
 
         setRealmTheme(this.realm);

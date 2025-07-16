@@ -78,7 +78,7 @@ class AuthServiceClass {
                     this.startUpdateTokenInterval();
                 }
 
-                // Add an interceptor to the OpenRemote manager rest api so that it properly uses the auth token
+                // Add the interceptor for interacting with the OpenRemote manager rest api
                 manager.rest.addRequestInterceptor((config: AxiosRequestConfig) => {
                     if (!config!.headers!.Authorization) {
                         const authHeader = `Bearer ${this.token}`;

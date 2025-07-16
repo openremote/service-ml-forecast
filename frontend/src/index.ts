@@ -37,14 +37,8 @@ setupConsoleLogging();
 async function init() {
     console.info('Context:', IS_EMBEDDED ? 'iframe' : 'standalone');
 
-    const realm = getRealmParam() ?? 'master';
-
-    await AuthService.init(realm);
-
-    // Setup OR icons
+    await AuthService.init(getRealmParam() ?? 'master');
     setupORIcons();
-
-    // Setup the router
     setupRouter();
 }
 

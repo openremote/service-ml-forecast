@@ -24,7 +24,7 @@ import { AuthService } from './auth-service';
  * @param realm The realm for the API
  * @returns The service url with the api path
  */
-function buildServiceApiUrl(realm: string): string {
+function getServiceBaseUrl(realm: string): string {
     return ML_SERVICE_URL + '/api/' + realm;
 }
 
@@ -45,7 +45,7 @@ export const APIService = {
      * @returns The list of model configs
      */
     async getModelConfigs(realm: string): Promise<ModelConfig[]> {
-        const response = await fetch(buildServiceApiUrl(realm) + '/configs', {
+        const response = await fetch(getServiceBaseUrl(realm) + '/configs', {
             method: 'GET',
             headers: buildHeaders()
         });
@@ -62,7 +62,7 @@ export const APIService = {
      * @returns The model config
      */
     async getModelConfig(realm: string, id: string): Promise<ModelConfig> {
-        const response = await fetch(buildServiceApiUrl(realm) + '/configs/' + id, {
+        const response = await fetch(getServiceBaseUrl(realm) + '/configs/' + id, {
             method: 'GET',
             headers: buildHeaders()
         });
@@ -78,7 +78,7 @@ export const APIService = {
      * @param id The id of the model config
      */
     async deleteModelConfig(realm: string, id: string): Promise<void> {
-        const response = await fetch(buildServiceApiUrl(realm) + '/configs/' + id, {
+        const response = await fetch(getServiceBaseUrl(realm) + '/configs/' + id, {
             method: 'DELETE',
             headers: buildHeaders()
         });
@@ -95,7 +95,7 @@ export const APIService = {
      * @returns The updated model config
      */
     async updateModelConfig(realm: string, id: string, modelConfig: ModelConfig): Promise<ModelConfig> {
-        const response = await fetch(buildServiceApiUrl(realm) + '/configs/' + id, {
+        const response = await fetch(getServiceBaseUrl(realm) + '/configs/' + id, {
             method: 'PUT',
             body: JSON.stringify(modelConfig),
             headers: buildHeaders()
@@ -113,7 +113,7 @@ export const APIService = {
      * @returns The created model config
      */
     async createModelConfig(realm: string, modelConfig: ModelConfig): Promise<ModelConfig> {
-        const response = await fetch(buildServiceApiUrl(realm) + '/configs', {
+        const response = await fetch(getServiceBaseUrl(realm) + '/configs', {
             method: 'POST',
             body: JSON.stringify(modelConfig),
             headers: buildHeaders()
