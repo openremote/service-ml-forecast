@@ -20,7 +20,7 @@ import { IS_EMBEDDED } from '../common/constants';
 import { manager } from '@openremote/core';
 import { AxiosRequestConfig } from 'axios';
 
-const keycloakUrl: string = (process.env.ML_KEYCLOAK_URL || '').replace(/\/$/, '');
+const keycloakUrl: string = (process.env.ML_OR_KEYCLOAK_URL || '').replace(/\/$/, '');
 
 type AuthChangeListener = () => void;
 

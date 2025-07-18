@@ -6,7 +6,8 @@ services:
       context: ..
       dockerfile: docker/Dockerfile
       args:
-        ML_KEYCLOAK_URL: ${ML_KEYCLOAK_URL:-/auth} # OpenRemote Keycloak URL
+        ML_OR_URL: ${ML_OR_URL:-} # OpenRemote URL
+        ML_OR_KEYCLOAK_URL: ${ML_OR_KEYCLOAK_URL:-/auth} # OpenRemote Keycloak URL
         ML_SERVICE_URL: ${ML_SERVICE_URL:-/services/ml-forecast} # Url to reach the back-end service, should be the same as ML_API_ROOT_PATH
         ML_WEB_ROOT_PATH: ${ML_WEB_ROOT_PATH:-/services/ml-forecast/ui} # Public path for the front-end (e.g. when behind a reverse proxy)
     container_name: service-ml-forecast
@@ -17,7 +18,7 @@ services:
       - ML_ENVIRONMENT=${ML_ENVIRONMENT:-production} # Environment to run the service in
       - ML_API_ROOT_PATH=${ML_API_ROOT_PATH:-/services/ml-forecast} # Public path for the back-end (e.g. when behind a reverse proxy)
       - ML_OR_URL=${ML_OR_URL:-http://host.docker.internal:8080} # OpenRemote URL
-      - ML_OR_KEYCLOAK_URL=${ML_OR_KEYCLOAK_URL:-http://host.docker.internal:8081} # OpenRemote Keycloak URL
+      - ML_OR_KEYCLOAK_URL=${ML_OR_KEYCLOAK_URL:-http://host.docker.internal:8081/auth} # OpenRemote Keycloak URL
       - ML_OR_SERVICE_USER=${ML_OR_SERVICE_USER:-serviceuser} # OpenRemote service user
       - ML_OR_SERVICE_USER_SECRET=${ML_OR_SERVICE_USER_SECRET:-secret} # OpenRemote service user secret
     volumes:
