@@ -10,7 +10,7 @@ const isProduction = process.env.NODE_ENV === 'production';
 const rootPath = process.env.ML_WEB_ROOT_PATH;
 const serviceUrl = process.env.ML_SERVICE_URL || 'http://localhost:8000'; // Default to default service backend
 const keycloakUrl = process.env.ML_OR_KEYCLOAK_URL || 'http://localhost:8081/auth'; // Default to openremote keycloak address
-const openremoteUrl = process.env.ML_OR_URL || 'http://localhost:8080';
+const openremoteUrl = process.env.ML_OR_URL !== undefined ? process.env.ML_OR_URL : 'http://localhost:8080'; // Default to openremote url
 
 export default {
     mode: isProduction ? 'production' : 'development',
