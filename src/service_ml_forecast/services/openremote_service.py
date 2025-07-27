@@ -67,7 +67,7 @@ class OpenRemoteService:
         end_timestamp = TimeUtil.get_timestamp_ms()
 
         # Retrieve target feature datapoints from OpenRemote with chunking if needed
-        datapoints = self.__get_historical_datapoints(
+        datapoints = self._get_historical_datapoints(
             config.target.asset_id,
             config.target.attribute_name,
             start_timestamp,
@@ -94,7 +94,7 @@ class OpenRemoteService:
                 # Get the start timestamp for the regressor historical data
                 start_timestamp = TimeUtil.get_period_start_timestamp_ms(regressor.training_data_period)
 
-                regressor_datapoints = self.__get_historical_datapoints(
+                regressor_datapoints = self._get_historical_datapoints(
                     regressor.asset_id,
                     regressor.attribute_name,
                     start_timestamp,
@@ -125,7 +125,7 @@ class OpenRemoteService:
 
         return training_dataset
 
-    def __get_historical_datapoints(
+    def _get_historical_datapoints(
         self, asset_id: str, attribute_name: str, from_timestamp: int, to_timestamp: int
     ) -> list[AssetDatapoint] | None:
         """Wrapper get_historical_datapoints to split up requests into monthly chunks.

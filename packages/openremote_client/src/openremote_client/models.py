@@ -15,6 +15,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
+from enum import Enum
 from typing import Any
 
 from pydantic import BaseModel
@@ -83,3 +84,54 @@ class Realm(BaseModel):
     name: str
     displayName: str
     enabled: bool
+
+
+class ServiceStatus(str, Enum):
+    """The status of a registered service.
+
+    - AVAILABLE: The service is available and can be used
+    - UNAVAILABLE: The service is unavailable
+    - ERROR: The service is in an error state
+    - UNKNOWN: The service status is unknown
+    """
+
+    AVAILABLE = "AVAILABLE"
+    UNAVAILABLE = "UNAVAILABLE"
+    ERROR = "ERROR"
+    UNKNOWN = "UNKNOWN"
+
+
+class ServiceDescriptor(BaseModel):
+    """Holds comprehensive details about a service.
+
+    This object is used to register and deregister services.
+    """
+
+    label: str
+    """The label of the service, e.g. 'Energy Service'"""
+
+    serviceId: str
+    """The unique identifier of the service, e.g. 'energy-service'"""
+
+    ipAddress: str | None = None
+    """The IP address of the service, e.g. '192.168.1.100'"""
+
+    port: int | None = None
+    """The port of the service, e.g. 8080"""
+
+    homepageUrl: str | None = None
+    """The URL of the service's homepage which provides the user interface,
+    e.g. 'https://openremote.app/services/energy-service/ui'"""
+
+    status: ServiceStatus | None = None
+    """The status of the service, e.g. 'AVAILABLE'"""
+
+
+class ServiceRegistrationResponse(BaseModel):
+    """Response object for the service register operation.
+
+    Used to return the instanceId of the registered service.
+    """
+
+    instanceId: str
+    """The unique instance identifier of the registered service."""

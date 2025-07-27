@@ -75,7 +75,7 @@ def help() -> None:
     print("  test-coverage          - Run tests with coverage (main + packages)")
     print("  build                  - Build the backend")
     print("  build-frontend         - Build the frontend bundle")
-    print("  build-all              - Build the backend and frontend bundle")
+    print("  build-frontend-dev     - Build the frontend bundle in development mode")
     print("  lint-packages          - Run linting only on packages")
     print("  test-packages          - Run tests only on packages")
     print("  build-packages         - Build all packages")
@@ -214,6 +214,19 @@ def build_frontend() -> None:
 
     step(f"npm run build:prod", "Building frontend in frontend directory", FRONTEND_DIR)
 
+    _copy_frontend_dist()
+
+
+def build_frontend_dev() -> None:
+    """Build the frontend bundle and copy to deployment/web."""
+
+    step(f"npm run build:dev", "Building frontend in frontend directory", FRONTEND_DIR)
+
+    _copy_frontend_dist()
+
+
+def _copy_frontend_dist() -> None:
+    """Copy the frontend dist to the deployment/web directory."""
     DEPLOYMENT_WEB_DIR.mkdir(parents=True, exist_ok=True)
     
     if DEPLOYMENT_WEB_DIR.exists():
@@ -222,10 +235,3 @@ def build_frontend() -> None:
     shutil.copytree(FRONTEND_DIR / "dist", DEPLOYMENT_WEB_DIR / "dist")
     
     print(f"Frontend dist copied to {DEPLOYMENT_WEB_DIR}")
-
-
-def build_all() -> None:
-    """Build the package and frontend."""
-
-    build()
-    build_frontend()

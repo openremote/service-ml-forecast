@@ -489,12 +489,14 @@ name = "openremote-client"
 version = "0.1.0"
 source = { editable = "packages/openremote_client" }
 dependencies = [
+    { name = "apscheduler" },
     { name = "httpx" },
     { name = "pydantic" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "apscheduler", specifier = ">=3.11.0" },
     { name = "httpx", specifier = ">=0.24.0" },
     { name = "pydantic", specifier = ">=2.0.0" },
 ]

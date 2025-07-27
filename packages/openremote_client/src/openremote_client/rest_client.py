@@ -29,6 +29,8 @@ from openremote_client.models import (
     AssetDatapointQuery,
     BasicAsset,
     Realm,
+    ServiceDescriptor,
+    ServiceRegistrationResponse,
 )
 
 MASTER_REALM = "master"
@@ -83,21 +85,22 @@ class OpenRemoteClient:
         self.timeout: float = timeout
 
         # Initialize nested clients
-        self.assets = self.Assets(self)
-        self.realms = self.Realms(self)
-        self.health = self.Health(self)
+        self.assets = self._Assets(self)
+        self.realms = self._Realms(self)
+        self.health = self._Health(self)
+        self.services = self._Services(self)
 
-        self.__authenticate()
+        self._authenticate()
 
-    def __authenticate(self) -> bool:
-        token = self.__get_token()
+    def _authenticate(self) -> bool:
+        token = self._get_token()
         if token is not None:
             self.oauth_token = token
             self.token_expiration_timestamp = time.time() + token.expires_in
             return True
         return False
 
-    def __get_token(self) -> OAuthTokenResponse | None:
+    def _get_token(self) -> OAuthTokenResponse | None:
         url = f"{self.keycloak_url}/realms/master/protocol/openid-connect/token"
 
         data = OAuthTokenRequest(
@@ -116,25 +119,25 @@ class OpenRemoteClient:
                 self.logger.warning(f"Error getting authentication token: {e}")
                 return None
 
-    def __check_and_refresh_auth(self) -> bool:
+    def _check_and_refresh_auth(self) -> bool:
         if self.oauth_token is None or (
             self.token_expiration_timestamp is not None and time.time() > self.token_expiration_timestamp - 10
         ):
-            return self.__authenticate()
+            return self._authenticate()
         return True
 
-    def __build_headers(self) -> dict[str, str]:
+    def _build_headers(self) -> dict[str, str]:
         headers = {"Content-Type": "application/json"}
         if self.oauth_token is not None:
             headers["Authorization"] = f"Bearer {self.oauth_token.access_token}"
         return headers
 
     def _build_request(self, method: str, url: str, data: Any | None = None) -> httpx.Request:
-        self.__check_and_refresh_auth()
-        headers = self.__build_headers()
+        self._check_and_refresh_auth()
+        headers = self._build_headers()
         return httpx.Request(method, url, headers=headers, json=data)
 
-    class Health:
+    class _Health:
         """Health check operations."""
 
         def __init__(self, client: "OpenRemoteClient"):
@@ -158,7 +161,7 @@ class OpenRemoteClient:
                     self._client.logger.error(f"OpenRemote API is not healthy: {e}")
                     return False
 
-    class Assets:
+    class _Assets:
         """Asset-related operations."""
 
         def __init__(self, client: "OpenRemoteClient"):
@@ -348,7 +351,7 @@ class OpenRemoteClient:
             }
             return self.query(asset_query, query_realm, realm)
 
-    class Realms:
+    class _Realms:
         """Realm-related operations."""
 
         def __init__(self, client: "OpenRemoteClient"):
@@ -376,3 +379,48 @@ class OpenRemoteClient:
                 except (httpx.HTTPStatusError, httpx.ConnectError) as e:
                     self._client.logger.error(f"Error retrieving realms: {e}")
                     return None
+
+    class _Services:
+        """Service-related operations."""
+
+        def __init__(self, client: "OpenRemoteClient"):
+            self._client = client
+
+        def register(self, service: ServiceDescriptor) -> ServiceRegistrationResponse | None:
+            """Registers a service with the OpenRemote API."""
+            url = f"{self._client.openremote_url}/api/{MASTER_REALM}/service"
+            request = self._client._build_request("POST", url, data=service.model_dump())
+            with httpx.Client(timeout=self._client.timeout) as client:
+                try:
+                    response = client.send(request)
+                    response.raise_for_status()
+                    return ServiceRegistrationResponse(**response.json())
+                except (httpx.HTTPStatusError, httpx.ConnectError) as e:
+                    self._client.logger.error(f"Error registering service: {e}")
+                    return None
+
+        def heartbeat(self, service_id: str, instance_id: str) -> bool:
+            """Sends a heartbeat to the OpenRemote API."""
+            url = f"{self._client.openremote_url}/api/{MASTER_REALM}/service/{service_id}/{instance_id}"
+            request = self._client._build_request("PUT", url)
+            with httpx.Client(timeout=self._client.timeout) as client:
+                try:
+                    response = client.send(request)
+                    response.raise_for_status()
+                    return response.status_code == HTTPStatus.NO_CONTENT
+                except (httpx.HTTPStatusError, httpx.ConnectError) as e:
+                    self._client.logger.error(f"Error sending heartbeat: {e}")
+                    return False
+
+        def deregister(self, service_id: str, instance_id: str) -> bool:
+            """Deregisters a service with the OpenRemote API."""
+            url = f"{self._client.openremote_url}/api/{MASTER_REALM}/service/{service_id}/{instance_id}"
+            request = self._client._build_request("DELETE", url)
+            with httpx.Client(timeout=self._client.timeout) as client:
+                try:
+                    response = client.send(request)
+                    response.raise_for_status()
+                    return response.status_code == HTTPStatus.NO_CONTENT
+                except (httpx.HTTPStatusError, httpx.ConnectError) as e:
+                    self._client.logger.error(f"Error deregistering service: {e}")
+                    return False

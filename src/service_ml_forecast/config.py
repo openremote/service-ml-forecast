@@ -40,34 +40,34 @@ class AppEnvironment(BaseSettings):
 
     All settings can be overridden via environment variables.
 
-    The environment variables are prefixed with "ML_" to avoid conflicts with other services.
+    The environment variables are prefixed with "ML_" to avoid conflicts
     """
 
-    # Application Settings
-    ML_LOG_LEVEL: str = "INFO"  # log level to use
-    ML_ENVIRONMENT: str = "development"  # environment to run the service in
-    ML_VERIFY_SSL: bool = True  # whether to verify SSL certificates when making requests
+    # Application settings
+    ML_LOG_LEVEL: str = "INFO"
+    ML_ENVIRONMENT: str = "development"
+    ML_VERIFY_SSL: bool = True  # verify SSL certificates when making HTTP requests
 
-    # FastAPI Settings
-    ML_API_PUBLISH_DOCS: bool = True  # whether to make the openapi docs available
-    ML_API_ROOT_PATH: str = (
-        "/services/ml-forecast"  # when running behind a reverse proxy, the root path of the fastapi app
-    )
+    # FastAPI settings
+    ML_API_PUBLISH_DOCS: bool = True
+    ML_API_ROOT_PATH: str = "/services/ml-forecast"  # reverse proxy root path for the service
     ML_API_MIDDLEWARE_KEYCLOAK: bool = True  # whether to enable keycloak middleware
 
-    # Uvicorn Settings
-    ML_WEBSERVER_HOST: str = "0.0.0.0"  # host to bind the web server (uvicorn) to
-    ML_WEBSERVER_PORT: int = 8000  # port to bind the web server (uvicorn) to
+    # Uvicorn webserver settings
+    ML_WEBSERVER_PORT: int = 8000
     ML_WEBSERVER_ORIGINS: list[str] = [
         "http://localhost:8000",
         "http://localhost:8001",
-    ]  # origins to allow
+    ]
 
-    # OpenRemote Settings
-    ML_OR_URL: str = "http://localhost:8080"  # OpenRemote URL
-    ML_OR_KEYCLOAK_URL: str = "http://localhost:8081/auth"  # OpenRemote Keycloak URL
-    ML_OR_SERVICE_USER: str = "serviceuser"  # OpenRemote service user
-    ML_OR_SERVICE_USER_SECRET: str = "secret"  # OpenRemote service user secret
+    # OpenRemote settings
+    ML_OR_URL: str = "http://localhost:8080"
+    ML_OR_KEYCLOAK_URL: str = "http://localhost:8081/auth"
+    ML_OR_SERVICE_USER: str = "serviceuser"
+    ML_OR_SERVICE_USER_SECRET: str = "secret"
+
+    # Service registration settings
+    ML_SERVICE_HOSTNAME: str = f"http://localhost:{ML_WEBSERVER_PORT}"
 
     model_config = SettingsConfigDict(case_sensitive=True, env_file=".env", env_file_encoding="utf-8", extra="ignore")
 

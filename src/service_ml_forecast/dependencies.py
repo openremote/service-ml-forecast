@@ -54,6 +54,13 @@ def get_openremote_service() -> OpenRemoteService:
     return __openremote_service
 
 
+def get_openremote_client() -> OpenRemoteClient:
+    """
+    Get the openremote client dependency.
+    """
+    return __openremote_client
+
+
 # --- OAuth2 Scheme ---
 # This is used to allow authorization via the Docs and Redoc pages
 # Also allows us to extract the token easily from the Authorization header
