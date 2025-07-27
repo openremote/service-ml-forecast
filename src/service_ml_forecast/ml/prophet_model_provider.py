@@ -19,10 +19,10 @@ import logging
 from uuid import UUID
 
 import pandas as pd
+from openremote_client import AssetDatapoint
 from prophet import Prophet
 from prophet.serialize import model_from_json, model_to_json
 
-from service_ml_forecast.clients.openremote.models import AssetDatapoint
 from service_ml_forecast.common.time_util import TimeUtil
 from service_ml_forecast.ml.model_provider import ModelProvider
 from service_ml_forecast.models.feature_data_wrappers import ForecastDataSet, ForecastResult, TrainingDataSet

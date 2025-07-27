@@ -213,7 +213,7 @@ class ModelConfigService:
             for regressor in config.regressors:
                 asset_ids_to_check.add(regressor.asset_id)
 
-        assets = self.openremote_service.get_assets_by_ids(config.realm, config.realm, list(asset_ids_to_check))
+        assets = self.openremote_service.get_assets_by_ids(config.realm, list(asset_ids_to_check))
 
         if len(assets) != len(asset_ids_to_check):
             logger.error(f"Invalid model config: {config.id} - some assets do not exist in the correct realm")

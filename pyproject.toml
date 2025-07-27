@@ -26,7 +26,17 @@ dependencies = [
     "isodate>=0.7.2",
     "pyjwt>=2.10.1",
     "aiocache>=0.12.3",
+    "openremote-client", # local package
 ]
+
+
+# Workspace and sources for local packages
+[tool.uv.workspace]
+members = ["packages/*"]
+
+[tool.uv.sources]
+openremote-client = { workspace = true }
+
 
 [dependency-groups]
 dev = [
@@ -110,7 +120,7 @@ filterwarnings = ["ignore:.*"]
 [project.scripts]
 service_ml_forecast = "service_ml_forecast.main:app"
 
-# CLI commands for development tasks
+# CLI helpers
 lint = "scripts.tools:lint"
 start = "scripts.tools:start"
 test = "scripts.tools:test"
@@ -120,3 +130,11 @@ build = "scripts.tools:build"
 build-frontend = "scripts.tools:build_frontend"
 build-all = "scripts.tools:build_all"
 help = "scripts.tools:help"
+
+# Package-specific commands
+lint-packages = "scripts.tools:lint_packages"
+test-packages = "scripts.tools:test_packages"
+build-packages = "scripts.tools:build_packages"
+
+
+

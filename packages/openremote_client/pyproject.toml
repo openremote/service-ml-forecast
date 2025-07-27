@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openremote-client"
+version = "0.1.0"
+description = "A Python client for interacting with the OpenRemote API"
+readme = "README.md"
+requires-python = ">=3.13"
+
+dependencies = ["httpx>=0.24.0", "pydantic>=2.0.0"]
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+[tool.setuptools.package-data]
+"openremote_client" = ["py.typed"] # include type stubs
+
+[tool.setuptools.packages.find]
+where = ["src"]

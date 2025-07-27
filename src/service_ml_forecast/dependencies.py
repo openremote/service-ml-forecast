@@ -22,8 +22,8 @@ The injectors are used to inject the services into the FastAPI app, or other dep
 """
 
 from fastapi.security import OAuth2PasswordBearer
+from openremote_client import OpenRemoteClient
 
-from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 from service_ml_forecast.config import ENV
 from service_ml_forecast.services.model_config_service import ModelConfigService
 from service_ml_forecast.services.openremote_service import OpenRemoteService
