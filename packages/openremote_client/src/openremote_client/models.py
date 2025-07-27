@@ -120,6 +120,9 @@ class ServiceDescriptor(BaseModel):
     status: ServiceStatus | None = None
     """The status of the service, e.g. 'AVAILABLE'"""
 
+    instanceId: str | None = None
+    """The unique instance identifier of the registered service."""
+
 
 class ServiceRegistrationResponse(BaseModel):
     """Response object for the service register operation.
