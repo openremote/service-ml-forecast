@@ -15,11 +15,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-import atexit
 import logging
-import signal
-import sys
-from typing import Any
 
 from apscheduler.executors.pool import ThreadPoolExecutor
 from apscheduler.jobstores.memory import MemoryJobStore
@@ -63,21 +59,6 @@ class OpenRemoteServiceRegistrar:
             job_defaults={"misfire_grace_time": JOB_GRACE_PERIOD},
             logger=logger,
         )
-
-        self._setup_exit_hooks()
-
-    def _setup_exit_hooks(self) -> None:
-        """Setup hooks to cleanly stop the service on exit or signals."""
-
-        atexit.register(self.stop)
-
-        def _signal_handler(signum: int, frame: Any) -> None:
-            logger.info(f"Received signal {signum}, stopping service...")
-            self.stop()
-            sys.exit(0)
-
-        signal.signal(signal.SIGINT, _signal_handler)
-        signal.signal(signal.SIGTERM, _signal_handler)
 
     def start(self) -> None:
         """Start the scheduler and register the service."""

@@ -16,7 +16,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 import logging.config
-import socket
 from collections.abc import AsyncGenerator
 
 import uvicorn
@@ -111,15 +110,10 @@ def initialize_background_services() -> None:
     model_scheduler = ModelScheduler(get_openremote_service())
     model_scheduler.start()
 
-    # Setup service registration
-    ip_address = socket.gethostbyname(socket.gethostname())
-
     # Service details for registration
     service_descriptor = ServiceDescriptor(
         serviceId="ml-forecast-service",
         label="ML Forecast Service",
-        ipAddress=ip_address,
-        port=ENV.ML_WEBSERVER_PORT,
         homepageUrl=f"{ENV.ML_SERVICE_HOSTNAME}{ENV.ML_API_ROOT_PATH}/ui/{{realm}}",
         status=ServiceStatus.AVAILABLE,
     )

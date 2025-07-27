@@ -113,12 +113,6 @@ class ServiceDescriptor(BaseModel):
     serviceId: str
     """The unique identifier of the service, e.g. 'energy-service'"""
 
-    ipAddress: str | None = None
-    """The IP address of the service, e.g. '192.168.1.100'"""
-
-    port: int | None = None
-    """The port of the service, e.g. 8080"""
-
     homepageUrl: str | None = None
     """The URL of the service's homepage which provides the user interface,
     e.g. 'https://openremote.app/services/energy-service/ui'"""

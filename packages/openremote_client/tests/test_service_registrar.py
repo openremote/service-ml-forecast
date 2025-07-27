@@ -21,10 +21,6 @@ from unittest.mock import Mock
 from openremote_client.models import ServiceDescriptor, ServiceRegistrationResponse, ServiceStatus
 from openremote_client.service_registrar import OpenRemoteServiceRegistrar
 
-# Test constants
-TEST_PORT_8080 = 8080
-TEST_PORT_8000 = 8000
-
 
 def test_service_registrar_start() -> None:
     """Test that OpenRemoteServiceRegistrar starts correctly."""
@@ -37,8 +33,6 @@ def test_service_registrar_start() -> None:
         service_descriptor=ServiceDescriptor(
             serviceId="test-service",
             label="Test Service",
-            ipAddress="192.168.1.100",
-            port=TEST_PORT_8080,
             homepageUrl="http://localhost:8000/ui",
             status=ServiceStatus.AVAILABLE,
         ),
@@ -61,8 +55,6 @@ def test_service_registrar_stop() -> None:
         service_descriptor=ServiceDescriptor(
             serviceId="test-service",
             label="Test Service",
-            ipAddress="192.168.1.100",
-            port=TEST_PORT_8080,
             homepageUrl="http://localhost:8000/ui",
             status=ServiceStatus.AVAILABLE,
         ),
@@ -89,8 +81,6 @@ def test_service_registrar_heartbeat() -> None:
         service_descriptor=ServiceDescriptor(
             serviceId="test-service",
             label="Test Service",
-            ipAddress="192.168.1.100",
-            port=TEST_PORT_8080,
             homepageUrl="http://localhost:8000/ui",
             status=ServiceStatus.AVAILABLE,
         ),
@@ -112,8 +102,6 @@ def test_service_registrar_heartbeat_not_registered() -> None:
         service_descriptor=ServiceDescriptor(
             serviceId="test-service",
             label="Test Service",
-            ipAddress="192.168.1.100",
-            port=TEST_PORT_8080,
             homepageUrl="http://localhost:8000/ui",
             status=ServiceStatus.AVAILABLE,
         ),
