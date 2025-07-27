@@ -262,7 +262,7 @@ def _is_excluded_route(path: str, excluded_routes: list[str]) -> bool:
 
 class KeycloakMiddleware(BaseHTTPMiddleware):
     """
-    Middleware that verifies Bearer token against OR_ML_KEYCLOAK_URL's JWKS endpoint.
+    Middleware that verifies Bearer token against ML_OR_KEYCLOAK_URL's JWKS endpoint.
     Routes can be excluded from authentication by providing a list of route paths.
     """
 
