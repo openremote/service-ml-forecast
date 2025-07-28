@@ -17,6 +17,7 @@ ARG ML_WEB_ROOT_PATH
 ARG ML_OR_KEYCLOAK_URL
 ARG ML_OR_URL
 
+# Run the front-end bundle in production mode
 RUN ML_SERVICE_URL=${ML_SERVICE_URL:-/services/ml-forecast} \
     ML_WEB_ROOT_PATH=${ML_WEB_ROOT_PATH:-/services/ml-forecast/ui} \
     ML_OR_KEYCLOAK_URL=${ML_OR_KEYCLOAK_URL:-/auth} \
@@ -31,24 +32,27 @@ RUN echo "Starting Python build phase..."
 WORKDIR /app
 
 ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1 
+    PYTHONDONTWRITEBYTECODE=1
 
 RUN echo "Installing Python build dependencies..."
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         build-essential \
+        curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy project files
-COPY pyproject.toml README.md ./
+# Install uv
+RUN pip install uv
+
+# Copy the necessary project files
+COPY pyproject.toml uv.lock README.md ./
 COPY src/ ./src/
 COPY scripts/ ./scripts/
+COPY packages/ ./packages/
 
-# Install project dependencies and clean up
+# Install project dependencies using uv
 RUN echo "Installing Python project dependencies..."
-RUN pip install --no-cache-dir . \
+RUN uv sync --no-cache-dir \
     && apt-get remove -y build-essential \
     && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/* \
@@ -67,27 +71,29 @@ ARG ML_ENVIRONMENT
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONPATH=/app/src \
-    # Use the ARG, falling back to a default if not provided during build or runtime
     ML_ENVIRONMENT=${ML_ENVIRONMENT:-production}
 
-# Install runtime dependencies and clean up
+# Install any runtime dependencies
 RUN echo "Installing runtime dependencies..."
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy installed packages from builder
-RUN echo "Copying Python packages from builder..."
-COPY --from=builder /usr/local/lib/python3.13/site-packages/ /usr/local/lib/python3.13/site-packages/
-COPY --from=builder /usr/local/bin/ /usr/local/bin/
+# Install uv package manager
+RUN pip install uv
 
 # Copy application code
-COPY pyproject.toml ./
+COPY pyproject.toml uv.lock README.md ./
 COPY src/ ./src/
 COPY scripts/ ./scripts/
+COPY packages/ ./packages/
 
-# Copy frontend build and clean up
+# Install project dependencies using uv
+RUN echo "Installing Python project dependencies..."
+RUN uv sync --no-cache-dir
+
+# Copy frontend build artifacts
 RUN echo "Copying frontend build artifacts..."
 COPY --from=frontend-builder /app/frontend/dist/ ./deployment/web/dist/
 RUN rm -rf /app/frontend
@@ -100,9 +106,9 @@ RUN mkdir -p ./deployment/data/models ./deployment/data/configs
 EXPOSE 8000
 
 # Add health check
-HEALTHCHECK --interval=5s --timeout=5s --start-period=30s --retries=3 CMD curl --fail --silent http://localhost:8000/ui || exit 1
+HEALTHCHECK --interval=10s --timeout=10s --start-period=30s --retries=3 CMD curl --fail --silent http://localhost:8000/ui || exit 1
 
 RUN echo "Container setup complete! Starting application..."
 
-# Run the application
-CMD ["python", "-m", "service_ml_forecast.main"]
+# Run the application using uv run to ensure virtual environment is activated
+CMD ["uv", "run", "python", "-m", "service_ml_forecast.main"]
