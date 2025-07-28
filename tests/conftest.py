@@ -175,6 +175,15 @@ def get_fresh_app(keycloak_enabled: bool) -> FastAPI | Any:
 
     ENV.ML_API_MIDDLEWARE_KEYCLOAK = keycloak_enabled
 
+    # Mock the get_openremote_issuers function if keycloak is enabled
+    if keycloak_enabled:
+        import service_ml_forecast.dependencies
+        
+        def mock_get_openremote_issuers() -> list[str]:
+            return [f"{MOCK_KEYCLOAK_URL}/realms/master"]
+        
+        service_ml_forecast.dependencies.get_openremote_issuers = mock_get_openremote_issuers
+
     # Import the app fresh
     import service_ml_forecast.main
 
