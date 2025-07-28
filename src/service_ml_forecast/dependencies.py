@@ -21,12 +21,16 @@ This module contains the dependency injectors for the service.
 The injectors are used to inject the services into the FastAPI app, or other dependencies.
 """
 
+import logging
+
 from fastapi.security import OAuth2PasswordBearer
 
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 from service_ml_forecast.config import ENV
 from service_ml_forecast.services.model_config_service import ModelConfigService
 from service_ml_forecast.services.openremote_service import OpenRemoteService
+
+logger = logging.getLogger(__name__)
 
 __openremote_client = OpenRemoteClient(
     openremote_url=ENV.ML_OR_URL,
@@ -54,13 +58,36 @@ def get_openremote_service() -> OpenRemoteService:
     return __openremote_service
 
 
+def get_openremote_issuers() -> list[str] | None:
+    """Get valid issuers from OpenRemote realms.
+
+    Returns:
+        List of valid issuer URLs or None if realms cannot be retrieved.
+    """
+    try:
+        openremote_service = get_openremote_service()
+        realms = openremote_service.get_realms()
+
+        if realms is None:
+            return None
+
+        urls = []
+        for realm in realms:
+            urls.append(f"{ENV.ML_OR_URL}/auth/realms/{realm.name}")
+        return urls
+    except Exception as e:
+        logger.error(f"Error getting issuers from OpenRemote: {e}", exc_info=True)
+        return None
+
+
+# --- Constants ---
+OPENREMOTE_KC_RESOURCE = "openremote"
+
 # --- OAuth2 Scheme ---
 # This is used to allow authorization via the Docs and Redoc pages
-# Also allows us to extract the token easily from the Authorization header
-# Does not validate the token, this is done in the KeycloakMiddleware!
-__realm_name = "master"
-oauth2_scheme = OAuth2PasswordBearer(
-    tokenUrl=f"{ENV.ML_OR_KEYCLOAK_URL}/realms/{__realm_name}/protocol/openid-connect/token",
+# Does not validate the token, this should be done via a middleware or manually
+OAUTH2_SCHEME = OAuth2PasswordBearer(
+    tokenUrl=f"{ENV.ML_OR_KEYCLOAK_URL}/realms/master/protocol/openid-connect/token",
     scopes={"openid": "OpenID Connect", "profile": "User profile", "email": "User email"},
     description="Login into the OpenRemote Management -- Expected Client ID: 'openremote'",
     auto_error=False,

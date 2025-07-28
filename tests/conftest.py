@@ -8,6 +8,7 @@ import types
 from collections.abc import Generator
 from http import HTTPStatus
 from pathlib import Path
+from typing import Any
 
 import pytest
 import respx
@@ -162,7 +163,7 @@ def mock_openremote_service(mock_openremote_client: OpenRemoteClient) -> OpenRem
     return service
 
 
-def get_fresh_app(keycloak_enabled: bool) -> FastAPI:
+def get_fresh_app(keycloak_enabled: bool) -> FastAPI | Any:
     """Get a fresh instance of the app with the given keycloak setting."""
     # Remove any cached modules to ensure we get a fresh app
     for module in list(sys.modules.keys()):
