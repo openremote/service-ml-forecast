@@ -7,8 +7,7 @@ from openremote_client.models import (
     BasicAsset,
     BasicAttribute,
     Realm,
-    ServiceDescriptor,
-    ServiceRegistrationResponse,
+    ServiceInfo,
     ServiceStatus,
 )
 from openremote_client.rest_client import OpenRemoteClient
@@ -23,7 +22,6 @@ __all__ = [
     "OpenRemoteClient",
     "OpenRemoteServiceRegistrar",
     "Realm",
-    "ServiceDescriptor",
-    "ServiceRegistrationResponse",
+    "ServiceInfo",
     "ServiceStatus",
 ]

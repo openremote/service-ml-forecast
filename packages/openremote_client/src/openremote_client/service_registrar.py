@@ -21,7 +21,7 @@ from apscheduler.executors.pool import ThreadPoolExecutor
 from apscheduler.jobstores.memory import MemoryJobStore
 from apscheduler.schedulers.background import BackgroundScheduler
 
-from openremote_client.models import ServiceDescriptor
+from openremote_client.models import ServiceInfo
 from openremote_client.rest_client import OpenRemoteClient
 
 logger = logging.getLogger(__name__)
@@ -37,10 +37,10 @@ class OpenRemoteServiceRegistrar:
     def __init__(
         self,
         client: OpenRemoteClient,
-        service_descriptor: ServiceDescriptor,
+        service_info: ServiceInfo,
     ):
         self.client = client
-        self.service_descriptor = service_descriptor
+        self.service_info = service_info
         self.instance_id: str | None = None
         self.registered = False
         self._stopped = False
@@ -94,7 +94,7 @@ class OpenRemoteServiceRegistrar:
     def _register_service(self) -> None:
         """Register the service with OpenRemote."""
         try:
-            response = self.client.services.register(self.service_descriptor)
+            response = self.client.services.register(self.service_info)
 
             if response is not None:
                 self.instance_id = response.instanceId
@@ -114,7 +114,7 @@ class OpenRemoteServiceRegistrar:
             return
 
         try:
-            success = self.client.services.heartbeat(self.service_descriptor.serviceId, self.instance_id)
+            success = self.client.services.heartbeat(self.service_info.serviceId, self.instance_id)
 
             if success:
                 logger.debug(f"Heartbeat sent successfully for instance: {self.instance_id}")
@@ -130,7 +130,7 @@ class OpenRemoteServiceRegistrar:
             return
 
         try:
-            success = self.client.services.deregister(self.service_descriptor.serviceId, self.instance_id)
+            success = self.client.services.deregister(self.service_info.serviceId, self.instance_id)
 
             if success:
                 logger.info(f"Successfully deregistered service with instance ID: {self.instance_id}")

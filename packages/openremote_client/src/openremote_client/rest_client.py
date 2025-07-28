@@ -29,8 +29,7 @@ from openremote_client.models import (
     AssetDatapointQuery,
     BasicAsset,
     Realm,
-    ServiceDescriptor,
-    ServiceRegistrationResponse,
+    ServiceInfo,
 )
 
 MASTER_REALM = "master"
@@ -386,7 +385,7 @@ class OpenRemoteClient:
         def __init__(self, client: "OpenRemoteClient"):
             self._client = client
 
-        def register(self, service: ServiceDescriptor) -> ServiceRegistrationResponse | None:
+        def register(self, service: ServiceInfo) -> ServiceInfo | None:
             """Registers a service with the OpenRemote API."""
             url = f"{self._client.openremote_url}/api/{MASTER_REALM}/service"
             request = self._client._build_request("POST", url, data=service.model_dump())
@@ -394,7 +393,7 @@ class OpenRemoteClient:
                 try:
                     response = client.send(request)
                     response.raise_for_status()
-                    return ServiceRegistrationResponse(**response.json())
+                    return ServiceInfo(**response.json())
                 except (httpx.HTTPStatusError, httpx.ConnectError) as e:
                     self._client.logger.error(f"Error registering service: {e}")
                     return None

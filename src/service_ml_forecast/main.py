@@ -24,7 +24,7 @@ from fastapi.concurrency import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from openremote_client import OpenRemoteServiceRegistrar
-from openremote_client.models import ServiceDescriptor, ServiceStatus
+from openremote_client.models import ServiceInfo, ServiceStatus
 
 from service_ml_forecast import __app_info__
 from service_ml_forecast.api import model_config_route, web_route
@@ -111,7 +111,7 @@ def initialize_background_services() -> None:
     model_scheduler.start()
 
     # Service details for registration
-    service_descriptor = ServiceDescriptor(
+    service_info = ServiceInfo(
         serviceId="ml-forecast-service",
         label="ML Forecast Service",
         homepageUrl=f"{ENV.ML_SERVICE_HOSTNAME}{ENV.ML_API_ROOT_PATH}/ui/{{realm}}",
@@ -119,7 +119,7 @@ def initialize_background_services() -> None:
     )
 
     # Start the OpenRemote Service Registrar
-    service_registrar = OpenRemoteServiceRegistrar(get_openremote_client(), service_descriptor)
+    service_registrar = OpenRemoteServiceRegistrar(get_openremote_client(), service_info)
     service_registrar.start()
 
 

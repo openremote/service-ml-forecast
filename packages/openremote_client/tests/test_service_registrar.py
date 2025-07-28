@@ -18,19 +18,27 @@
 
 from unittest.mock import Mock
 
-from openremote_client.models import ServiceDescriptor, ServiceRegistrationResponse, ServiceStatus
+from openremote_client.models import ServiceInfo, ServiceStatus
 from openremote_client.service_registrar import OpenRemoteServiceRegistrar
 
 
 def test_service_registrar_start() -> None:
     """Test that OpenRemoteServiceRegistrar starts correctly."""
     mock_client = Mock()
-    mock_response = ServiceRegistrationResponse(instanceId="test-instance-id")
+
+    # mock response with the instanceId set to the test-instance-id
+    mock_response = ServiceInfo(
+        serviceId="test-service",
+        instanceId="test-instance-id",
+        label="Test Service",
+        homepageUrl="http://localhost:8000/ui",
+        status=ServiceStatus.AVAILABLE,
+    )
     mock_client.services.register.return_value = mock_response
 
     registrar = OpenRemoteServiceRegistrar(
         client=mock_client,
-        service_descriptor=ServiceDescriptor(
+        service_info=ServiceInfo(
             serviceId="test-service",
             label="Test Service",
             homepageUrl="http://localhost:8000/ui",
@@ -52,7 +60,7 @@ def test_service_registrar_stop() -> None:
 
     registrar = OpenRemoteServiceRegistrar(
         client=mock_client,
-        service_descriptor=ServiceDescriptor(
+        service_info=ServiceInfo(
             serviceId="test-service",
             label="Test Service",
             homepageUrl="http://localhost:8000/ui",
@@ -78,7 +86,7 @@ def test_service_registrar_heartbeat() -> None:
 
     registrar = OpenRemoteServiceRegistrar(
         client=mock_client,
-        service_descriptor=ServiceDescriptor(
+        service_info=ServiceInfo(
             serviceId="test-service",
             label="Test Service",
             homepageUrl="http://localhost:8000/ui",
@@ -99,7 +107,7 @@ def test_service_registrar_heartbeat_not_registered() -> None:
 
     registrar = OpenRemoteServiceRegistrar(
         client=mock_client,
-        service_descriptor=ServiceDescriptor(
+        service_info=ServiceInfo(
             serviceId="test-service",
             label="Test Service",
             homepageUrl="http://localhost:8000/ui",
