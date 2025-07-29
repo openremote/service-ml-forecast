@@ -30,7 +30,7 @@ from fastapi.responses import JSONResponse
 
 from openremote_client import ClientRoles
 from service_ml_forecast.dependencies import OAUTH2_SCHEME, OPENREMOTE_KC_RESOURCE, get_config_service
-from service_ml_forecast.middlewares.keycloak.decorators import realm_allowed, roles_allowed
+from service_ml_forecast.middlewares.keycloak.decorators import realm_accessible, roles_allowed
 from service_ml_forecast.middlewares.keycloak.middleware import KeycloakMiddleware
 from service_ml_forecast.middlewares.keycloak.models import UserContext
 from service_ml_forecast.models.model_config import ModelConfig
@@ -55,7 +55,7 @@ router = APIRouter(
         HTTPStatus.FORBIDDEN: {"description": "Forbidden - insufficient permissions"},
     },
 )
-@realm_allowed
+@realm_accessible
 @roles_allowed(resource=OPENREMOTE_KC_RESOURCE, roles=[ClientRoles.WRITE_ADMIN_ROLE])
 async def create_model_config(
     user: Annotated[UserContext, Depends(KeycloakMiddleware.get_user_context)],
@@ -76,7 +76,7 @@ async def create_model_config(
         HTTPStatus.FORBIDDEN: {"description": "Forbidden - insufficient permissions"},
     },
 )
-@realm_allowed
+@realm_accessible
 @roles_allowed(resource=OPENREMOTE_KC_RESOURCE, roles=[ClientRoles.READ_ADMIN_ROLE])
 async def get_model_config(
     user: Annotated[UserContext, Depends(KeycloakMiddleware.get_user_context)],
@@ -96,7 +96,7 @@ async def get_model_config(
         HTTPStatus.FORBIDDEN: {"description": "Forbidden - insufficient permissions"},
     },
 )
-@realm_allowed
+@realm_accessible
 @roles_allowed(resource=OPENREMOTE_KC_RESOURCE, roles=[ClientRoles.READ_ADMIN_ROLE])
 async def get_model_configs(
     user: Annotated[UserContext, Depends(KeycloakMiddleware.get_user_context)],
@@ -116,7 +116,7 @@ async def get_model_configs(
         HTTPStatus.FORBIDDEN: {"description": "Forbidden - insufficient permissions"},
     },
 )
-@realm_allowed
+@realm_accessible
 @roles_allowed(resource=OPENREMOTE_KC_RESOURCE, roles=[ClientRoles.WRITE_ADMIN_ROLE])
 async def update_model_config(
     user: Annotated[UserContext, Depends(KeycloakMiddleware.get_user_context)],
@@ -141,7 +141,7 @@ async def update_model_config(
         HTTPStatus.FORBIDDEN: {"description": "Forbidden - insufficient permissions"},
     },
 )
-@realm_allowed
+@realm_accessible
 @roles_allowed(resource=OPENREMOTE_KC_RESOURCE, roles=[ClientRoles.WRITE_ADMIN_ROLE])
 async def delete_model_config(
     user: Annotated[UserContext, Depends(KeycloakMiddleware.get_user_context)],
