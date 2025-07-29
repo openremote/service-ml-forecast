@@ -28,11 +28,21 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 
-from service_ml_forecast.dependencies import get_config_service, oauth2_scheme
+from service_ml_forecast.clients.openremote.client_roles import ClientRoles
+from service_ml_forecast.dependencies import OAUTH2_SCHEME, OPENREMOTE_KC_RESOURCE, get_config_service
+from service_ml_forecast.middlewares.keycloak.decorators import realm_allowed, roles_allowed
+from service_ml_forecast.middlewares.keycloak.middleware import KeycloakMiddleware
+from service_ml_forecast.middlewares.keycloak.models import UserContext
 from service_ml_forecast.models.model_config import ModelConfig
 from service_ml_forecast.services.model_config_service import ModelConfigService
 
-router = APIRouter(prefix="/api/{realm}/configs", tags=["Forecast Configs"])
+router = APIRouter(
+    prefix="/api/{realm}/configs",
+    tags=["Forecast Configs"],
+    dependencies=[
+        Depends(OAUTH2_SCHEME),
+    ],
+)
 
 
 @router.post(
@@ -42,10 +52,13 @@ router = APIRouter(prefix="/api/{realm}/configs", tags=["Forecast Configs"])
         HTTPStatus.OK: {"description": "Model config has been created"},
         HTTPStatus.CONFLICT: {"description": "Model config already exists"},
         HTTPStatus.UNAUTHORIZED: {"description": "Unauthorized"},
+        HTTPStatus.FORBIDDEN: {"description": "Forbidden - insufficient permissions"},
     },
 )
+@realm_allowed
+@roles_allowed(resource=OPENREMOTE_KC_RESOURCE, roles=[ClientRoles.WRITE_ADMIN_ROLE])
 async def create_model_config(
-    token: Annotated[str, Depends(oauth2_scheme)],
+    user: Annotated[UserContext, Depends(KeycloakMiddleware.get_user_context)],
     realm: str,
     model_config: ModelConfig,
     config_service: ModelConfigService = Depends(get_config_service),
@@ -60,10 +73,13 @@ async def create_model_config(
         HTTPStatus.OK: {"description": "Model config has been retrieved"},
         HTTPStatus.NOT_FOUND: {"description": "Model config not found"},
         HTTPStatus.UNAUTHORIZED: {"description": "Unauthorized"},
+        HTTPStatus.FORBIDDEN: {"description": "Forbidden - insufficient permissions"},
     },
 )
+@realm_allowed
+@roles_allowed(resource=OPENREMOTE_KC_RESOURCE, roles=[ClientRoles.READ_ADMIN_ROLE])
 async def get_model_config(
-    token: Annotated[str, Depends(oauth2_scheme)],
+    user: Annotated[UserContext, Depends(KeycloakMiddleware.get_user_context)],
     realm: str,
     id: UUID,
     config_service: ModelConfigService = Depends(get_config_service),
@@ -77,10 +93,13 @@ async def get_model_config(
     responses={
         HTTPStatus.OK: {"description": "List of model configs has been retrieved"},
         HTTPStatus.UNAUTHORIZED: {"description": "Unauthorized"},
+        HTTPStatus.FORBIDDEN: {"description": "Forbidden - insufficient permissions"},
     },
 )
+@realm_allowed
+@roles_allowed(resource=OPENREMOTE_KC_RESOURCE, roles=[ClientRoles.READ_ADMIN_ROLE])
 async def get_model_configs(
-    token: Annotated[str, Depends(oauth2_scheme)],
+    user: Annotated[UserContext, Depends(KeycloakMiddleware.get_user_context)],
     realm: str,
     config_service: ModelConfigService = Depends(get_config_service),
 ) -> list[ModelConfig]:
@@ -94,10 +113,13 @@ async def get_model_configs(
         HTTPStatus.OK: {"description": "Model config has been updated"},
         HTTPStatus.NOT_FOUND: {"description": "Model config not found"},
         HTTPStatus.UNAUTHORIZED: {"description": "Unauthorized"},
+        HTTPStatus.FORBIDDEN: {"description": "Forbidden - insufficient permissions"},
     },
 )
+@realm_allowed
+@roles_allowed(resource=OPENREMOTE_KC_RESOURCE, roles=[ClientRoles.WRITE_ADMIN_ROLE])
 async def update_model_config(
-    token: Annotated[str, Depends(oauth2_scheme)],
+    user: Annotated[UserContext, Depends(KeycloakMiddleware.get_user_context)],
     realm: str,
     id: UUID,
     model_config: ModelConfig,
@@ -116,10 +138,13 @@ async def update_model_config(
         HTTPStatus.OK: {"description": "Model config has been deleted"},
         HTTPStatus.NOT_FOUND: {"description": "Model config not found"},
         HTTPStatus.UNAUTHORIZED: {"description": "Unauthorized"},
+        HTTPStatus.FORBIDDEN: {"description": "Forbidden - insufficient permissions"},
     },
 )
+@realm_allowed
+@roles_allowed(resource=OPENREMOTE_KC_RESOURCE, roles=[ClientRoles.WRITE_ADMIN_ROLE])
 async def delete_model_config(
-    token: Annotated[str, Depends(oauth2_scheme)],
+    user: Annotated[UserContext, Depends(KeycloakMiddleware.get_user_context)],
     realm: str,
     id: UUID,
     config_service: ModelConfigService = Depends(get_config_service),

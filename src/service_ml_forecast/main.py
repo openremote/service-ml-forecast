@@ -30,17 +30,15 @@ from service_ml_forecast import __app_info__
 from service_ml_forecast.api import model_config_route, web_route
 from service_ml_forecast.api.route_exception_handlers import register_exception_handlers
 from service_ml_forecast.config import ENV
-from service_ml_forecast.dependencies import get_openremote_client, get_openremote_service
+from service_ml_forecast.dependencies import get_openremote_client, get_openremote_service, get_openremote_issuers
 from service_ml_forecast.logging_config import LOGGING_CONFIG
-from service_ml_forecast.middlewares.keycloak_middleware import KeycloakMiddleware
+from service_ml_forecast.middlewares.keycloak.middleware import KeycloakMiddleware
 from service_ml_forecast.services.model_scheduler import ModelScheduler
 
 # Load the logging configuration
 logging.config.dictConfig(LOGGING_CONFIG)
 
 logger = logging.getLogger(__name__)
-
-IS_DEV = ENV.is_development()
 
 
 # FastAPI Lifecycle, handles startup and shutdown tasks
@@ -64,6 +62,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+
 # --- API Docs ---
 if not ENV.ML_API_PUBLISH_DOCS:
     app.docs_url = None
@@ -72,20 +71,17 @@ if not ENV.ML_API_PUBLISH_DOCS:
 
 
 # --- Middlewares ---
-# Last in the chain -- GZIP
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
-# Second to last in the chain -- Keycloak
 if ENV.ML_API_MIDDLEWARE_KEYCLOAK:
     app.add_middleware(
         KeycloakMiddleware,
-        keycloak_url=ENV.ML_OR_KEYCLOAK_URL,
         excluded_routes=["/docs", "/redoc", "/openapi.json", "/ui"],
+        issuer_provider=get_openremote_issuers,
     )
 else:
     logger.warning("Keycloak middleware disabled! This is NOT recommended in production!")
 
-# First in the chain -- CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ENV.ML_WEBSERVER_ORIGINS,
@@ -125,6 +121,9 @@ def initialize_background_services() -> None:
 
 # Entrypoint for the service
 if __name__ == "__main__":
+    # Check if the application is running in development mode
+    IS_DEV = ENV.is_development()
+
     if IS_DEV:
         logger.warning("Application is running in development mode -- DO NOT USE IN PRODUCTION")
 

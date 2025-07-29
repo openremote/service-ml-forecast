@@ -32,7 +32,7 @@ def test_create_model_with_invalid_token(mock_test_client_with_keycloak: TestCli
     assert response.status_code == HTTPStatus.UNAUTHORIZED
 
 
-@patch("service_ml_forecast.middlewares.keycloak_middleware._verify_jwt_token")
+@patch("service_ml_forecast.middlewares.keycloak.middleware._verify_jwt_token")
 def test_token_with_missing_required_roles(
     mock_verify_jwt: AsyncMock, mock_test_client_with_keycloak: TestClient
 ) -> None:
@@ -46,11 +46,15 @@ def test_token_with_missing_required_roles(
     mock_verify_jwt.return_value = {
         "name": "Test User",
         "preferred_username": "test-user",
+        "realm_access": {"roles": ["user"]},
         "resource_access": {
             "openremote": {
                 "roles": ["some-other-role"]  # Missing required write:admin and read:admin roles
             }
         },
+        "exp": 9999999999,
+        "iss": "https://keycloak.local/auth/realms/master",
+        "azp": "openremote",
     }
 
     config = create_test_config()
@@ -88,7 +92,7 @@ def test_malformed_authorization_header(mock_test_client_with_keycloak: TestClie
     assert response.status_code == HTTPStatus.UNAUTHORIZED
 
 
-@patch("service_ml_forecast.middlewares.keycloak_middleware._verify_jwt_token")
+@patch("service_ml_forecast.middlewares.keycloak.middleware._verify_jwt_token")
 def test_token_with_expired_signature(mock_verify_jwt: AsyncMock, mock_test_client_with_keycloak: TestClient) -> None:
     """Test with an expired token.
 

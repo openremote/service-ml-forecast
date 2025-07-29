@@ -105,7 +105,7 @@ export class PageConfigList extends LitElement {
             this.loading = false;
         } catch (error) {
             console.error('Failed to fetch model configs:', error);
-            this.error = `Failed to retrieve forecast configurations`;
+            this.error = `Failed to retrieve the forecast configurations`;
             this.modelConfigs = [];
             this.configAssets = [];
             this.loading = false;
@@ -134,8 +134,8 @@ export class PageConfigList extends LitElement {
                 await APIService.deleteModelConfig(this.realm, config.id);
                 this.modelConfigs = this.modelConfigs?.filter((c) => c.id !== config.id);
             } catch (error) {
-                showSnackbar(undefined, `Failed to delete config: ${error}`);
-                console.error('Failed to delete config:', error);
+                showSnackbar(undefined, `Failed to delete the config`);
+                console.error('Failed to delete the config:', error);
             }
         }
     }

@@ -8,6 +8,7 @@ import types
 from collections.abc import Generator
 from http import HTTPStatus
 from pathlib import Path
+from typing import Any
 
 import pytest
 import respx
@@ -140,7 +141,7 @@ def mock_openremote_service(mock_openremote_client: OpenRemoteClient) -> OpenRem
     return service
 
 
-def get_fresh_app(keycloak_enabled: bool) -> FastAPI:
+def get_fresh_app(keycloak_enabled: bool) -> FastAPI | Any:
     """Get a fresh instance of the app with the given keycloak setting."""
     # Remove any cached modules to ensure we get a fresh app
     for module in list(sys.modules.keys()):
@@ -151,6 +152,15 @@ def get_fresh_app(keycloak_enabled: bool) -> FastAPI:
     from service_ml_forecast.config import ENV
 
     ENV.ML_API_MIDDLEWARE_KEYCLOAK = keycloak_enabled
+
+    # Mock the get_openremote_issuers function if keycloak is enabled
+    if keycloak_enabled:
+        import service_ml_forecast.dependencies
+        
+        def mock_get_openremote_issuers() -> list[str]:
+            return [f"{MOCK_KEYCLOAK_URL}/realms/master"]
+        
+        service_ml_forecast.dependencies.get_openremote_issuers = mock_get_openremote_issuers
 
     # Import the app fresh
     import service_ml_forecast.main

@@ -33,10 +33,6 @@ export function getRootPath() {
     return '';
 }
 
-export function isEmbedded(): boolean {
-    return window.top !== window.self;
-}
-
 export function setupConsoleLogging() {
     // Override console.log to add a prefix
     const originalConsoleLog = console.log;
