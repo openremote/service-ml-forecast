@@ -73,7 +73,7 @@ def help() -> None:
     print("  format                 - Format the code (main + packages)")
     print("  test                   - Run tests (main + packages)")
     print("  test-coverage          - Run tests with coverage (main + packages)")
-    print("  build                  - Build the backend")
+    print("  build                  - Build the backend and packages")
     print("  build-frontend         - Build the frontend bundle")
     print("  build-frontend-dev     - Build the frontend bundle in development mode")
     print("  lint-packages          - Run linting only on packages")
