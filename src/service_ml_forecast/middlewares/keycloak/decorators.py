@@ -61,9 +61,9 @@ async def _execute_decorated_function(func: Callable[..., Any], *args: Any, **kw
         return func(*args, **kwargs)
 
 
-def realm_allowed(func: Callable[..., Any]) -> Callable[..., Any]:
+def realm_accessible(func: Callable[..., Any]) -> Callable[..., Any]:
     """
-    @realm_allowed decorator checks whether the user has access to the realm.
+    @realm_accessible decorator checks whether the user has access to the realm.
 
     The decorated function must have 'realm' and 'user' parameters.
     """
