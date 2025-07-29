@@ -30,7 +30,7 @@ from service_ml_forecast import __app_info__
 from service_ml_forecast.api import model_config_route, web_route
 from service_ml_forecast.api.route_exception_handlers import register_exception_handlers
 from service_ml_forecast.config import ENV
-from service_ml_forecast.dependencies import get_openremote_client, get_openremote_service, get_openremote_issuers
+from service_ml_forecast.dependencies import get_openremote_client, get_openremote_issuers, get_openremote_service
 from service_ml_forecast.logging_config import LOGGING_CONFIG
 from service_ml_forecast.middlewares.keycloak.middleware import KeycloakMiddleware
 from service_ml_forecast.services.model_scheduler import ModelScheduler

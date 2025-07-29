@@ -1,5 +1,6 @@
 """OpenRemote Client Package."""
 
+from openremote_client.client_roles import ClientRoles
 from openremote_client.models import (
     AssetDatapoint,
     AssetDatapointPeriod,
@@ -19,6 +20,7 @@ __all__ = [
     "AssetDatapointQuery",
     "BasicAsset",
     "BasicAttribute",
+    "ClientRoles",
     "OpenRemoteClient",
     "OpenRemoteServiceRegistrar",
     "Realm",
