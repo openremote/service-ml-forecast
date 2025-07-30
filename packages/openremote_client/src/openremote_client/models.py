@@ -60,7 +60,7 @@ class AssetDatapoint(BaseModel):
     """Data point of an asset attribute.
 
     Args:
-        x: The timestamp of the data point.
+        x: The timestamp of the data point in milliseconds.
         y: The value of the data point.
     """
 

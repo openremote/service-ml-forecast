@@ -15,6 +15,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
+import datetime
 import logging
 import time
 
@@ -203,10 +204,16 @@ def _model_training_job(config: ModelConfig, data_service: OpenRemoteService) ->
     # Save the model
     provider.save_model(model)
 
+    # Log the first and last datapoint datetimes of the target attribute
+    target_first_datapoint_datetime = datetime.datetime.fromtimestamp(training_dataset.target.datapoints[0].x / 1000)
+    target_last_datapoint_datetime = datetime.datetime.fromtimestamp(training_dataset.target.datapoints[-1].x / 1000)
+
     end_time = time.perf_counter()
     logger.info(
         f"Training job for {config.id} completed - duration: {end_time - start_time}s. "
-        f"Type: {config.type}, Training Interval: {config.training_interval}"
+        f"Type: {config.type}, Training Interval: {config.training_interval}, "
+        f"Target first datapoint datetime: {target_first_datapoint_datetime}, "
+        f"Target last datapoint datetime: {target_last_datapoint_datetime}"
     )
 
 
@@ -248,8 +255,14 @@ def _model_forecast_job(config: ModelConfig, data_service: OpenRemoteService) ->
         return
 
     end_time = time.perf_counter()
+
+    # Log the first and last datapoint datetimes of the forecast
+    first_datapoint_datetime = datetime.datetime.fromtimestamp(forecast.datapoints[0].x / 1000)
+    last_datapoint_datetime = datetime.datetime.fromtimestamp(forecast.datapoints[-1].x / 1000)
+
     logger.info(
         f"Forecasting job for {config.id} completed - duration: {end_time - start_time}s. "
         f"Wrote {len(forecast.datapoints)} datapoints. "
+        f"First datapoint datetime: {first_datapoint_datetime}, Last datapoint datetime: {last_datapoint_datetime}"
         f"Asset ID: {config.target.asset_id}, Attribute: {config.target.attribute_name}"
     )

@@ -152,7 +152,9 @@ class OpenRemoteService:
             logger.info(
                 f"Chunking datapoint retrieval into {months_diff} monthly chunks for {asset_id} {attribute_name}"
             )
-            for i in range(months_diff):
+            
+            # Continue until we've processed a chunk that ends at or after to_timestamp
+            while current_from < to_timestamp:
                 # Calculate the end timestamp for this chunk (1 month from current_from)
                 current_to = TimeUtil.add_months_to_timestamp(current_from, 1)
 
@@ -166,7 +168,7 @@ class OpenRemoteService:
                 if chunk_datapoints is None:
                     logger.error(
                         f"Failed to retrieve historical datapoints for {asset_id} {attribute_name} "
-                        f"for chunk {i + 1} of {months_diff}"
+                        f"for chunk ending at {current_to}"
                     )
                     return None
 
@@ -174,10 +176,6 @@ class OpenRemoteService:
 
                 # Move to the next chunk
                 current_from = current_to
-
-                # Break if we've reached the end
-                if current_from >= to_timestamp:
-                    break
 
             return all_datapoints
 
