@@ -36,7 +36,7 @@ CONFIG_WATCHER_JOB_ID = "model:config-watcher"
 TRAINING_JOB_ID_PREFIX = "model:training"
 FORECAST_JOB_ID_PREFIX = "model:forecast"
 
-JOB_GRACE_PERIOD = 60  # Allow jobs to be late a maximum of 1 minute, otherwise reschedule
+JOB_GRACE_PERIOD = 1800  # Allow jobs to be delayed by a maximum of 30 minutes, otherwise skip.
 
 CONFIG_POLLING_INTERVAL = 30  # Poll configs for changes every 30 seconds
 
