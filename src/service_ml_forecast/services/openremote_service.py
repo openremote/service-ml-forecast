@@ -152,7 +152,7 @@ class OpenRemoteService:
             logger.info(
                 f"Chunking datapoint retrieval into {months_diff} monthly chunks for {asset_id} {attribute_name}"
             )
-            
+
             # Continue until we've processed a chunk that ends at or after to_timestamp
             while current_from < to_timestamp:
                 # Calculate the end timestamp for this chunk (1 month from current_from)

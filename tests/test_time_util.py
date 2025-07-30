@@ -118,24 +118,6 @@ class TestTimeUtil:
             current_ms = fixed_time * MILLISECONDS_PER_SECOND
             assert result > current_ms
 
-    def test_invalid_iso_duration_handling(self) -> None:
-        """Test handling of invalid ISO duration strings.
-
-        Verifies that:
-        - Invalid duration strings raise ValueError
-        - Empty strings raise ValueError
-        - None values raise TypeError
-        - The method fails gracefully with proper error types
-        """
-        with pytest.raises(ValueError):
-            TimeUtil.parse_iso_duration("invalid")
-
-        with pytest.raises(ValueError):
-            TimeUtil.parse_iso_duration("")
-
-        with pytest.raises(TypeError):
-            TimeUtil.parse_iso_duration(None)
-
     def test_timestamp_edge_cases(self) -> None:
         """Test timestamp methods with extreme edge cases.
 

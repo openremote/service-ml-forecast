@@ -1,5 +1,6 @@
 from unittest.mock import Mock
 
+from openremote_client import AssetDatapoint
 from service_ml_forecast.services.openremote_service import OpenRemoteService
 
 # Constants for test values
@@ -27,7 +28,7 @@ def test_get_historical_datapoints_single_month_no_chunking(mock_openremote_serv
     mock_openremote_service.client = mock_client
 
     # Mock return value for single month
-    mock_datapoints = [{"timestamp": JAN_1_2024, "value": 100}]
+    mock_datapoints = [AssetDatapoint(x=JAN_1_2024, y=100)]
     mock_client.assets.get_historical_datapoints.return_value = mock_datapoints
 
     # Test single month (Jan 1 to Feb 1)
@@ -60,9 +61,9 @@ def test_get_historical_datapoints_multi_month_chunking(mock_openremote_service:
     mock_openremote_service.client = mock_client
 
     # Mock return values for chunks
-    chunk1_datapoints = [{"timestamp": JAN_1_2024, "value": 100}]  # Jan
-    chunk2_datapoints = [{"timestamp": FEB_1_2024, "value": 200}]  # Feb
-    chunk3_datapoints = [{"timestamp": MAR_1_2024, "value": 300}]  # Mar
+    chunk1_datapoints = [AssetDatapoint(x=JAN_1_2024, y=100)]  # Jan
+    chunk2_datapoints = [AssetDatapoint(x=FEB_1_2024, y=200)]  # Feb
+    chunk3_datapoints = [AssetDatapoint(x=MAR_1_2024, y=300)]  # Mar
 
     mock_client.assets.get_historical_datapoints.side_effect = [
         chunk1_datapoints,
@@ -128,10 +129,10 @@ def test_get_historical_datapoints_chunking_partial_months(mock_openremote_servi
     mock_openremote_service.client = mock_client
 
     # Mock return values for chunks
-    jan_datapoints = [{"timestamp": 1705276800000, "value": 100}]  # Jan 15-31
-    feb_datapoints = [{"timestamp": FEB_1_2024, "value": 200}]  # Feb 1-29
-    mar_datapoints = [{"timestamp": MAR_1_2024, "value": 300}]  # Mar 1-31
-    apr_datapoints = [{"timestamp": APR_1_2024, "value": 400}]  # Apr 1-30
+    jan_datapoints = [AssetDatapoint(x=1705276800000, y=100)]  # Jan 15-31
+    feb_datapoints = [AssetDatapoint(x=FEB_1_2024, y=200)]  # Feb 1-29
+    mar_datapoints = [AssetDatapoint(x=MAR_1_2024, y=300)]  # Mar 1-31
+    apr_datapoints = [AssetDatapoint(x=APR_1_2024, y=400)]  # Apr 1-30
 
     mock_client.assets.get_historical_datapoints.side_effect = [
         jan_datapoints,
@@ -216,7 +217,7 @@ def test_get_historical_datapoints_chunking_failure_handling(mock_openremote_ser
     mock_openremote_service.client = mock_client
 
     # Mock first chunk succeeds, second chunk fails
-    chunk1_datapoints = [{"timestamp": JAN_1_2024, "value": 100}]
+    chunk1_datapoints = [AssetDatapoint(x=JAN_1_2024, y=100)]
     mock_client.assets.get_historical_datapoints.side_effect = [
         chunk1_datapoints,
         None,  # Second chunk fails
@@ -253,7 +254,7 @@ def test_get_historical_datapoints_chunking_edge_case_same_timestamp(
     mock_openremote_service.client = mock_client
 
     # Mock return value
-    mock_datapoints = [{"timestamp": JAN_1_2024, "value": 100}]
+    mock_datapoints = [AssetDatapoint(x=JAN_1_2024, y=100)]
     mock_client.assets.get_historical_datapoints.return_value = mock_datapoints
 
     # Test same timestamp
