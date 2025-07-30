@@ -1,5 +1,6 @@
 from unittest.mock import Mock
 
+from service_ml_forecast.clients.openremote.models import AssetDatapoint
 from service_ml_forecast.services.openremote_service import OpenRemoteService
 
 # Constants for test values
@@ -27,8 +28,8 @@ def test_get_historical_datapoints_single_month_no_chunking(mock_openremote_serv
     mock_openremote_service.client = mock_client
 
     # Mock return value for single month
-    mock_datapoints = [{"timestamp": JAN_1_2024, "value": 100}]
-    mock_client.assets.get_historical_datapoints.return_value = mock_datapoints
+    mock_datapoints = [AssetDatapoint(x=JAN_1_2024, y=100)]
+    mock_client.get_historical_datapoints.return_value = mock_datapoints
 
     # Test single month (Jan 1 to Feb 1)
     from_timestamp = JAN_1_2024  # 2024-01-01 00:00:00 UTC
@@ -39,7 +40,7 @@ def test_get_historical_datapoints_single_month_no_chunking(mock_openremote_serv
     )
 
     # Should call client method once (no chunking)
-    mock_client.assets.get_historical_datapoints.assert_called_once_with(
+    mock_client.get_historical_datapoints.assert_called_once_with(
         "test_asset", "test_attribute", from_timestamp, to_timestamp
     )
     assert result == mock_datapoints
@@ -60,11 +61,11 @@ def test_get_historical_datapoints_multi_month_chunking(mock_openremote_service:
     mock_openremote_service.client = mock_client
 
     # Mock return values for chunks
-    chunk1_datapoints = [{"timestamp": JAN_1_2024, "value": 100}]  # Jan
-    chunk2_datapoints = [{"timestamp": FEB_1_2024, "value": 200}]  # Feb
-    chunk3_datapoints = [{"timestamp": MAR_1_2024, "value": 300}]  # Mar
+    chunk1_datapoints = [AssetDatapoint(x=JAN_1_2024, y=100)]  # Jan
+    chunk2_datapoints = [AssetDatapoint(x=FEB_1_2024, y=200)]  # Feb
+    chunk3_datapoints = [AssetDatapoint(x=MAR_1_2024, y=300)]  # Mar
 
-    mock_client.assets.get_historical_datapoints.side_effect = [
+    mock_client.get_historical_datapoints.side_effect = [
         chunk1_datapoints,
         chunk2_datapoints,
         chunk3_datapoints,
@@ -79,10 +80,10 @@ def test_get_historical_datapoints_multi_month_chunking(mock_openremote_service:
     )
 
     # Should call client method 3 times (one for each month)
-    assert mock_client.assets.get_historical_datapoints.call_count == EXPECTED_CALLS_3_MONTHS
+    assert mock_client.get_historical_datapoints.call_count == EXPECTED_CALLS_3_MONTHS
 
     # Verify the calls were made with correct timestamps
-    calls = mock_client.assets.get_historical_datapoints.call_args_list
+    calls = mock_client.get_historical_datapoints.call_args_list
     assert len(calls) == EXPECTED_CALLS_3_MONTHS
 
     # Verify chunk boundaries are correct
@@ -128,12 +129,12 @@ def test_get_historical_datapoints_chunking_partial_months(mock_openremote_servi
     mock_openremote_service.client = mock_client
 
     # Mock return values for chunks
-    jan_datapoints = [{"timestamp": 1705276800000, "value": 100}]  # Jan 15-31
-    feb_datapoints = [{"timestamp": FEB_1_2024, "value": 200}]  # Feb 1-29
-    mar_datapoints = [{"timestamp": MAR_1_2024, "value": 300}]  # Mar 1-31
-    apr_datapoints = [{"timestamp": APR_1_2024, "value": 400}]  # Apr 1-30
+    jan_datapoints = [AssetDatapoint(x=1705276800000, y=100)]  # Jan 15-31
+    feb_datapoints = [AssetDatapoint(x=FEB_1_2024, y=200)]  # Feb 1-29
+    mar_datapoints = [AssetDatapoint(x=MAR_1_2024, y=300)]  # Mar 1-31
+    apr_datapoints = [AssetDatapoint(x=APR_1_2024, y=400)]  # Apr 1-30
 
-    mock_client.assets.get_historical_datapoints.side_effect = [
+    mock_client.get_historical_datapoints.side_effect = [
         jan_datapoints,
         feb_datapoints,
         mar_datapoints,
@@ -149,10 +150,10 @@ def test_get_historical_datapoints_chunking_partial_months(mock_openremote_servi
     )
 
     # Should call client method 4 times (Jan 15-31, Feb 1-29, Mar 1-31, Apr 1-30)
-    assert mock_client.assets.get_historical_datapoints.call_count == EXPECTED_CALLS_4_MONTHS
+    assert mock_client.get_historical_datapoints.call_count == EXPECTED_CALLS_4_MONTHS
 
     # Verify the calls were made with correct timestamps
-    calls = mock_client.assets.get_historical_datapoints.call_args_list
+    calls = mock_client.get_historical_datapoints.call_args_list
     assert len(calls) == EXPECTED_CALLS_4_MONTHS
 
     # Verify boundaries for partial month scenario
@@ -171,7 +172,7 @@ def test_get_historical_datapoints_chunking_partial_months(mock_openremote_servi
 
     # Reset mock for second test
     mock_client.reset_mock()
-    mock_client.assets.get_historical_datapoints.side_effect = [
+    mock_client.get_historical_datapoints.side_effect = [
         jan_datapoints,
         feb_datapoints,
         mar_datapoints,
@@ -186,10 +187,10 @@ def test_get_historical_datapoints_chunking_partial_months(mock_openremote_servi
     )
 
     # Should call client method 3 times (Jan 1-31, Feb 1-29, Mar 1-31)
-    assert mock_client.assets.get_historical_datapoints.call_count == EXPECTED_CALLS_3_MONTHS
+    assert mock_client.get_historical_datapoints.call_count == EXPECTED_CALLS_3_MONTHS
 
     # Verify boundaries for the second test case
-    calls = mock_client.assets.get_historical_datapoints.call_args_list
+    calls = mock_client.get_historical_datapoints.call_args_list
     first_call_args = calls[0][0]
     last_call_args = calls[2][0]
 
@@ -216,8 +217,8 @@ def test_get_historical_datapoints_chunking_failure_handling(mock_openremote_ser
     mock_openremote_service.client = mock_client
 
     # Mock first chunk succeeds, second chunk fails
-    chunk1_datapoints = [{"timestamp": JAN_1_2024, "value": 100}]
-    mock_client.assets.get_historical_datapoints.side_effect = [
+    chunk1_datapoints = [AssetDatapoint(x=JAN_1_2024, y=100)]
+    mock_client.get_historical_datapoints.side_effect = [
         chunk1_datapoints,
         None,  # Second chunk fails
     ]
@@ -234,7 +235,7 @@ def test_get_historical_datapoints_chunking_failure_handling(mock_openremote_ser
     assert result is None
 
     # Should call client method 2 times (first succeeds, second fails)
-    assert mock_client.assets.get_historical_datapoints.call_count == EXPECTED_CALLS_2_MONTHS
+    assert mock_client.get_historical_datapoints.call_count == EXPECTED_CALLS_2_MONTHS
 
 
 def test_get_historical_datapoints_chunking_edge_case_same_timestamp(
@@ -253,8 +254,8 @@ def test_get_historical_datapoints_chunking_edge_case_same_timestamp(
     mock_openremote_service.client = mock_client
 
     # Mock return value
-    mock_datapoints = [{"timestamp": JAN_1_2024, "value": 100}]
-    mock_client.assets.get_historical_datapoints.return_value = mock_datapoints
+    mock_datapoints = [AssetDatapoint(x=JAN_1_2024, y=100)]
+    mock_client.get_historical_datapoints.return_value = mock_datapoints
 
     # Test same timestamp
     timestamp = JAN_1_2024  # 2024-01-01 00:00:00 UTC
@@ -262,7 +263,5 @@ def test_get_historical_datapoints_chunking_edge_case_same_timestamp(
     result = mock_openremote_service._get_historical_datapoints("test_asset", "test_attribute", timestamp, timestamp)
 
     # Should call client method once (goes through single month path)
-    mock_client.assets.get_historical_datapoints.assert_called_once_with(
-        "test_asset", "test_attribute", timestamp, timestamp
-    )
+    mock_client.get_historical_datapoints.assert_called_once_with("test_asset", "test_attribute", timestamp, timestamp)
     assert result == mock_datapoints
