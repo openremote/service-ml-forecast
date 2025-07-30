@@ -36,8 +36,6 @@ CONFIG_WATCHER_JOB_ID = "model:config-watcher"
 TRAINING_JOB_ID_PREFIX = "model:training"
 FORECAST_JOB_ID_PREFIX = "model:forecast"
 
-JOB_GRACE_PERIOD = 60  # Allow jobs to be late a maximum of 1 minute, otherwise reschedule
-
 CONFIG_POLLING_INTERVAL = 30  # Poll configs for changes every 30 seconds
 
 
@@ -60,7 +58,7 @@ class ModelScheduler(Singleton):
             daemon=True,  # Ensure any threads/processes are properly exited when the main process exits
             coalesce=True,
             max_instances=1,
-            job_defaults={"misfire_grace_time": JOB_GRACE_PERIOD},
+            job_defaults={"misfire_grace_time": None},  # Allows jobs to run even if their execution is delayed
             logger=logger,
         )
 
@@ -210,7 +208,7 @@ def _model_training_job(config: ModelConfig, data_service: OpenRemoteService) ->
 
     end_time = time.perf_counter()
     logger.info(
-        f"Training job for {config.id} completed - duration: {end_time - start_time}s. "
+        f"Training job for {config.id} completed - duration: {end_time - start_time}s, "
         f"Type: {config.type}, Training Interval: {config.training_interval}, "
         f"Target first datapoint datetime: {target_first_datapoint_datetime}, "
         f"Target last datapoint datetime: {target_last_datapoint_datetime}"
@@ -261,8 +259,8 @@ def _model_forecast_job(config: ModelConfig, data_service: OpenRemoteService) ->
     last_datapoint_datetime = datetime.datetime.fromtimestamp(forecast.datapoints[-1].x / 1000)
 
     logger.info(
-        f"Forecasting job for {config.id} completed - duration: {end_time - start_time}s. "
-        f"Wrote {len(forecast.datapoints)} datapoints. "
-        f"First datapoint datetime: {first_datapoint_datetime}, Last datapoint datetime: {last_datapoint_datetime}"
+        f"Forecasting job for {config.id} completed - duration: {end_time - start_time}s, "
+        f"Wrote {len(forecast.datapoints)} datapoints, "
+        f"First datapoint datetime: {first_datapoint_datetime}, Last datapoint datetime: {last_datapoint_datetime}, "
         f"Asset ID: {config.target.asset_id}, Attribute: {config.target.attribute_name}"
     )
