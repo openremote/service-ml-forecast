@@ -19,6 +19,7 @@ import { css, html, LitElement } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { Router, RouterLocation } from '@vaadin/router';
 import { getRootPath } from '../common/util';
+import { IS_EMBEDDED } from '../common/constants';
 
 /**
  * Represents a part of the breadcrumb navigation
@@ -26,6 +27,7 @@ import { getRootPath } from '../common/util';
 interface BreadcrumbPart {
     path: string;
     name: string;
+    icon?: string;
 }
 
 /**
@@ -42,7 +44,31 @@ export class BreadcrumbNav extends LitElement {
             align-items: center;
             gap: 8px;
             margin-bottom: 16px;
-            width: fit-content;
+            width: 100%;
+            justify-content: space-between;
+        }
+
+        .breadcrumb-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .realm-badge {
+            background-color: var(--or-app-color4);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-left: auto;
+            min-width: 60px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         a {
@@ -53,7 +79,7 @@ export class BreadcrumbNav extends LitElement {
             gap: 4px;
             --or-icon-width: 16px;
             --or-icon-height: 16px;
-            max-width: 200px;
+            max-width: 300px;
         }
 
         a:hover {
@@ -63,7 +89,7 @@ export class BreadcrumbNav extends LitElement {
         span[aria-current='page'] {
             color: rgba(0, 0, 0, 0.87);
             font-weight: 500;
-            max-width: 200px;
+            max-width: 300px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -86,18 +112,10 @@ export class BreadcrumbNav extends LitElement {
 
     protected readonly rootPath = getRootPath();
 
-    protected get HOME_LINK(): BreadcrumbPart {
-        return {
-            path: `${this.rootPath}/${this.realm}/configs`,
-            name: 'ML Forecast Service'
-        };
-    }
-
-    protected readonly MAX_TEXT_LENGTH = 20;
+    protected readonly MAX_TEXT_LENGTH = 40;
 
     willUpdate(changedProperties: Map<string, any>) {
         if (changedProperties.has('realm') && this.realm) {
-            // Trigger location change event
             const location: Partial<RouterLocation> = {
                 pathname: `${this.rootPath}/${this.realm}/configs`,
                 params: {
@@ -105,7 +123,6 @@ export class BreadcrumbNav extends LitElement {
                 }
             };
 
-            // Update the breadcrumbs and title
             this.updateBreadcrumbs(location as RouterLocation);
         }
     }
@@ -115,7 +132,6 @@ export class BreadcrumbNav extends LitElement {
      */
     protected readonly handleLocationChange = (event: CustomEvent<{ location: RouterLocation }>) => {
         const location = event.detail.location;
-        // Update the breadcrumbs and title
         this.updateBreadcrumbs(location);
     };
 
@@ -136,28 +152,45 @@ export class BreadcrumbNav extends LitElement {
         const parts: BreadcrumbPart[] = [];
         const { pathname, params } = location;
 
-        // Add Smartcity part (realm)
-        if (this.realm) {
-            parts.push({
-                path: `${this.rootPath}/${this.realm}/configs`,
-                name: this.realm.charAt(0).toUpperCase() + this.realm.slice(1)
-            });
+
+        const homePart = {
+            path: `${this.rootPath}/${this.realm}/configs`,
+            name: 'ML Forecast Service',
+            icon: 'puzzle'
+        };
+
+        // If we are not embedded, add the home part
+        if (!IS_EMBEDDED) {
+            parts.push(homePart);
         }
+
+        const configsPart = {
+            path: `${this.rootPath}/${this.realm}/configs`,
+            name: 'Configurations'
+        };
 
         // Add Configs part
         if (pathname.includes('/configs')) {
-            parts.push({
-                path: `${this.rootPath}/${this.realm}/configs`,
-                name: 'Configs'
-            });
+            parts.push(configsPart);
 
-            // Add specific config part if we're on a config page
-            if (params.id) {
+            // Handle config editor page
+            const isExistingConfig = params.id && !pathname.includes('/new');
+            if (isExistingConfig) {
                 parts.push({
                     path: `${this.rootPath}/${this.realm}/configs/${params.id}`,
-                    name: params.id === 'new' ? 'New Config' : `${params.id}`
+                    name: `${params.id}`
                 });
             }
+
+            const isNewConfig = pathname.includes('/new');
+            if (isNewConfig) {
+                parts.push({
+                    path: `${this.rootPath}/${this.realm}/configs/new`,
+                    name: 'New'
+                });
+            }
+
+
         }
 
         this.parts = parts;
@@ -173,15 +206,18 @@ export class BreadcrumbNav extends LitElement {
     /**
      * Renders a single breadcrumb item
      */
-    protected renderBreadcrumbItem(part: BreadcrumbPart, readonly: boolean) {
+    protected renderBreadcrumbItem(part: BreadcrumbPart, readonly: boolean, isFirst: boolean) {
         const truncatedName = this.truncateText(part.name);
 
+        const icon = part.icon ? html`<or-icon icon=${part.icon}></or-icon>` : html``;
+
         return html`
-            <span aria-hidden="true">&gt;</span>
+            ${!isFirst ? html`<span aria-hidden="true">&gt;</span>` : html``}
             ${readonly
                 ? html`<span aria-current="page">${truncatedName}</span>`
                 : html`
                       <a href="${part.path}" @click=${(e: MouseEvent) => this.handleNavigation(e, part.path)}>
+                          ${icon}
                           <span class="truncate">${truncatedName}</span>
                       </a>
                   `}
@@ -197,15 +233,20 @@ export class BreadcrumbNav extends LitElement {
     }
 
     render() {
-        const truncatedHomeName = this.truncateText(this.HOME_LINK.name);
+        // Hide breadcrumbs if there's only one part
+        const shouldShowBreadcrumbs = this.parts.length > 1;
+        if (!shouldShowBreadcrumbs) {
+            return html``;
+        }
+
+        const realmBadge = IS_EMBEDDED ? html`` : html`<div class="realm-badge">${this.realm}</div>`;
 
         return html`
             <nav aria-label="breadcrumb">
-                <a href="${this.HOME_LINK.path}" @click=${(e: MouseEvent) => this.handleNavigation(e, this.HOME_LINK.path)}>
-                    <or-icon icon="puzzle"></or-icon>
-                    <span class="truncate">${truncatedHomeName}</span>
-                </a>
-                ${this.parts.map((part, index) => this.renderBreadcrumbItem(part, index === this.parts.length - 1))}
+                <div class="breadcrumb-container">
+                    ${this.parts.map((part, index) => this.renderBreadcrumbItem(part, index === this.parts.length - 1, index === 0))}
+                </div>
+                ${realmBadge}
             </nav>
         `;
     }

@@ -17,20 +17,30 @@
 
 import { createContext, provide } from '@lit/context';
 import { PreventAndRedirectCommands, RouterLocation } from '@vaadin/router';
-import { html, LitElement } from 'lit';
+import { css, html, LitElement, unsafeCSS } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { setRealmTheme } from '../common/theme';
 import { AuthService } from '../services/auth-service';
 import { manager } from '@openremote/core';
-import { ML_OR_URL } from '../common/constants';
+import { IS_EMBEDDED, ML_OR_URL } from '../common/constants';
 
 export const realmContext = createContext<string>(Symbol('realm'));
 
 @customElement('app-layout')
 export class AppLayout extends LitElement {
-    // Use a context to provide the realm to all child elements
-    // Child elements can use the @consume decorator to receive the realm
-    // This is done in the parent layout to extract the realm from the route params on route change in a single place
+
+
+    static get styles() {
+        const padding = IS_EMBEDDED ? '0 20px' : '20px';
+
+        return css`
+            :host {
+                display: block;
+                padding: ${unsafeCSS(padding)};
+            }
+        `;
+    }
+
     @provide({ context: realmContext })
     @state()
     realm = '';
