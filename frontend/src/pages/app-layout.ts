@@ -28,8 +28,6 @@ export const realmContext = createContext<string>(Symbol('realm'));
 
 @customElement('app-layout')
 export class AppLayout extends LitElement {
-
-
     static get styles() {
         const padding = IS_EMBEDDED ? '0 20px' : '20px';
 

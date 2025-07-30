@@ -152,7 +152,6 @@ export class BreadcrumbNav extends LitElement {
         const parts: BreadcrumbPart[] = [];
         const { pathname, params } = location;
 
-
         const homePart = {
             path: `${this.rootPath}/${this.realm}/configs`,
             name: 'ML Forecast Service',
@@ -189,8 +188,6 @@ export class BreadcrumbNav extends LitElement {
                     name: 'New'
                 });
             }
-
-
         }
 
         this.parts = parts;

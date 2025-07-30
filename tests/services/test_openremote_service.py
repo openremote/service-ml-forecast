@@ -1,6 +1,7 @@
 from unittest.mock import Mock
 
 from openremote_client import AssetDatapoint
+
 from service_ml_forecast.services.openremote_service import OpenRemoteService
 
 # Constants for test values
