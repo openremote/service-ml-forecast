@@ -33,32 +33,36 @@ export function getRootPath() {
     return '';
 }
 
+/**
+ * Setup console logging to add a prefix to all console logs
+ * Enabling proper distinction between logs from the service and other sources
+ */
 export function setupConsoleLogging() {
-    // Override console.log to add a prefix
     const originalConsoleLog = console.log;
     console.log = (...args) => {
         originalConsoleLog('[ml-forecast]', ...args);
     };
 
-    // Override console.info to add a prefix
     const originalConsoleInfo = console.info;
     console.info = (...args) => {
         originalConsoleInfo('[ml-forecast]', ...args);
     };
 
-    // Override console.warn to add a prefix
     const originalConsoleWarn = console.warn;
     console.warn = (...args) => {
         originalConsoleWarn('[ml-forecast]', ...args);
     };
 
-    // Override console.error to add a prefix
     const originalConsoleError = console.error;
     console.error = (...args) => {
         originalConsoleError('[ml-forecast]', ...args);
     };
 }
 
-export const getRealmParam = () => {
+/**
+ * Get the realm search param from the url (?realm=)
+ * @returns The realm search param
+ */
+export const getRealmSearchParam = () => {
     return new URLSearchParams(window.location.search).get('realm');
 };
