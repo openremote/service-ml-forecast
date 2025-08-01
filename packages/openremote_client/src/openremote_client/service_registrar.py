@@ -119,7 +119,8 @@ class OpenRemoteServiceRegistrar:
             if success:
                 logger.debug(f"Heartbeat sent successfully for instance: {self.instance_id}")
             else:
-                logger.error(f"Failed to send heartbeat for instance: {self.instance_id}")
+                logger.error(f"Failed to send heartbeat for instance: {self.instance_id}, trying re-registration")
+                self._register_service()
 
         except Exception as e:
             logger.error(f"Error sending heartbeat: {e}")
