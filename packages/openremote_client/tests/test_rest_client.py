@@ -426,33 +426,25 @@ def test_get_realms(mock_openremote_client: OpenRemoteClient) -> None:
     """
     mock_realms: list[dict[str, Any]] = [
         {
-            "id": "realm1",
             "name": "test_realm_1",
             "displayName": "Test Realm 1",
-            "enabled": True,
         },
         {
-            "id": "realm2",
             "name": "test_realm_2",
             "displayName": "Test Realm 2",
-            "enabled": False,
         },
     ]
 
     with respx.mock(base_url=MOCK_OPENREMOTE_URL) as respx_mock:
-        respx_mock.get("/api/master/realm").mock(
+        respx_mock.get("/api/master/realm/accessible").mock(
             return_value=respx.MockResponse(HTTPStatus.OK, json=mock_realms),
         )
 
-        realms = mock_openremote_client.realms.get_all()
+        realms = mock_openremote_client.realms.get_accessible()
         assert realms is not None
         assert len(realms) == EXPECTED_REALMS_COUNT
-        assert realms[0].id == "realm1"
         assert realms[0].name == "test_realm_1"
-        assert realms[0].enabled is True
-        assert realms[1].id == "realm2"
         assert realms[1].name == "test_realm_2"
-        assert realms[1].enabled is False
 
 
 def test_get_realms_failure(mock_openremote_client: OpenRemoteClient) -> None:
@@ -463,9 +455,9 @@ def test_get_realms_failure(mock_openremote_client: OpenRemoteClient) -> None:
     - The method returns None when the operation fails
     """
     with respx.mock(base_url=MOCK_OPENREMOTE_URL) as respx_mock:
-        respx_mock.get("/api/master/realm").mock(
+        respx_mock.get("/api/master/realm/accessible").mock(
             return_value=respx.MockResponse(HTTPStatus.INTERNAL_SERVER_ERROR),
         )
 
-        realms = mock_openremote_client.realms.get_all()
+        realms = mock_openremote_client.realms.get_accessible()
         assert realms is None

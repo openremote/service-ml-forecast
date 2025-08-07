@@ -14,6 +14,7 @@ TEST_OLDEST_TIMESTAMP = 1716153600000  # 2024-05-20 00:00:00 UTC
 # Mock URLs and credentials
 MOCK_OPENREMOTE_URL = "https://openremote.local"
 MOCK_KEYCLOAK_URL = "https://keycloak.local/auth"
+MOCK_REALM = "master"
 MOCK_SERVICE_USER = "service_user"
 MOCK_SERVICE_USER_SECRET = "service_user_secret"
 MOCK_ACCESS_TOKEN = "mock_access_token"
@@ -38,6 +39,7 @@ def mock_openremote_client() -> OpenRemoteClient | None:
         client = OpenRemoteClient(
             openremote_url=MOCK_OPENREMOTE_URL,
             keycloak_url=MOCK_KEYCLOAK_URL,
+            realm=MOCK_REALM,
             service_user=MOCK_SERVICE_USER,
             service_user_secret=MOCK_SERVICE_USER_SECRET,
         )
