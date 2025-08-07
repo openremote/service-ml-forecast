@@ -16,9 +16,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 """
-This module contains the dependency injectors for the service.
-
-The injectors are used to inject the services into the FastAPI app, or other dependencies.
+This module contains the dependency injectors and constants for the service.
 """
 
 import logging
@@ -35,6 +33,7 @@ logger = logging.getLogger(__name__)
 __openremote_client = OpenRemoteClient(
     openremote_url=ENV.ML_OR_URL,
     keycloak_url=ENV.ML_OR_KEYCLOAK_URL,
+    realm=ENV.ML_OR_REALM,
     service_user=ENV.ML_OR_SERVICE_USER,
     service_user_secret=ENV.ML_OR_SERVICE_USER_SECRET,
 )
@@ -66,7 +65,7 @@ def get_openremote_issuers() -> list[str] | None:
     """
     try:
         openremote_service = get_openremote_service()
-        realms = openremote_service.get_realms()
+        realms = openremote_service.get_accessible_realms()
 
         if realms is None:
             return None
@@ -82,13 +81,14 @@ def get_openremote_issuers() -> list[str] | None:
 
 # --- Constants ---
 OPENREMOTE_KC_RESOURCE = "openremote"
+OPENREMOTE_CLIENT_ID = "openremote"
 
 # --- OAuth2 Scheme ---
 # This is used to allow authorization via the Docs and Redoc pages
 # Does not validate the token, this should be done via a middleware or manually
 OAUTH2_SCHEME = OAuth2PasswordBearer(
-    tokenUrl=f"{ENV.ML_OR_KEYCLOAK_URL}/realms/master/protocol/openid-connect/token",
+    tokenUrl=f"{ENV.ML_OR_KEYCLOAK_URL}/realms/{ENV.ML_OR_REALM}/protocol/openid-connect/token",
     scopes={"openid": "OpenID Connect", "profile": "User profile", "email": "User email"},
-    description="Login into the OpenRemote Management -- Expected Client ID: 'openremote'",
+    description=f"Login into the OpenRemote {ENV.ML_OR_REALM}'",
     auto_error=False,
 )

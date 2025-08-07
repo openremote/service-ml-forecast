@@ -31,8 +31,6 @@ from service_ml_forecast.clients.openremote.models import (
     Realm,
 )
 
-MASTER_REALM = "master"
-
 
 class OAuthTokenResponse(BaseModel):
     """Response model for OpenRemote OAuth token."""
@@ -56,6 +54,7 @@ class OpenRemoteClient:
     Args:
         openremote_url: The URL of the OpenRemote API.
         keycloak_url: The URL of the Keycloak API.
+        realm: The default realm to use for the OpenRemote API.
         service_user: The service user for the OpenRemote API.
         service_user_secret: The service user secret for the OpenRemote API.
         timeout: Timeout in seconds for HTTP requests. Defaults to 30 seconds.
@@ -70,12 +69,14 @@ class OpenRemoteClient:
         self,
         openremote_url: str,
         keycloak_url: str,
+        realm: str,
         service_user: str,
         service_user_secret: str,
         timeout: float = 60.0,
     ):
         self.openremote_url: str = openremote_url
         self.keycloak_url: str = keycloak_url
+        self.realm: str = realm
         self.service_user: str = service_user
         self.service_user_secret: str = service_user_secret
         self.oauth_token: OAuthTokenResponse | None = None
@@ -93,7 +94,7 @@ class OpenRemoteClient:
         return False
 
     def __get_token(self) -> OAuthTokenResponse | None:
-        url = f"{self.keycloak_url}/realms/master/protocol/openid-connect/token"
+        url = f"{self.keycloak_url}/realms/{self.realm}/protocol/openid-connect/token"
 
         data = OAuthTokenRequest(
             grant_type="client_credentials",
@@ -149,17 +150,21 @@ class OpenRemoteClient:
                 return False
 
     def get_asset_datapoint_period(
-        self, asset_id: str, attribute_name: str, realm: str = MASTER_REALM
+        self, asset_id: str, attribute_name: str, realm: str | None = None
     ) -> AssetDatapointPeriod | None:
         """Retrieve the datapoints timestamp period of a given asset attribute.
 
         Args:
             asset_id: The ID of the asset.
             attribute_name: The name of the attribute.
+            realm: The realm to retrieve assets from defaulting to the configured realm.
 
         Returns:
             AssetDatapointPeriod | None: The datapoints timestamp period of the asset attribute
         """
+
+        if realm is None:
+            realm = self.realm
 
         query = f"?assetId={asset_id}&attributeName={attribute_name}"
         url = f"{self.openremote_url}/api/{realm}/asset/datapoint/periods{query}"
@@ -181,7 +186,7 @@ class OpenRemoteClient:
         attribute_name: str,
         from_timestamp: int,
         to_timestamp: int,
-        realm: str = MASTER_REALM,
+        realm: str | None = None,
     ) -> list[AssetDatapoint] | None:
         """Retrieve the historical data points of a given asset attribute.
 
@@ -193,10 +198,13 @@ class OpenRemoteClient:
             attribute_name: The name of the attribute.
             from_timestamp: Epoch timestamp in milliseconds.
             to_timestamp: Epoch timestamp in milliseconds.
-            realm: The realm to retrieve assets from defaulting to MASTER_REALM.
+            realm: The realm to retrieve assets from defaulting to the configured realm.
         Returns:
             list[AssetDatapoint] | None: List of historical data points or None
         """
+
+        if realm is None:
+            realm = self.realm
 
         params = f"{asset_id}/{attribute_name}"
         url = f"{self.openremote_url}/api/{realm}/asset/datapoint/{params}"
@@ -219,7 +227,7 @@ class OpenRemoteClient:
                 return None
 
     def write_predicted_datapoints(
-        self, asset_id: str, attribute_name: str, datapoints: list[AssetDatapoint], realm: str = MASTER_REALM
+        self, asset_id: str, attribute_name: str, datapoints: list[AssetDatapoint], realm: str | None = None
     ) -> bool:
         """Write the predicted data points of a given asset attribute.
 
@@ -227,10 +235,13 @@ class OpenRemoteClient:
             asset_id: The ID of the asset.
             attribute_name: The name of the attribute.
             datapoints: The data points to write.
-            realm: The realm to write the data points to defaulting to MASTER_REALM.
+            realm: The realm to write the data points to defaulting to the configured realm.
         Returns:
             bool: True if successful
         """
+
+        if realm is None:
+            realm = self.realm
 
         params = f"{asset_id}/{attribute_name}"
         url = f"{self.openremote_url}/api/{realm}/asset/predicted/{params}"
@@ -254,7 +265,7 @@ class OpenRemoteClient:
         attribute_name: str,
         from_timestamp: int,
         to_timestamp: int,
-        realm: str = MASTER_REALM,
+        realm: str | None = None,
     ) -> list[AssetDatapoint] | None:
         """Retrieve the predicted data points of a given asset attribute.
 
@@ -263,10 +274,13 @@ class OpenRemoteClient:
             attribute_name: The name of the attribute.
             from_timestamp: Epoch timestamp in milliseconds.
             to_timestamp: Epoch timestamp in milliseconds.
-            realm: The realm to retrieve assets from defaulting to MASTER_REALM.
+            realm: The realm to retrieve assets from defaulting to the configured realm.
         Returns:
             list[AssetDatapoint] | None: List of predicted data points or None
         """
+
+        if realm is None:
+            realm = self.realm
 
         params = f"{asset_id}/{attribute_name}"
         url = f"{self.openremote_url}/api/{realm}/asset/predicted/{params}"
@@ -289,17 +303,21 @@ class OpenRemoteClient:
                 return None
 
     def asset_query(
-        self, asset_query: dict[str, Any], query_realm: str, realm: str = MASTER_REALM
+        self, asset_query: dict[str, Any], query_realm: str, realm: str | None = None
     ) -> list[BasicAsset] | None:
         """Perform an asset query.
 
         Args:
             asset_query: The asset query dict to send to the OpenRemote API.
             query_realm: The realm for the asset query.
-            realm: The realm to retrieve assets from defaulting to MASTER_REALM.
+            realm: The realm to retrieve assets from defaulting to the configured realm.
         Returns:
             list[Asset] | None: List of assets or None
         """
+
+        if realm is None:
+            realm = self.realm
+
         url = f"{self.openremote_url}/api/{realm}/asset/query"
         request = self.__build_request("POST", url, data=asset_query)
         with httpx.Client(timeout=self.timeout) as client:
@@ -313,39 +331,40 @@ class OpenRemoteClient:
                 return None
 
     def get_assets_by_ids(
-        self, asset_ids: list[str], query_realm: str, realm: str = MASTER_REALM
+        self, asset_ids: list[str], query_realm: str, realm: str | None = None
     ) -> list[BasicAsset] | None:
         """Retrieve assets by their IDs.
 
         Args:
             asset_ids: The IDs of the assets to retrieve.
             query_realm: The realm for the asset query.
-            realm: The realm to retrieve assets from defaulting to MASTER_REALM.
+            realm: The realm to retrieve assets from defaulting to the configured realm.
 
         Returns:
             list[Asset] | None: List of assets or None
         """
 
+        if realm is None:
+            realm = self.realm
+
         asset_query = {"recursive": False, "realm": {"name": query_realm}, "ids": asset_ids}
         return self.asset_query(asset_query, query_realm, realm)
 
-    def get_realms(self, realm: str = MASTER_REALM) -> list[Realm] | None:
-        """Retrieves all realms.
-
-        Args:
-            realm: The realm to retrieve realms from defaulting to MASTER_REALM.
+    def get_accessible_realms(self) -> list[Realm] | None:
+        """Retrieves all accessible realms for the current authenticated user.
 
         Returns:
             list[Realm] | None: List of realms or None
         """
 
-        url = f"{self.openremote_url}/api/{realm}/realm"
+        url = f"{self.openremote_url}/api/{self.realm}/realm/accessible"
         request = self.__build_request("GET", url)
 
         with httpx.Client(timeout=self.timeout) as client:
             try:
                 response = client.send(request)
                 response.raise_for_status()
+                self.logger.info(f"Accessible realms: {response.json()}")
 
                 return [Realm(**realm) for realm in response.json()]
 

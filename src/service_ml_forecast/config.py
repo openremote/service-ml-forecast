@@ -64,10 +64,11 @@ class AppEnvironment(BaseSettings):
     ]  # origins to allow
 
     # OpenRemote Settings
-    ML_OR_URL: str = "http://localhost:8080"  # OpenRemote URL
+    ML_OR_URL: str = "http://localhost:8080"  # OpenRemote Manager URL
     ML_OR_KEYCLOAK_URL: str = "http://localhost:8081/auth"  # OpenRemote Keycloak URL
-    ML_OR_SERVICE_USER: str = "serviceuser"  # OpenRemote service user
-    ML_OR_SERVICE_USER_SECRET: str = "secret"  # OpenRemote service user secret
+    ML_OR_REALM: str = "master"  # OpenRemote realm to use for the OpenRemote Manager API
+    ML_OR_SERVICE_USER: str = "serviceuser"  # OpenRemote Manager service user
+    ML_OR_SERVICE_USER_SECRET: str = "secret"  # OpenRemote Manager service user secret
 
     model_config = SettingsConfigDict(case_sensitive=True, env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
