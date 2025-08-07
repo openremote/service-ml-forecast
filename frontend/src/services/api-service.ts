@@ -17,7 +17,7 @@
 
 import { ModelConfig } from './models';
 import { ML_SERVICE_URL } from '../common/constants';
-import { AuthService } from './auth-service';
+import { manager } from '@openremote/core';
 
 /**
  * Build the service url with the api path
@@ -35,7 +35,7 @@ function getServiceBaseUrl(realm: string): string {
 function buildHeaders(): Headers {
     return new Headers({
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${AuthService.token}`
+        Authorization: `Bearer ${manager.getKeycloakToken()}`
     });
 }
 

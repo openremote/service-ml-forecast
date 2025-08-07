@@ -22,21 +22,9 @@ import { getRootPath } from './util';
 import { manager } from '@openremote/core';
 
 /**
- * Base theme settings
- */
-const BASE_THEME = {
-    color1: Core.DefaultColor1,
-    color2: Core.DefaultColor2,
-    color3: Core.DefaultColor3,
-    color4: Core.DefaultColor4,
-    color5: Core.DefaultColor5,
-    color6: Core.DefaultColor6
-};
-
-/**
- * Setup the OR icons
- * Overrides the default createMdiIconSet with a function that uses the static fonts part of the build
- * Setup the MDI-Icons for or-icon element
+ * Initialize icon sets, overriding the default createMdiIconSet with a custom implementation to allow custom urls
+ * Creates a custom MDI icon set that uses static font files from the assets directory
+ * and registers both MDI and OR icon sets for use with or-icon elements
  */
 export function setupORIcons() {
     function createMdiIconSet(): IconSet {
@@ -68,6 +56,18 @@ export function setupORIcons() {
     IconSets.addIconSet('mdi', createMdiIconSet());
     IconSets.addIconSet('or', createSvgIconSet(OrIconSet.size, OrIconSet.icons));
 }
+
+/**
+ * Base theme settings
+ */
+const BASE_THEME = {
+    color1: Core.DefaultColor1,
+    color2: Core.DefaultColor2,
+    color3: Core.DefaultColor3,
+    color4: Core.DefaultColor4,
+    color5: Core.DefaultColor5,
+    color6: Core.DefaultColor6
+};
 
 /**
  * Theme settings
@@ -132,7 +132,6 @@ export async function setRealmTheme(realm: string) {
     } catch {
         console.warn('Was unable to retrieve realm specific theme settings, falling back to default');
     }
-
     setTheme(theme);
 }
 

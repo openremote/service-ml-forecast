@@ -15,11 +15,12 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { AuthService } from './services/auth-service';
 import { setupORIcons } from './common/theme';
 import { setupRouter } from './router';
-import { IS_EMBEDDED } from './common/constants';
-import { setupConsoleLogging, getRealmParam } from './common/util';
+import { IS_EMBEDDED, ML_OR_KEYCLOAK_URL, ML_OR_URL } from './common/constants';
+import { getRealmSearchParam, setupConsoleLogging } from './common/util';
+import { manager } from '@openremote/core';
+import { Auth, EventProviderType, ManagerConfig } from '@openremote/model';
 
 // Component Imports
 import '@openremote/or-mwc-components/or-mwc-input';
@@ -34,12 +35,32 @@ import './components/alert-message';
 // Override default log statements with service prefix
 setupConsoleLogging();
 
+const DEFAULT_MANAGER_CONFIG: ManagerConfig = {
+    managerUrl: ML_OR_URL || '',
+    keycloakUrl: ML_OR_KEYCLOAK_URL || '',
+    auth: Auth.KEYCLOAK,
+    autoLogin: true,
+    realm: 'master',
+    consoleAutoEnable: true,
+    loadTranslations: ['or'],
+    eventProviderType: EventProviderType.POLLING
+};
+
 async function init() {
     console.info('Context:', IS_EMBEDDED ? 'iframe' : 'standalone');
 
-    await AuthService.init(getRealmParam() ?? 'master');
+    // get realm search param (?realm=) from url, if not provided, use master for auth
+    const realm = getRealmSearchParam() ?? 'master';
+    const managerConfig = { ...DEFAULT_MANAGER_CONFIG, realm };
+
+    await setupManager(managerConfig);
+
     setupORIcons();
     setupRouter();
+}
+
+async function setupManager(managerConfig: ManagerConfig) {
+    await manager.init(managerConfig);
 }
 
 init();

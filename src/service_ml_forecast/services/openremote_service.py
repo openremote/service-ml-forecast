@@ -236,10 +236,10 @@ class OpenRemoteService:
 
         return assets
 
-    def get_realms(self) -> list[Realm] | None:
-        """Get all realms from OpenRemote.
+    def get_accessible_realms(self) -> list[Realm] | None:
+        """Get all accessible realms from OpenRemote for the current authenticated user.
 
         Returns:
-            A list of all realms from OpenRemote.
+            A list of all accessible realms from OpenRemote.
         """
-        return self.client.realms.get_all()
+        return self.client.realms.get_accessible()

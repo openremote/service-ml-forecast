@@ -43,11 +43,6 @@ class AppEnvironment(BaseSettings):
     The environment variables are prefixed with "ML_" to avoid conflicts
     """
 
-    # Application settings
-    ML_LOG_LEVEL: str = "INFO"
-    ML_ENVIRONMENT: str = "development"
-    ML_VERIFY_SSL: bool = True  # verify SSL certificates when making HTTP requests
-
     # FastAPI settings
     ML_API_PUBLISH_DOCS: bool = True
     ML_API_ROOT_PATH: str = "/services/ml-forecast"  # reverse proxy root path for the service
@@ -60,14 +55,20 @@ class AppEnvironment(BaseSettings):
         "http://localhost:8001",
     ]
 
-    # OpenRemote settings
-    ML_OR_URL: str = "http://localhost:8080"
-    ML_OR_KEYCLOAK_URL: str = "http://localhost:8081/auth"
-    ML_OR_SERVICE_USER: str = "serviceuser"
-    ML_OR_SERVICE_USER_SECRET: str = "secret"
+    # Application settings
+    ML_LOG_LEVEL: str = "INFO"
+    ML_ENVIRONMENT: str = "development"
+    ML_VERIFY_SSL: bool = True  # verify SSL certificates when making HTTP requests
 
     # Service registration settings
     ML_SERVICE_HOSTNAME: str = f"http://localhost:{ML_WEBSERVER_PORT}"
+
+    # OpenRemote Settings
+    ML_OR_URL: str = "http://localhost:8080"  # OpenRemote Manager URL
+    ML_OR_KEYCLOAK_URL: str = "http://localhost:8081/auth"  # OpenRemote Keycloak URL
+    ML_OR_REALM: str = "master"  # OpenRemote realm to use for the OpenRemote Manager API
+    ML_OR_SERVICE_USER: str = "serviceuser"  # OpenRemote Manager service user
+    ML_OR_SERVICE_USER_SECRET: str = "secret"  # OpenRemote Manager service user secret
 
     model_config = SettingsConfigDict(case_sensitive=True, env_file=".env", env_file_encoding="utf-8", extra="ignore")
 

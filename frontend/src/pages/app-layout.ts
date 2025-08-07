@@ -20,7 +20,6 @@ import { PreventAndRedirectCommands, RouterLocation } from '@vaadin/router';
 import { css, html, LitElement, unsafeCSS } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { setRealmTheme } from '../common/theme';
-import { AuthService } from '../services/auth-service';
 import { manager } from '@openremote/core';
 import { IS_EMBEDDED, ML_OR_URL } from '../common/constants';
 
@@ -39,40 +38,31 @@ export class AppLayout extends LitElement {
         `;
     }
 
+    // Provide the realm to all child elements
     @provide({ context: realmContext })
     @state()
     realm = '';
 
-    // Called before the initial Vaadin Router location is entered ('/'), only called once since its a parent route
+    // Vaadin router lifecycle hook -- runs exactly once since this is the parent route
     async onBeforeEnter(location: RouterLocation, commands: PreventAndRedirectCommands) {
-        if (!AuthService.authenticated) {
-            await AuthService.login();
-            return;
-        }
-
+        const authRealm = manager.getRealm() ?? 'master';
         const paramRealm = location.params.realm as string;
-        const authRealm = AuthService.realm;
 
-        // Param realm takes precedence over auth realm
-        if (!paramRealm) {
-            this.realm = authRealm;
-        } else {
-            this.realm = paramRealm;
-        }
-
-        // Navigate to the given auth realm if no param realm is provided
+        // Redirect to auth realm, if no param realm is provided
         if (!paramRealm) {
             console.log(`No realm provided, redirecting to ${authRealm}`);
             return commands.redirect(authRealm);
         }
 
-        // Initialise the OpenRemote manager rest api
-        manager.rest.initialise(ML_OR_URL + '/api/' + authRealm);
+        this.realm = paramRealm;
 
+        // Initialize the OpenRemote manager rest api using the authenticated realm
+        manager.rest.initialise(`${ML_OR_URL}/api/${authRealm}`);
+
+        // Set the service UI theme based on the given realm
         setRealmTheme(this.realm);
     }
 
-    // Render the breadcrumb nav and slot
     render() {
         return html`
             <breadcrumb-nav realm=${this.realm}></breadcrumb-nav>
