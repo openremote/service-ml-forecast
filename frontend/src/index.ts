@@ -40,7 +40,7 @@ const DEFAULT_MANAGER_CONFIG: ManagerConfig = {
     keycloakUrl: ML_OR_KEYCLOAK_URL || '',
     auth: Auth.KEYCLOAK,
     autoLogin: true,
-    realm: 'master',
+    realm: undefined,
     consoleAutoEnable: true,
     loadTranslations: ['or'],
     eventProviderType: EventProviderType.POLLING
