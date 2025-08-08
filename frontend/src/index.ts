@@ -36,8 +36,8 @@ import './components/alert-message';
 setupConsoleLogging();
 
 const DEFAULT_MANAGER_CONFIG: ManagerConfig = {
-    managerUrl: ML_OR_URL || '',
-    keycloakUrl: ML_OR_KEYCLOAK_URL || '',
+    managerUrl: ML_OR_URL || '/',
+    keycloakUrl: ML_OR_KEYCLOAK_URL || '/auth',
     auth: Auth.KEYCLOAK,
     autoLogin: true,
     realm: undefined,
