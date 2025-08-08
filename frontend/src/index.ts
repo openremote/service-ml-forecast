@@ -41,8 +41,6 @@ const DEFAULT_MANAGER_CONFIG: ManagerConfig = {
     auth: Auth.KEYCLOAK,
     autoLogin: true,
     realm: undefined,
-    consoleAutoEnable: true,
-    loadTranslations: ['or'],
     eventProviderType: EventProviderType.POLLING
 };
 
