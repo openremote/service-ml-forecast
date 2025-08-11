@@ -48,7 +48,7 @@ else:
         HTTPStatus.NOT_FOUND: {"description": "Index.html file not found"},
     },
 )
-async def serve_index() -> FileResponse:
+def serve_index() -> FileResponse:
     """Serve the index.html file from the web dist directory."""
 
     index_path = DIRS.ML_WEBSERVER_UI_DIST_DIR / "index.html"
@@ -65,7 +65,7 @@ async def serve_index() -> FileResponse:
         HTTPStatus.NOT_FOUND: {"description": "Static file not found"},
     },
 )
-async def serve_spa(path: str) -> FileResponse:
+def serve_spa(path: str) -> FileResponse:
     """Serve static files or return index.html for SPA routing."""
 
     requested_path = DIRS.ML_WEBSERVER_UI_DIST_DIR / path
