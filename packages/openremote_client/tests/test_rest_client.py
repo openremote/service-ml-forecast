@@ -323,7 +323,7 @@ def test_asset_query(mock_openremote_client: OpenRemoteClient) -> None:
     ]
 
     with respx.mock(base_url=MOCK_OPENREMOTE_URL) as respx_mock:
-        respx_mock.post("/api/master/asset/query").mock(
+        respx_mock.post("/api/test_realm/asset/query").mock(
             return_value=respx.MockResponse(HTTPStatus.OK, json=mock_assets),
         )
 
@@ -350,7 +350,7 @@ def test_asset_query_failure(mock_openremote_client: OpenRemoteClient) -> None:
     }
 
     with respx.mock(base_url=MOCK_OPENREMOTE_URL) as respx_mock:
-        respx_mock.post("/api/master/asset/query").mock(
+        respx_mock.post("/api/test_realm/asset/query").mock(
             return_value=respx.MockResponse(HTTPStatus.INTERNAL_SERVER_ERROR),
         )
 

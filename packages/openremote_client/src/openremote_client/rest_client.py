@@ -322,15 +322,12 @@ class OpenRemoteClient:
                     self._client.logger.error(f"Error retrieving predicted datapoints: {e}")
                     return None
 
-        def query(
-            self, asset_query: dict[str, Any], query_realm: str, realm: str | None = None
-        ) -> list[BasicAsset] | None:
+        def query(self, asset_query: dict[str, Any], realm: str | None = None) -> list[BasicAsset] | None:
             """Perform an asset query.
 
             Args:
                 asset_query: The asset query dict to send to the OpenRemote API.
-                query_realm: The realm for the asset query.
-                realm: The realm to retrieve assets from defaulting to the configured realm.
+                realm: The realm to perform the asset query on.
             Returns:
                 list[Asset] | None: List of assets or None
             """
@@ -370,7 +367,7 @@ class OpenRemoteClient:
                 "realm": {"name": query_realm},
                 "ids": asset_ids,
             }
-            return self.query(asset_query, query_realm, realm)
+            return self.query(asset_query, realm)
 
     class _Realms:
         """Realm-related operations."""
