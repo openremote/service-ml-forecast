@@ -33,6 +33,7 @@ def test_service_registrar_start() -> None:
         label="Test Service",
         homepageUrl="http://localhost:8000/ui",
         status=ServiceStatus.AVAILABLE,
+        realm="test-realm",
     )
     mock_client.services.register.return_value = mock_response
 
@@ -43,6 +44,7 @@ def test_service_registrar_start() -> None:
             label="Test Service",
             homepageUrl="http://localhost:8000/ui",
             status=ServiceStatus.AVAILABLE,
+            realm="test-realm",
         ),
     )
 
@@ -65,6 +67,7 @@ def test_service_registrar_stop() -> None:
             label="Test Service",
             homepageUrl="http://localhost:8000/ui",
             status=ServiceStatus.AVAILABLE,
+            realm="test-realm",
         ),
     )
     registrar.instance_id = "test-instance-id"
@@ -91,6 +94,7 @@ def test_service_registrar_heartbeat() -> None:
             label="Test Service",
             homepageUrl="http://localhost:8000/ui",
             status=ServiceStatus.AVAILABLE,
+            realm="test-realm",
         ),
     )
     registrar.instance_id = "test-instance-id"
@@ -112,6 +116,7 @@ def test_service_registrar_heartbeat_not_registered() -> None:
             label="Test Service",
             homepageUrl="http://localhost:8000/ui",
             status=ServiceStatus.AVAILABLE,
+            realm="test-realm",
         ),
     )
     registrar.registered = False
