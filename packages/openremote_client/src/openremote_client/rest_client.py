@@ -412,7 +412,7 @@ class OpenRemoteClient:
 
         def register(self, service: ServiceInfo) -> ServiceInfo | None:
             """Registers a service with the OpenRemote API."""
-            url = f"{self._client.openremote_url}/api/{MASTER_REALM}/service"
+            url = f"{self._client.openremote_url}/api/{self._client.realm}/service"
             request = self._client._build_request("POST", url, data=service.model_dump())
             with httpx.Client(timeout=self._client.timeout) as client:
                 try:

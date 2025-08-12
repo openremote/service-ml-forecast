@@ -108,8 +108,9 @@ def initialize_background_services() -> None:
 
     # Service details for registration
     service_info = ServiceInfo(
-        serviceId="ml-forecast-service",
-        label="ML Forecast Service",
+        serviceId="ml-forecasting",
+        label="ML Forecasting Service",
+        realm=ENV.ML_OR_REALM,
         homepageUrl=f"{ENV.ML_SERVICE_HOSTNAME}{ENV.ML_API_ROOT_PATH}/ui/{{realm}}",
         status=ServiceStatus.AVAILABLE,
     )
