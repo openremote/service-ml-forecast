@@ -24,39 +24,18 @@
 export function getRootPath() {
     const scriptElement = document.querySelector('script[src*="bundle"]');
 
-    if (scriptElement && scriptElement.getAttribute('src')) {
+    if (scriptElement?.getAttribute('src')) {
         const scriptPath = new URL(scriptElement.getAttribute('src')!, window.location.href).pathname;
         // Positive lookahead to match everything up to bundle.js
-        const match = scriptPath.match(/(.*?)(?=bundle)/);
-        return match ? (match[1].endsWith('/') ? match[1].slice(0, -1) : match[1]) : '';
+        const regex = /(.*?)(?=bundle)/;
+        const match = regex.exec(scriptPath);
+        let rootPath = '';
+        if (match) {
+            rootPath = match[1].endsWith('/') ? match[1].slice(0, -1) : match[1];
+        }
+        return rootPath;
     }
     return '';
-}
-
-/**
- * Setup console logging to add a prefix to all console logs
- * Enabling proper distinction between logs from the service and other sources
- */
-export function setupConsoleLogging() {
-    const originalConsoleLog = console.log;
-    console.log = (...args) => {
-        originalConsoleLog('[ml-forecast]', ...args);
-    };
-
-    const originalConsoleInfo = console.info;
-    console.info = (...args) => {
-        originalConsoleInfo('[ml-forecast]', ...args);
-    };
-
-    const originalConsoleWarn = console.warn;
-    console.warn = (...args) => {
-        originalConsoleWarn('[ml-forecast]', ...args);
-    };
-
-    const originalConsoleError = console.error;
-    console.error = (...args) => {
-        originalConsoleError('[ml-forecast]', ...args);
-    };
 }
 
 /**

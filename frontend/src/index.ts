@@ -18,7 +18,7 @@
 import { setupORIcons } from './common/theme';
 import { setupRouter } from './router';
 import { IS_EMBEDDED, ML_OR_KEYCLOAK_URL, ML_OR_URL } from './common/constants';
-import { getRealmSearchParam, setupConsoleLogging } from './common/util';
+import { getRealmSearchParam } from './common/util';
 import { manager } from '@openremote/core';
 import { Auth, EventProviderType, ManagerConfig } from '@openremote/model';
 
@@ -32,8 +32,6 @@ import './components/loading-spinner';
 import './components/breadcrumb-nav';
 import './components/alert-message';
 
-// Override default log statements with service prefix
-setupConsoleLogging();
 
 const DEFAULT_MANAGER_CONFIG: ManagerConfig = {
     managerUrl: ML_OR_URL || '/',
