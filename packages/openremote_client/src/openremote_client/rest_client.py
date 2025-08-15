@@ -407,9 +407,12 @@ class OpenRemoteClient:
         def __init__(self, client: "OpenRemoteClient"):
             self._client = client
 
-        def register(self, service: ServiceInfo) -> ServiceInfo | None:
+        def register(self, service: ServiceInfo, is_global: bool = False) -> ServiceInfo | None:
             """Registers a service with the OpenRemote API."""
             url = f"{self._client.openremote_url}/api/{self._client.realm}/service"
+            if is_global:
+                url = f"{self._client.openremote_url}/api/{self._client.realm}/service/global"
+
             request = self._client._build_request("POST", url, data=service.model_dump())
             with httpx.Client(timeout=self._client.timeout) as client:
                 try:
@@ -422,7 +425,7 @@ class OpenRemoteClient:
 
         def heartbeat(self, service_id: str, instance_id: str) -> bool:
             """Sends a heartbeat to the OpenRemote API."""
-            url = f"{self._client.openremote_url}/api/{MASTER_REALM}/service/{service_id}/{instance_id}"
+            url = f"{self._client.openremote_url}/api/{self._client.realm}/service/{service_id}/{instance_id}"
             request = self._client._build_request("PUT", url)
             with httpx.Client(timeout=self._client.timeout) as client:
                 try:
@@ -435,7 +438,7 @@ class OpenRemoteClient:
 
         def deregister(self, service_id: str, instance_id: str) -> bool:
             """Deregisters a service with the OpenRemote API."""
-            url = f"{self._client.openremote_url}/api/{MASTER_REALM}/service/{service_id}/{instance_id}"
+            url = f"{self._client.openremote_url}/api/{self._client.realm}/service/{service_id}/{instance_id}"
             request = self._client._build_request("DELETE", url)
             with httpx.Client(timeout=self._client.timeout) as client:
                 try:

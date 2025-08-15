@@ -38,9 +38,11 @@ class OpenRemoteServiceRegistrar:
         self,
         client: OpenRemoteClient,
         service_info: ServiceInfo,
+        is_global: bool = False,
     ):
         self.client = client
         self.service_info = service_info
+        self.is_global = is_global
         self.instance_id: str | None = None
         self.registered = False
         self._stopped = False
@@ -94,7 +96,7 @@ class OpenRemoteServiceRegistrar:
     def _register_service(self) -> None:
         """Register the service with OpenRemote."""
         try:
-            response = self.client.services.register(self.service_info)
+            response = self.client.services.register(self.service_info, self.is_global)
 
             if response is not None:
                 self.instance_id = response.instanceId

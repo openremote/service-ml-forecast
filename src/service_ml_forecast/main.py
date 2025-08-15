@@ -115,8 +115,8 @@ def initialize_background_services() -> None:
         status=ServiceStatus.AVAILABLE,
     )
 
-    # Start the OpenRemote Service Registrar
-    service_registrar = OpenRemoteServiceRegistrar(get_openremote_client(), service_info)
+    # Start the OpenRemote Service Registrar, service is global so it can be accessed from any realm
+    service_registrar = OpenRemoteServiceRegistrar(get_openremote_client(), service_info, is_global=True)
     service_registrar.start()
 
 
