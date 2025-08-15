@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "keycloak-middleware"
+version = "0.1.0"
+description = "A custom Keycloak middleware for FastAPI supporting multi-tenancy authentication"
+readme = "README.md"
+requires-python = ">=3.13"
+
+dependencies = ["httpx>=0.24.0", "pydantic>=2.0.0", "fastapi>=0.115.11", "pyjwt>=2.10.1", "aiocache>=0.12.3"]
+
+[project.optional-dependencies]
+test = ["pytest>=8.0.0", "pytest-asyncio>=0.24.0"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+[tool.setuptools.package-data]
+"keycloak_middleware" = ["py.typed"] # include type stubs
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[dependency-groups]
+dev = [
+    "pytest-asyncio>=1.1.0",
+]

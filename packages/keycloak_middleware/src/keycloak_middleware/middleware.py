@@ -46,8 +46,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 from starlette.types import ASGIApp
 
-from service_ml_forecast.config import ENV
-from service_ml_forecast.middlewares.keycloak.constants import (
+from keycloak_middleware.constants import (
     ERROR_INTERNAL_SERVER_ERROR,
     ERROR_INVALID_TOKEN,
     ERROR_MISSING_AUTH_HEADER,
@@ -60,7 +59,7 @@ from service_ml_forecast.middlewares.keycloak.constants import (
     JWT_KEY_TYPE_RSA,
     JWT_KEY_USE_SIGNATURE,
 )
-from service_ml_forecast.middlewares.keycloak.models import IssuerProvider, KeycloakTokenPayload, UserContext
+from keycloak_middleware.models import IssuerProvider, KeycloakTokenPayload, UserContext
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +70,7 @@ def _jwks_cache_key(f: Any, issuer: str, kid: str, *args: Any, **kwargs: Any) ->
 
 
 @cached(ttl=JWKS_CACHE_TTL_SECONDS, cache=Cache.MEMORY, key_builder=_jwks_cache_key)  # type: ignore[misc]
-async def _get_jwks(issuer: str, kid: str, valid_issuers: list[str]) -> dict[str, Any]:
+async def _get_jwks(issuer: str, kid: str, valid_issuers: list[str], verify_ssl: bool) -> dict[str, Any]:
     """Get JWKS from Keycloak based on the issuer URL.
 
     Args:
@@ -96,7 +95,7 @@ async def _get_jwks(issuer: str, kid: str, valid_issuers: list[str]) -> dict[str
     jwks_url = f"{issuer}{JWKS_ENDPOINT_PATH}"
 
     try:
-        async with httpx.AsyncClient(verify=ENV.ML_VERIFY_SSL, timeout=JWKS_REQUEST_TIMEOUT_SECONDS) as client:
+        async with httpx.AsyncClient(verify=verify_ssl, timeout=JWKS_REQUEST_TIMEOUT_SECONDS) as client:
             response = await client.get(jwks_url)
             response.raise_for_status()
             return cast(dict[str, Any], response.json())
@@ -109,7 +108,7 @@ async def _get_jwks(issuer: str, kid: str, valid_issuers: list[str]) -> dict[str
         raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail=ERROR_INVALID_TOKEN) from e
 
 
-async def _verify_jwt_token(token: str, valid_issuers: list[str]) -> dict[str, Any]:
+async def _verify_jwt_token(token: str, valid_issuers: list[str], verify_ssl: bool) -> dict[str, Any]:
     """Verify the JWT token using the public key obtained from Keycloak's JWKS endpoint.
 
     Args:
@@ -147,7 +146,7 @@ async def _verify_jwt_token(token: str, valid_issuers: list[str]) -> dict[str, A
             raise jwt.exceptions.InvalidTokenError("Issuer missing in token")
 
         # Get the JWKS for the issuer
-        jwks = await _get_jwks(issuer, kid, valid_issuers)
+        jwks = await _get_jwks(issuer, kid, valid_issuers, verify_ssl)
 
         # Find the matching public key from JWKS
         public_key_material: RSAPublicKey | None = None
@@ -203,12 +202,12 @@ async def _verify_jwt_token(token: str, valid_issuers: list[str]) -> dict[str, A
         raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail=ERROR_INVALID_TOKEN) from e
 
 
-def _is_excluded_route(path: str, excluded_routes: list[str]) -> bool:
+def _is_excluded_route(path: str, excluded_routes: list[str], api_root_path: str | None = None) -> bool:
     """Check if the path matches any of the excluded routes."""
     for route in excluded_routes:
         # Handle routes that start with "/" by adding API root path prefix
         if route.startswith("/"):
-            full_route_with_prefix = ENV.ML_API_ROOT_PATH + route if ENV.ML_API_ROOT_PATH else route
+            full_route_with_prefix = api_root_path + route if api_root_path else route
             if path.startswith(full_route_with_prefix):
                 return True
 
@@ -224,10 +223,19 @@ class KeycloakMiddleware(BaseHTTPMiddleware):
     Middleware that verifies Bearer token against Keycloak's JWKS endpoint.
     Routes can be excluded from authentication by providing a list of route paths.
 
-    The middleware can be configured with either:
-    - A static list of valid issuer URLs
-    - A callable function that returns a list of valid issuer URLs
-    - A callable function that returns None (for dynamic issuer validation)
+
+    Args:
+        app: The ASGI application to wrap.
+        excluded_routes: List of route paths to exclude from authentication.
+        valid_issuers: List of valid issuer URLs.
+        issuer_provider: Callable function that returns a list of valid issuer URLs.
+        api_root_path: The root path of the API.
+        verify_ssl: Whether to verify SSL certificates.
+
+    Raises:
+        ValueError: If neither valid_issuers nor issuer_provider is provided.
+        HTTPException: If the issuer provider returns None.
+        Exception: If an unexpected error occurs during token verification.
     """
 
     def __init__(
@@ -236,11 +244,15 @@ class KeycloakMiddleware(BaseHTTPMiddleware):
         excluded_routes: list[str] | None = None,
         valid_issuers: list[str] | None = None,
         issuer_provider: IssuerProvider | None = None,
+        api_root_path: str | None = None,
+        verify_ssl: bool = True,
     ):
         super().__init__(app)
         self.excluded_routes: list[str] = list(excluded_routes) if excluded_routes else []
         self.valid_issuers: list[str] | None = valid_issuers
         self.issuer_provider: IssuerProvider | None = issuer_provider
+        self.api_root_path: str | None = api_root_path
+        self.verify_ssl: bool = verify_ssl
 
         if self.valid_issuers is None and self.issuer_provider is None:
             raise ValueError("Either valid_issuers or issuer_provider must be provided")
@@ -264,7 +276,7 @@ class KeycloakMiddleware(BaseHTTPMiddleware):
         path = request.url.path
 
         # Skip excluded routes from authentication
-        if _is_excluded_route(path, self.excluded_routes):
+        if _is_excluded_route(path, self.excluded_routes, self.api_root_path):
             return await call_next(request)
 
         try:
@@ -283,7 +295,7 @@ class KeycloakMiddleware(BaseHTTPMiddleware):
 
             # Get valid issuers and verify the token
             valid_issuers = await self._get_valid_issuers()
-            payload = await _verify_jwt_token(token, valid_issuers)
+            payload = await _verify_jwt_token(token, valid_issuers, self.verify_ssl)
 
             # Create user context and inject into request state
             token_payload = KeycloakTokenPayload(**payload)

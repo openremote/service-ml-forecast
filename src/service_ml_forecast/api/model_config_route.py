@@ -30,9 +30,7 @@ from fastapi.responses import JSONResponse
 from openremote_client import ClientRoles
 
 from service_ml_forecast.dependencies import OAUTH2_SCHEME, OPENREMOTE_KC_RESOURCE, get_config_service
-from service_ml_forecast.middlewares.keycloak.decorators import realm_accessible, roles_allowed
-from service_ml_forecast.middlewares.keycloak.middleware import KeycloakMiddleware
-from service_ml_forecast.middlewares.keycloak.models import UserContext
+from keycloak_middleware import KeycloakMiddleware, UserContext, realm_accessible, roles_allowed
 from service_ml_forecast.models.model_config import ModelConfig
 from service_ml_forecast.services.model_config_service import ModelConfigService
 

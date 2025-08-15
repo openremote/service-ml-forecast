@@ -32,7 +32,7 @@ from service_ml_forecast.api.route_exception_handlers import register_exception_
 from service_ml_forecast.config import ENV
 from service_ml_forecast.dependencies import get_openremote_client, get_openremote_issuers, get_openremote_service
 from service_ml_forecast.logging_config import LOGGING_CONFIG
-from service_ml_forecast.middlewares.keycloak.middleware import KeycloakMiddleware
+from keycloak_middleware import KeycloakMiddleware
 from service_ml_forecast.services.model_scheduler import ModelScheduler
 
 # Load the logging configuration
@@ -78,6 +78,8 @@ if ENV.ML_API_MIDDLEWARE_KEYCLOAK:
         KeycloakMiddleware,
         excluded_routes=["/docs", "/redoc", "/openapi.json", "/ui"],
         issuer_provider=get_openremote_issuers,
+        api_root_path=ENV.ML_API_ROOT_PATH,
+        verify_ssl=ENV.ML_VERIFY_SSL,
     )
 else:
     logger.warning("Keycloak middleware disabled! This is NOT recommended in production!")

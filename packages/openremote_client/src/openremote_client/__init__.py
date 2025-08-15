@@ -1,7 +1,7 @@
 """OpenRemote Client Package."""
 
-from openremote_client.client_roles import ClientRoles
-from openremote_client.models import (
+from .client_roles import ClientRoles
+from .models import (
     AssetDatapoint,
     AssetDatapointPeriod,
     AssetDatapointQuery,
@@ -11,8 +11,8 @@ from openremote_client.models import (
     ServiceInfo,
     ServiceStatus,
 )
-from openremote_client.rest_client import OpenRemoteClient
-from openremote_client.service_registrar import OpenRemoteServiceRegistrar
+from .rest_client import OpenRemoteClient
+from .service_registrar import OpenRemoteServiceRegistrar
 
 __all__ = [
     "AssetDatapoint",

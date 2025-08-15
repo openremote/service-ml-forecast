@@ -4,6 +4,7 @@ requires-python = ">=3.13"
 
 [manifest]
 members = [
+    "keycloak-middleware",
     "openremote-client",
     "service-ml-forecast",
 ]
@@ -351,6 +352,44 @@ sdist = { url = "https://files.pythonhosted.org/packages/54/4d/e940025e2ce31a8ce
 wheels = [
     { url = "https://files.pythonhosted.org/packages/15/aa/0aca39a37d3c7eb941ba736ede56d689e7be91cab5d9ca846bde3999eba6/isodate-0.7.2-py3-none-any.whl", hash = "sha256:28009937d8031054830160fce6d409ed342816b543597cece116d966c6d99e15", size = 22320 },
 ]
+
+[[package]]
+name = "keycloak-middleware"
+version = "0.1.0"
+source = { editable = "packages/keycloak_middleware" }
+dependencies = [
+    { name = "aiocache" },
+    { name = "fastapi" },
+    { name = "httpx" },
+    { name = "pydantic" },
+    { name = "pyjwt" },
+]
+
+[package.optional-dependencies]
+test = [
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest-asyncio" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "aiocache", specifier = ">=0.12.3" },
+    { name = "fastapi", specifier = ">=0.115.11" },
+    { name = "httpx", specifier = ">=0.24.0" },
+    { name = "pydantic", specifier = ">=2.0.0" },
+    { name = "pyjwt", specifier = ">=2.10.1" },
+    { name = "pytest", marker = "extra == 'test'", specifier = ">=8.0.0" },
+    { name = "pytest-asyncio", marker = "extra == 'test'", specifier = ">=0.24.0" },
+]
+provides-extras = ["test"]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest-asyncio", specifier = ">=1.1.0" }]
 
 [[package]]
 name = "kiwisolver"
@@ -729,6 +768,18 @@ wheels = [
 ]
 
 [[package]]
+name = "pytest-asyncio"
+version = "1.1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pytest" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/4e/51/f8794af39eeb870e87a8c8068642fc07bce0c854d6865d7dd0f2a9d338c2/pytest_asyncio-1.1.0.tar.gz", hash = "sha256:796aa822981e01b68c12e4827b8697108f7205020f24b5793b3c41555dab68ea", size = 46652 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c7/9d/bf86eddabf8c6c9cb1ea9a869d6873b46f105a5d292d3a6f7071f5b07935/pytest_asyncio-1.1.0-py3-none-any.whl", hash = "sha256:5fe2d69607b0bd75c656d1211f969cadba035030156745ee09e7d71740e58ecf", size = 15157 },
+]
+
+[[package]]
 name = "pytest-cov"
 version = "6.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -860,12 +911,12 @@ name = "service-ml-forecast"
 version = "0.2.0"
 source = { editable = "." }
 dependencies = [
-    { name = "aiocache" },
     { name = "apscheduler" },
     { name = "cryptography" },
     { name = "fastapi" },
     { name = "httpx" },
     { name = "isodate" },
+    { name = "keycloak-middleware" },
     { name = "numpy" },
     { name = "openremote-client" },
     { name = "pandas" },
@@ -873,7 +924,6 @@ dependencies = [
     { name = "prophet" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
-    { name = "pyjwt" },
     { name = "pyyaml" },
     { name = "pyzmq" },
     { name = "tomli" },
@@ -893,12 +943,12 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "aiocache", specifier = ">=0.12.3" },
     { name = "apscheduler", specifier = ">=3.11.0" },
     { name = "cryptography", specifier = ">=44.0.2" },
     { name = "fastapi", specifier = ">=0.115.11" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "isodate", specifier = ">=0.7.2" },
+    { name = "keycloak-middleware", editable = "packages/keycloak_middleware" },
     { name = "numpy", specifier = ">=2.2.4" },
     { name = "openremote-client", editable = "packages/openremote_client" },
     { name = "pandas", specifier = ">=2.2.3" },
@@ -906,7 +956,6 @@ requires-dist = [
     { name = "prophet", specifier = ">=1.1.6" },
     { name = "pydantic", specifier = ">=2.10.6" },
     { name = "pydantic-settings", specifier = ">=2.8.1" },
-    { name = "pyjwt", specifier = ">=2.10.1" },
     { name = "pyyaml", specifier = ">=6.0.2" },
     { name = "pyzmq", specifier = ">=26.3.0" },
     { name = "tomli", specifier = ">=2.2.1" },
