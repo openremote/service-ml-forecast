@@ -56,7 +56,7 @@ router = APIRouter(
     },
 )
 @realm_accessible
-@roles_allowed(resource=OPENREMOTE_KC_RESOURCE, roles=[ClientRoles.WRITE_ADMIN_ROLE])
+@roles_allowed(resource=OPENREMOTE_KC_RESOURCE, roles=[ClientRoles.WRITE_SERVICES_ROLE])
 def create_model_config(
     user: Annotated[UserContext, Depends(KeycloakMiddleware.get_user_context)],
     realm: str,
@@ -77,7 +77,7 @@ def create_model_config(
     },
 )
 @realm_accessible
-@roles_allowed(resource=OPENREMOTE_KC_RESOURCE, roles=[ClientRoles.READ_ADMIN_ROLE])
+@roles_allowed(resource=OPENREMOTE_KC_RESOURCE, roles=[ClientRoles.READ_SERVICES_ROLE])
 def get_model_config(
     user: Annotated[UserContext, Depends(KeycloakMiddleware.get_user_context)],
     realm: str,
@@ -97,7 +97,7 @@ def get_model_config(
     },
 )
 @realm_accessible
-@roles_allowed(resource=OPENREMOTE_KC_RESOURCE, roles=[ClientRoles.READ_ADMIN_ROLE])
+@roles_allowed(resource=OPENREMOTE_KC_RESOURCE, roles=[ClientRoles.READ_SERVICES_ROLE])
 def get_model_configs(
     user: Annotated[UserContext, Depends(KeycloakMiddleware.get_user_context)],
     realm: str,
@@ -117,7 +117,7 @@ def get_model_configs(
     },
 )
 @realm_accessible
-@roles_allowed(resource=OPENREMOTE_KC_RESOURCE, roles=[ClientRoles.WRITE_ADMIN_ROLE])
+@roles_allowed(resource=OPENREMOTE_KC_RESOURCE, roles=[ClientRoles.WRITE_SERVICES_ROLE])
 def update_model_config(
     user: Annotated[UserContext, Depends(KeycloakMiddleware.get_user_context)],
     realm: str,
@@ -142,7 +142,7 @@ def update_model_config(
     },
 )
 @realm_accessible
-@roles_allowed(resource=OPENREMOTE_KC_RESOURCE, roles=[ClientRoles.WRITE_ADMIN_ROLE])
+@roles_allowed(resource=OPENREMOTE_KC_RESOURCE, roles=[ClientRoles.WRITE_SERVICES_ROLE])
 def delete_model_config(
     user: Annotated[UserContext, Depends(KeycloakMiddleware.get_user_context)],
     realm: str,
