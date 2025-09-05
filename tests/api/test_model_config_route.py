@@ -1,17 +1,18 @@
 from http import HTTPStatus
+from typing import Any
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
 
-# Test data
+# --- Test data ---
 TEST_CONFIG_ID = "d3c143a6-1018-4ebd-932b-a509eb7ab841"
 TEST_REALM = "master"
 TEST_ASSET_ID = "41ORIplRVAlT97dYGUD9n5"
 TEST_ATTRIBUTE_NAME = "test-attribute"
-TEST_CUTOFF_TIMESTAMP = 1716153600000
+TEST_training_data_period = "P6M"
 
 
-def create_test_config() -> dict[str, object]:
+def create_test_config() -> dict[str, Any]:
     """Helper function to create a test model config."""
 
     return {
@@ -23,7 +24,7 @@ def create_test_config() -> dict[str, object]:
         "target": {
             "asset_id": TEST_ASSET_ID,
             "attribute_name": TEST_ATTRIBUTE_NAME,
-            "cutoff_timestamp": TEST_CUTOFF_TIMESTAMP,
+            "training_data_period": TEST_training_data_period,
         },
         "forecast_interval": "PT1H",
         "training_interval": "PT1H",
@@ -205,17 +206,16 @@ def test_delete_model_config_not_found(mock_test_client: TestClient) -> None:
     assert response.status_code == HTTPStatus.NOT_FOUND
 
 
-def test_create_asset_dependencies_missing(test_client: TestClient) -> None:
-    """Test creating a model config with missing asset dependencies.
-
-    The provided target asset does not exist, so the model config should not be created.
+def test_create_asset_invalid_asset_id(mock_test_client: TestClient) -> None:
+    """Test creating a model config with an invalid asset id.
 
     Verifies that:
-    - The model config asset ids are validated, e.g. they exist in the openremote service response
+    - The model config target asset id is validated
     - The model config is not created
     - The model config is not returned in the response
-    - The response status code is 400
+    - The response status code is 422
     """
     config = create_test_config()
-    response = test_client.post("/api/master/configs", json=config)
-    assert response.status_code == HTTPStatus.BAD_REQUEST
+    config["target"]["asset_id"] = "invalid-asset-id"
+    response = mock_test_client.post("/api/master/configs", json=config)
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY

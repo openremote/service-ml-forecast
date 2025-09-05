@@ -20,7 +20,7 @@ from typing import Any
 from pydantic import BaseModel
 
 
-class AssetAttribute(BaseModel):
+class BasicAttribute(BaseModel):
     """Minimal attribute of an asset."""
 
     name: str
@@ -29,14 +29,14 @@ class AssetAttribute(BaseModel):
     meta: dict[str, Any] | None = None
 
 
-class Asset(BaseModel):
+class BasicAsset(BaseModel):
     """Minimal asset of OpenRemote."""
 
     id: str
     name: str
     realm: str
     parentId: str | None = None
-    attributes: dict[str, AssetAttribute]
+    attributes: dict[str, BasicAttribute]
 
     def get_attribute_value(self, attribute_name: str) -> Any | None:
         """Helper method to get an attribute value."""
@@ -59,7 +59,7 @@ class AssetDatapoint(BaseModel):
     """Data point of an asset attribute.
 
     Args:
-        x: The timestamp of the data point.
+        x: The timestamp of the data point in milliseconds.
         y: The value of the data point.
     """
 
@@ -76,15 +76,8 @@ class AssetDatapointQuery(BaseModel):
     toTime: str = ""
 
 
-class RealmConfig(BaseModel):
-    """Realm configuration."""
+class Realm(BaseModel):
+    """Realm model."""
 
-    styles: str | None = None
-    logo: str | None = None
-    logoMobile: str | None = None
-
-
-class ManagerConfig(BaseModel):
-    """Structure containing configurations for all realms."""
-
-    realms: dict[str, RealmConfig]
+    name: str
+    displayName: str

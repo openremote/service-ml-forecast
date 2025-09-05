@@ -41,10 +41,10 @@ export interface TargetFeature {
      */
     attribute_name: string;
     /**
-     * Timestamp in milliseconds since epoch. All data after this timestamp will be used for forecasting.
-     * Constraints: gt=0
+     * ISO 8601 duration string, this duration period will be used for retrieving training data.
+     * E.g. 'P6M' for data from the last 6 months.
      */
-    cutoff_timestamp: number;
+    training_data_period: string;
 }
 
 /**
@@ -62,59 +62,10 @@ export interface RegressorFeature {
      */
     attribute_name: string;
     /**
-     * Timestamp in milliseconds since epoch. All data after this timestamp will be used for forecasting.
-     * Constraints: gt=0
+     * ISO 8601 duration string, this duration period will be used for retrieving training data.
+     * E.g. 'P6M' for data from the last 6 months.
      */
-    cutoff_timestamp: number;
-}
-
-/**
- * Represents an attribute of an asset.
- */
-export interface BasicAttribute {
-    /**
-     * Name of the attribute.
-     */
-    name: string;
-    /**
-     * Value of the attribute. Can be any type or null.
-     */
-    value?: any | null; // Optional as it allows None
-    /**
-     * Timestamp of the attribute value in milliseconds since epoch.
-     */
-    timestamp: number;
-    /**
-     * Meta data of the attribute.
-     */
-    meta: { [key: string]: any };
-}
-
-/**
- * Represents a minimal asset from OpenRemote.
- */
-export interface BasicAsset {
-    /**
-     * ID of the asset.
-     */
-    id: string;
-    /**
-     * Realm of the asset.
-     */
-    realm: string;
-    /**
-     * Name of the asset.
-     */
-    name: string;
-    /**
-     * ID of the parent asset, if any.
-     * @default null
-     */
-    parentId?: string | null; // Optional as it has a default
-    /**
-     * Dictionary mapping attribute names to their corresponding AssetAttribute objects.
-     */
-    attributes: { [key: string]: BasicAttribute };
+    training_data_period: string;
 }
 
 /**
@@ -232,21 +183,3 @@ export interface ProphetModelConfig extends BaseModelConfig {
  * This uses a discriminated union based on the 'type' field.
  */
 export type ModelConfig = ProphetModelConfig;
-
-/**
- * Represents the configuration of a realm.
- */
-export interface RealmConfig {
-    /**
-     * Styles of the realm.
-     */
-    styles: string;
-    /**
-     * Logo of the realm.
-     */
-    logo: string;
-    /**
-     * Logo of the realm for mobile devices.
-     */
-    logoMobile: string;
-}

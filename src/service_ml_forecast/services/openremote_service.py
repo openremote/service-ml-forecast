@@ -17,7 +17,7 @@
 
 import logging
 
-from service_ml_forecast.clients.openremote.models import Asset, AssetDatapoint, RealmConfig
+from service_ml_forecast.clients.openremote.models import AssetDatapoint, BasicAsset, Realm
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 from service_ml_forecast.common.time_util import TimeUtil
 from service_ml_forecast.models.feature_data_wrappers import AssetFeatureDatapoints, ForecastDataSet, TrainingDataSet
@@ -62,12 +62,16 @@ class OpenRemoteService:
         """
         target_feature_datapoints: AssetFeatureDatapoints
 
-        # Retrieve target feature datapoints from OpenRemote
-        datapoints = self.client.retrieve_historical_datapoints(
+        # Get the start timestamp for the target feature
+        start_timestamp = TimeUtil.get_period_start_timestamp_ms(config.target.training_data_period)
+        end_timestamp = TimeUtil.get_timestamp_ms()
+
+        # Retrieve target feature datapoints from OpenRemote with chunking if needed
+        datapoints = self._get_historical_datapoints(
             config.target.asset_id,
             config.target.attribute_name,
-            config.target.cutoff_timestamp,
-            TimeUtil.get_timestamp_ms(),
+            start_timestamp,
+            end_timestamp,
         )
 
         if datapoints is None:
@@ -87,11 +91,14 @@ class OpenRemoteService:
         # Retrieve regressor historical feature datapoints if configured
         if config.regressors is not None:
             for regressor in config.regressors:
-                regressor_datapoints = self.client.retrieve_historical_datapoints(
+                # Get the start timestamp for the regressor historical data
+                start_timestamp = TimeUtil.get_period_start_timestamp_ms(regressor.training_data_period)
+
+                regressor_datapoints = self._get_historical_datapoints(
                     regressor.asset_id,
                     regressor.attribute_name,
-                    regressor.cutoff_timestamp,
-                    TimeUtil.get_timestamp_ms(),
+                    start_timestamp,
+                    end_timestamp,
                 )
 
                 if regressor_datapoints is None:
@@ -118,6 +125,60 @@ class OpenRemoteService:
 
         return training_dataset
 
+    def _get_historical_datapoints(
+        self, asset_id: str, attribute_name: str, from_timestamp: int, to_timestamp: int
+    ) -> list[AssetDatapoint] | None:
+        """Wrapper get_historical_datapoints to split up requests into monthly chunks.
+
+        Args:
+            asset_id: The ID of the asset.
+            attribute_name: The name of the attribute.
+            from_timestamp: Epoch timestamp in milliseconds.
+            to_timestamp: Epoch timestamp in milliseconds.
+
+        Returns:
+            List of historical datapoints or None if failed.
+        """
+        months_diff = TimeUtil.months_between_timestamps(from_timestamp, to_timestamp)
+
+        # Single requests for sub-monthly periods
+        if months_diff <= 1:
+            return self.client.get_historical_datapoints(asset_id, attribute_name, from_timestamp, to_timestamp)
+        # Split into monthly chunks if more than 1 month to avoid hitting datapoint limits on the OpenRemote side
+        else:
+            all_datapoints = []
+            current_from = from_timestamp
+
+            logger.info(
+                f"Chunking datapoint retrieval into {months_diff} monthly chunks for {asset_id} {attribute_name}"
+            )
+
+            # Continue until we've processed a chunk that ends at or after to_timestamp
+            while current_from < to_timestamp:
+                # Calculate the end timestamp for this chunk (1 month from current_from)
+                current_to = TimeUtil.add_months_to_timestamp(current_from, 1)
+
+                # Don't exceed the original to_timestamp
+                current_to = min(current_to, to_timestamp)
+
+                chunk_datapoints = self.client.get_historical_datapoints(
+                    asset_id, attribute_name, current_from, current_to
+                )
+
+                if chunk_datapoints is None:
+                    logger.error(
+                        f"Failed to retrieve historical datapoints for {asset_id} {attribute_name} "
+                        f"for chunk ending at {current_to}"
+                    )
+                    return None
+
+                all_datapoints.extend(chunk_datapoints)
+
+                # Move to the next chunk
+                current_from = current_to
+
+            return all_datapoints
+
     def get_forecast_dataset(self, config: ModelConfig) -> ForecastDataSet | None:
         """Get the forecast dataset for a given model configuration.
 
@@ -132,10 +193,13 @@ class OpenRemoteService:
         # Retrieve regressor predicted feature datapoints if configured
         if config.regressors is not None:
             for regressor in config.regressors:
-                regressor_datapoints = self.client.retrieve_predicted_datapoints(
+                # Get the start timestamp for the regressor
+                start_timestamp = TimeUtil.get_period_start_timestamp_ms(regressor.training_data_period)
+
+                regressor_datapoints = self.client.get_predicted_datapoints(
                     regressor.asset_id,
                     regressor.attribute_name,
-                    regressor.cutoff_timestamp,
+                    start_timestamp,
                     TimeUtil.pd_future_timestamp(config.forecast_periods, config.forecast_frequency),
                 )
 
@@ -159,47 +223,23 @@ class OpenRemoteService:
 
         return forecast_dataset
 
-    def get_assets_with_historical_datapoints(self, realm: str) -> list[Asset]:
-        """Get all assets from OpenRemote with historical datapoints.
-
-        Returns:
-            A list of all assets from OpenRemote with historical datapoints.
-        """
-        assets = self.client.retrieve_assets_with_historical_datapoints(realm)
-        if assets is None:
-            logger.warning(f"Unable to retrieve assets with storeDataPoints for realm {realm}")
-            return []
-
-        return assets
-
-    def get_assets_by_ids(self, realm: str, asset_ids: list[str]) -> list[Asset]:
-        """Get all assets from OpenRemote.
+    def get_assets_by_ids(self, realm: str, asset_ids: list[str]) -> list[BasicAsset]:
+        """Get assets by a comma-separated list of Asset IDs.
 
         Returns:
             A list of all assets from OpenRemote.
         """
-        logger.info(f"Retrieving assets by ids: {asset_ids} for realm {realm}")
-        assets = self.client.retrieve_assets_by_ids(asset_ids, realm)
+        assets = self.client.get_assets_by_ids(asset_ids, realm)
         if assets is None:
             logger.warning(f"Unable to retrieve assets by ids for realm {realm}")
             return []
 
         return assets
 
-    def get_realm_config(self, realm: str) -> RealmConfig | None:
-        """Get the realm configuration for a given realm.
+    def get_accessible_realms(self) -> list[Realm] | None:
+        """Get all accessible realms from OpenRemote for the current authenticated user.
 
         Returns:
-            The realm configuration or None if the realm configuration could not be retrieved.
+            A list of all realms from OpenRemote.
         """
-        config = self.client.retrieve_manager_config()
-
-        if config is None:
-            logger.warning("Unable to retrieve manager config")
-            return None
-
-        if realm not in config.realms:
-            logger.warning(f"Realm {realm} not found in manager config")
-            return None
-
-        return config.realms[realm]
+        return self.client.get_accessible_realms()

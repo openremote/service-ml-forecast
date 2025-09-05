@@ -1,80 +1,47 @@
 import time
 
-from service_ml_forecast.clients.openremote.models import Asset, AssetDatapoint, AssetDatapointPeriod
+from service_ml_forecast.clients.openremote.models import AssetDatapoint, AssetDatapointPeriod
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 from service_ml_forecast.common.time_util import TimeUtil
 from tests.conftest import TEST_ASSET_ID, TEST_ATTRIBUTE_NAME
 
 
-def test_retrieve_assets_with_historical_datapoints(openremote_client: OpenRemoteClient) -> None:
-    """Test retrieval of assets with historical datapoints from a real OpenRemote instance.
-
-    Verifies that:
-    - The client can successfully connect to and retrieve assets from OpenRemote
-    - The response contains at least one valid asset
-    - The response contains only assets that have attributes with "meta": {"storeDataPoints": true}
-    """
-    assets: list[Asset] | None = openremote_client.retrieve_assets_with_historical_datapoints("smartcity")
-    assert assets is not None
-    assert len(assets) > 0
-
-    for asset in assets:
-        assert asset.attributes is not None
-        assert len(asset.attributes) > 0
-        # Check that each attribute has a meta field with storeDataPoints set to True
-        for attr_value in asset.attributes.values():
-            assert hasattr(attr_value, "meta")
-            assert isinstance(attr_value.meta, dict)
-            assert attr_value.meta.get("storeDataPoints")
-
-
-def test_retrieve_assets_invalid_realm(openremote_client: OpenRemoteClient) -> None:
-    """Test asset retrieval behavior with an invalid realm on a real instance.
-
-    Verifies that:
-    - The client properly handles errors when an invalid realm is specified
-    - The method returns None for non-existent realms
-    """
-    assets: list[Asset] | None = openremote_client.retrieve_assets_with_historical_datapoints("invalid_realm_name")
-    assert assets is None
-
-
-def test_retrieve_asset_datapoint_period(openremote_client: OpenRemoteClient) -> None:
+def test_get_asset_datapoint_period(openremote_client: OpenRemoteClient) -> None:
     """Test retrieval of datapoint period information from a real OpenRemote instance.
 
     Verifies that:
     - The client can retrieve time period metadata for asset datapoints
     - The returned object contains valid period information
     """
-    datapoint_period: AssetDatapointPeriod | None = openremote_client.retrieve_asset_datapoint_period(
+    datapoint_period: AssetDatapointPeriod | None = openremote_client.get_asset_datapoint_period(
         TEST_ASSET_ID,
         TEST_ATTRIBUTE_NAME,
     )
     assert datapoint_period is not None
 
 
-def test_retrieve_asset_datapoint_period_invalid_asset_id(openremote_client: OpenRemoteClient) -> None:
+def test_get_asset_datapoint_period_invalid_asset_id(openremote_client: OpenRemoteClient) -> None:
     """Test datapoint period retrieval with an invalid asset ID on a real instance.
 
     Verifies that:
     - The client properly handles errors for non-existent assets
     - The method returns None when the asset ID is invalid
     """
-    datapoint_period: AssetDatapointPeriod | None = openremote_client.retrieve_asset_datapoint_period(
+    datapoint_period: AssetDatapointPeriod | None = openremote_client.get_asset_datapoint_period(
         "invalid_asset_id",
         TEST_ATTRIBUTE_NAME,
     )
     assert datapoint_period is None
 
 
-def test_retrieve_historical_datapoints(openremote_client: OpenRemoteClient) -> None:
+def test_get_historical_datapoints(openremote_client: OpenRemoteClient) -> None:
     """Test retrieval of historical datapoints from a real OpenRemote instance.
 
     Verifies that:
     - The client can retrieve time series data from OpenRemote
     - The response contains valid datapoints for the given time range
     """
-    datapoints: list[AssetDatapoint] | None = openremote_client.retrieve_historical_datapoints(
+    datapoints: list[AssetDatapoint] | None = openremote_client.get_historical_datapoints(
         TEST_ASSET_ID,
         TEST_ATTRIBUTE_NAME,
         1716153600000,
@@ -84,14 +51,14 @@ def test_retrieve_historical_datapoints(openremote_client: OpenRemoteClient) -> 
     assert len(datapoints) > 0
 
 
-def test_retrieve_historical_datapoints_invalid_asset_id(openremote_client: OpenRemoteClient) -> None:
+def test_get_historical_datapoints_invalid_asset_id(openremote_client: OpenRemoteClient) -> None:
     """Test historical datapoint retrieval with an invalid asset ID on a real instance.
 
     Verifies that:
     - The client properly handles errors for non-existent assets
     - The method returns None when the asset ID is invalid
     """
-    datapoints: list[AssetDatapoint] | None = openremote_client.retrieve_historical_datapoints(
+    datapoints: list[AssetDatapoint] | None = openremote_client.get_historical_datapoints(
         "invalid_asset_id",
         TEST_ATTRIBUTE_NAME,
         1716153600000,
@@ -100,7 +67,7 @@ def test_retrieve_historical_datapoints_invalid_asset_id(openremote_client: Open
     assert datapoints is None, "Expected the datapoints to be None"
 
 
-def test_write_retrieve_predicted_datapoints(openremote_client: OpenRemoteClient) -> None:
+def test_write_predicted_datapoints(openremote_client: OpenRemoteClient) -> None:
     """Test writing and retrieving predicted datapoints on a real OpenRemote instance.
 
     Verifies that:
@@ -118,7 +85,7 @@ def test_write_retrieve_predicted_datapoints(openremote_client: OpenRemoteClient
 
     assert openremote_client.write_predicted_datapoints(TEST_ASSET_ID, TEST_ATTRIBUTE_NAME, datapoints)
 
-    predicted_datapoints: list[AssetDatapoint] | None = openremote_client.retrieve_predicted_datapoints(
+    predicted_datapoints: list[AssetDatapoint] | None = openremote_client.get_predicted_datapoints(
         TEST_ASSET_ID,
         TEST_ATTRIBUTE_NAME,
         timestamp1,

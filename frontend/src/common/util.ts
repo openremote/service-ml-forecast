@@ -24,11 +24,24 @@
 export function getRootPath() {
     const scriptElement = document.querySelector('script[src*="bundle"]');
 
-    if (scriptElement && scriptElement.getAttribute('src')) {
+    if (scriptElement?.getAttribute('src')) {
         const scriptPath = new URL(scriptElement.getAttribute('src')!, window.location.href).pathname;
         // Positive lookahead to match everything up to bundle.js
-        const match = scriptPath.match(/(.*?)(?=bundle)/);
-        return match ? (match[1].endsWith('/') ? match[1].slice(0, -1) : match[1]) : '';
+        const regex = /(.*?)(?=bundle)/;
+        const match = regex.exec(scriptPath);
+        let rootPath = '';
+        if (match) {
+            rootPath = match[1].endsWith('/') ? match[1].slice(0, -1) : match[1];
+        }
+        return rootPath;
     }
     return '';
 }
+
+/**
+ * Get the realm search param from the url (?realm=)
+ * @returns The realm search param
+ */
+export const getRealmSearchParam = () => {
+    return new URLSearchParams(window.location.search).get('realm');
+};

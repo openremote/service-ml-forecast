@@ -35,9 +35,15 @@ class RegressorAssetDatapointsFeature(BaseModel):
         description="Name of the attribute of the asset.",
         min_length=3,
     )
-    cutoff_timestamp: int = Field(
-        description="Timestamp in milliseconds since epoch, all data after this timestamp will be used.",
-        gt=0,
+    training_data_period: str = Field(
+        default="P6M",
+        description="ISO 8601 duration string, this duration period will be used for retrieving training data. "
+        "E.g. 'P6M' for data from the last 6 months.",
+    )
+    cutoff_timestamp: int | None = Field(
+        default=None,
+        description="Deprecated, use training_data_period instead.",
+        deprecated=True,
     )
 
     # Used for model training and forecasting -- requiring unique feature name
@@ -57,9 +63,15 @@ class TargetAssetDatapointsFeature(BaseModel):
         description="Name of the attribute of the asset.",
         min_length=3,
     )
-    cutoff_timestamp: int = Field(
-        description="Timestamp in milliseconds since epoch, all data after this timestamp will be used.",
-        gt=0,
+    training_data_period: str = Field(
+        default="P6M",
+        description="ISO 8601 duration string, this duration period will be used for retrieving training data. "
+        "E.g. 'P6M' for data from the last 6 months.",
+    )
+    cutoff_timestamp: int | None = Field(
+        default=None,
+        description="Deprecated, use training_data_period instead.",
+        deprecated=True,
     )
 
 

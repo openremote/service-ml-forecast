@@ -3,7 +3,7 @@ from http import HTTPStatus
 
 import respx
 
-from service_ml_forecast.clients.openremote.models import Asset, AssetDatapoint, AssetDatapointPeriod
+from service_ml_forecast.clients.openremote.models import AssetDatapoint, AssetDatapointPeriod
 from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 from service_ml_forecast.common.time_util import TimeUtil
 from tests.conftest import (
@@ -14,71 +14,7 @@ from tests.conftest import (
 )
 
 
-def test_retrieve_assets_with_historical_datapoints(mock_openremote_client: OpenRemoteClient) -> None:
-    """Test retrieval of assets from OpenRemote using a mocked client.
-
-    Verifies that:
-    - The client can successfully retrieve assets from a specific realm
-    - The returned assets have the expected ID
-    - The response is properly parsed into Asset objects
-    - The assets are filtered to only include attributes with storeDataPoints=True in meta
-    """
-    mock_power_value = 100
-
-    # Mock assets query endpoint
-    with respx.mock(base_url=MOCK_OPENREMOTE_URL) as respx_mock:
-        timestamp = TimeUtil.sec_to_ms(int(time.time()))
-
-        respx_mock.post("/api/master/asset/query").mock(
-            return_value=respx.MockResponse(
-                HTTPStatus.OK,
-                json=[
-                    {
-                        "id": TEST_ASSET_ID,
-                        "realm": "master",
-                        "name": "Test Asset",
-                        "attributes": {
-                            TEST_ATTRIBUTE_NAME: {
-                                "name": TEST_ATTRIBUTE_NAME,
-                                "value": mock_power_value,
-                                "timestamp": timestamp,
-                                "meta": {"storeDataPoints": True},
-                            },
-                            "other_attribute": {
-                                "name": "other_attribute",
-                                "value": "other_value",
-                                "timestamp": timestamp,
-                            },
-                        },
-                    },
-                ],
-            ),
-        )
-        assets: list[Asset] | None = mock_openremote_client.retrieve_assets_with_historical_datapoints("master")
-        assert assets is not None
-        assert len(assets) > 0
-        assert assets[0].id == TEST_ASSET_ID
-        assert TEST_ATTRIBUTE_NAME in assets[0].attributes
-        assert "other_attribute" not in assets[0].attributes
-
-
-def test_retrieve_assets_invalid_realm(mock_openremote_client: OpenRemoteClient) -> None:
-    """Test asset retrieval behavior with an invalid realm.
-
-    Verifies that:
-    - The client properly handles a NOT_FOUND response
-    - The method returns None when the realm doesn't exist
-    """
-    # Mock assets query endpoint
-    with respx.mock(base_url=MOCK_OPENREMOTE_URL) as respx_mock:
-        respx_mock.post("/api/master/asset/query").mock(return_value=respx.MockResponse(HTTPStatus.NOT_FOUND))
-        assets: list[Asset] | None = mock_openremote_client.retrieve_assets_with_historical_datapoints(
-            "invalid_realm_name"
-        )
-        assert assets is None
-
-
-def test_retrieve_asset_datapoint_period(mock_openremote_client: OpenRemoteClient) -> None:
+def test_get_asset_datapoint_period(mock_openremote_client: OpenRemoteClient) -> None:
     """Test retrieval of datapoint period information for an asset attribute.
 
     Verifies that:
@@ -101,7 +37,7 @@ def test_retrieve_asset_datapoint_period(mock_openremote_client: OpenRemoteClien
                 },
             ),
         )
-        datapoint_period: AssetDatapointPeriod | None = mock_openremote_client.retrieve_asset_datapoint_period(
+        datapoint_period: AssetDatapointPeriod | None = mock_openremote_client.get_asset_datapoint_period(
             TEST_ASSET_ID,
             TEST_ATTRIBUTE_NAME,
         )
@@ -110,7 +46,7 @@ def test_retrieve_asset_datapoint_period(mock_openremote_client: OpenRemoteClien
         assert datapoint_period.attributeName == TEST_ATTRIBUTE_NAME
 
 
-def test_retrieve_asset_datapoint_period_invalid_asset_id(mock_openremote_client: OpenRemoteClient) -> None:
+def test_get_asset_datapoint_period_invalid_asset_id(mock_openremote_client: OpenRemoteClient) -> None:
     """Test datapoint period retrieval with an invalid asset ID.
 
     Verifies that:
@@ -123,14 +59,14 @@ def test_retrieve_asset_datapoint_period_invalid_asset_id(mock_openremote_client
             f"/api/master/asset/datapoint/periods?assetId=invalid_asset_id&attributeName={TEST_ATTRIBUTE_NAME}",
         ).mock(return_value=respx.MockResponse(HTTPStatus.NOT_FOUND))
 
-        datapoint_period: AssetDatapointPeriod | None = mock_openremote_client.retrieve_asset_datapoint_period(
+        datapoint_period: AssetDatapointPeriod | None = mock_openremote_client.get_asset_datapoint_period(
             "invalid_asset_id",
             TEST_ATTRIBUTE_NAME,
         )
         assert datapoint_period is None
 
 
-def test_retrieve_historical_datapoints(mock_openremote_client: OpenRemoteClient) -> None:
+def test_get_historical_datapoints(mock_openremote_client: OpenRemoteClient) -> None:
     """Test retrieval of historical datapoints for an asset attribute.
 
     Verifies that:
@@ -151,7 +87,7 @@ def test_retrieve_historical_datapoints(mock_openremote_client: OpenRemoteClient
                 ],
             ),
         )
-        datapoints: list[AssetDatapoint] | None = mock_openremote_client.retrieve_historical_datapoints(
+        datapoints: list[AssetDatapoint] | None = mock_openremote_client.get_historical_datapoints(
             TEST_ASSET_ID,
             TEST_ATTRIBUTE_NAME,
             TEST_OLDEST_TIMESTAMP,
@@ -163,7 +99,7 @@ def test_retrieve_historical_datapoints(mock_openremote_client: OpenRemoteClient
         assert datapoints[0].y == mock_values[0]
 
 
-def test_retrieve_historical_datapoints_invalid_asset_id(mock_openremote_client: OpenRemoteClient) -> None:
+def test_get_historical_datapoints_invalid_asset_id(mock_openremote_client: OpenRemoteClient) -> None:
     """Test historical datapoint retrieval with an invalid asset ID.
 
     Verifies that:
@@ -175,7 +111,7 @@ def test_retrieve_historical_datapoints_invalid_asset_id(mock_openremote_client:
         respx_mock.post(f"/api/master/asset/datapoint/invalid_asset_id/{TEST_ATTRIBUTE_NAME}").mock(
             return_value=respx.MockResponse(HTTPStatus.NOT_FOUND),
         )
-        datapoints: list[AssetDatapoint] | None = mock_openremote_client.retrieve_historical_datapoints(
+        datapoints: list[AssetDatapoint] | None = mock_openremote_client.get_historical_datapoints(
             "invalid_asset_id",
             TEST_ATTRIBUTE_NAME,
             TEST_OLDEST_TIMESTAMP,
@@ -184,7 +120,7 @@ def test_retrieve_historical_datapoints_invalid_asset_id(mock_openremote_client:
         assert datapoints is None
 
 
-def test_write_retrieve_predicted_datapoints(mock_openremote_client: OpenRemoteClient) -> None:
+def test_write_predicted_datapoints(mock_openremote_client: OpenRemoteClient) -> None:
     """Test writing and retrieving predicted datapoints for an asset attribute.
 
     Verifies that:
@@ -221,7 +157,7 @@ def test_write_retrieve_predicted_datapoints(mock_openremote_client: OpenRemoteC
             "Failed to write predicted datapoints"
         )
 
-        predicted_datapoints: list[AssetDatapoint] | None = mock_openremote_client.retrieve_predicted_datapoints(
+        predicted_datapoints: list[AssetDatapoint] | None = mock_openremote_client.get_predicted_datapoints(
             TEST_ASSET_ID,
             TEST_ATTRIBUTE_NAME,
             mock_timestamp1,
