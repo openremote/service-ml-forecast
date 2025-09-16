@@ -29,7 +29,7 @@ def test_service_registrar_start() -> None:
     # mock response with the instanceId set to the test-instance-id
     mock_response = ServiceInfo(
         serviceId="test-service",
-        instanceId="test-instance-id",
+        instanceId=1,
         label="Test Service",
         homepageUrl="http://localhost:8000/ui",
         status=ServiceStatus.AVAILABLE,
@@ -51,7 +51,7 @@ def test_service_registrar_start() -> None:
     registrar.start()
 
     assert registrar.registered is True
-    assert registrar.instance_id == "test-instance-id"
+    assert registrar.instance_id == 1
     assert registrar.scheduler.running is True
 
 
@@ -70,7 +70,7 @@ def test_service_registrar_stop() -> None:
             realm="test-realm",
         ),
     )
-    registrar.instance_id = "test-instance-id"
+    registrar.instance_id = 1
     registrar.registered = True
 
     # Start the scheduler first so we can stop it
@@ -97,12 +97,12 @@ def test_service_registrar_heartbeat() -> None:
             realm="test-realm",
         ),
     )
-    registrar.instance_id = "test-instance-id"
+    registrar.instance_id = 1
     registrar.registered = True
 
     registrar._send_heartbeat()
 
-    mock_client.services.heartbeat.assert_called_once_with("test-service", "test-instance-id")
+    mock_client.services.heartbeat.assert_called_once_with("test-service", 1)
 
 
 def test_service_registrar_heartbeat_not_registered() -> None:

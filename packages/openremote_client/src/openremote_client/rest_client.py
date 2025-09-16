@@ -423,7 +423,7 @@ class OpenRemoteClient:
                     self._client.logger.error(f"Error registering service: {e}")
                     return None
 
-        def heartbeat(self, service_id: str, instance_id: str) -> bool:
+        def heartbeat(self, service_id: str, instance_id: int) -> bool:
             """Sends a heartbeat to the OpenRemote API."""
             url = f"{self._client.openremote_url}/api/{self._client.realm}/service/{service_id}/{instance_id}"
             request = self._client._build_request("PUT", url)
@@ -436,7 +436,7 @@ class OpenRemoteClient:
                     self._client.logger.error(f"Error sending heartbeat: {e}")
                     return False
 
-        def deregister(self, service_id: str, instance_id: str) -> bool:
+        def deregister(self, service_id: str, instance_id: int) -> bool:
             """Deregisters a service with the OpenRemote API."""
             url = f"{self._client.openremote_url}/api/{self._client.realm}/service/{service_id}/{instance_id}"
             request = self._client._build_request("DELETE", url)

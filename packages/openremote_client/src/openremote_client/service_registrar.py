@@ -43,7 +43,7 @@ class OpenRemoteServiceRegistrar:
         self.client = client
         self.service_info = service_info
         self.is_global = is_global
-        self.instance_id: str | None = None
+        self.instance_id: int | None = None
         self.registered = False
         self._stopped = False
 
