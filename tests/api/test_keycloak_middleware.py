@@ -49,7 +49,7 @@ def test_token_with_missing_required_roles(
         "realm_access": {"roles": ["user"]},
         "resource_access": {
             "openremote": {
-                "roles": ["some-other-role"]  # Missing required write:admin and read:admin roles
+                "roles": ["some-other-role"]  # Missing required write:services and read:services roles
             }
         },
         "exp": 9999999999,

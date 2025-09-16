@@ -33,7 +33,7 @@ from service_ml_forecast.common.exceptions import (
 )
 
 
-async def resource_not_found_handler(request: Request, exc: Exception) -> JSONResponse:
+def resource_not_found_handler(request: Request, exc: Exception) -> JSONResponse:
     """Handle ResourceNotFoundError exceptions.
     Returns:
         A JSON response with a 404 status code.
@@ -44,7 +44,7 @@ async def resource_not_found_handler(request: Request, exc: Exception) -> JSONRe
     )
 
 
-async def resource_already_exists_handler(request: Request, exc: Exception) -> JSONResponse:
+def resource_already_exists_handler(request: Request, exc: Exception) -> JSONResponse:
     """Handle ResourceAlreadyExistsError exceptions.
     Returns:
         A JSON response with a 409 status code.
@@ -55,7 +55,7 @@ async def resource_already_exists_handler(request: Request, exc: Exception) -> J
     )
 
 
-async def resource_validation_error_handler(request: Request, exc: Exception) -> JSONResponse:
+def resource_validation_error_handler(request: Request, exc: Exception) -> JSONResponse:
     """Handle ResourceValidationError exceptions.
     Returns:
         A JSON response with a 400 status code.
