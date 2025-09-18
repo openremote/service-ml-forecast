@@ -23,12 +23,14 @@ from fastapi import FastAPI
 from fastapi.concurrency import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
+from openremote_client import OpenRemoteServiceRegistrar
+from openremote_client.models import ServiceInfo, ServiceStatus
 
 from service_ml_forecast import __app_info__
 from service_ml_forecast.api import model_config_route, web_route
 from service_ml_forecast.api.route_exception_handlers import register_exception_handlers
 from service_ml_forecast.config import ENV
-from service_ml_forecast.dependencies import get_openremote_issuers, get_openremote_service
+from service_ml_forecast.dependencies import get_openremote_client, get_openremote_issuers, get_openremote_service
 from service_ml_forecast.logging_config import LOGGING_CONFIG
 from service_ml_forecast.middlewares.keycloak.middleware import KeycloakMiddleware
 from service_ml_forecast.services.model_scheduler import ModelScheduler
@@ -104,6 +106,20 @@ def initialize_background_services() -> None:
     model_scheduler = ModelScheduler(get_openremote_service())
     model_scheduler.start()
 
+    # Service details for registration
+    service_info = ServiceInfo(
+        serviceId="ml-forecasting",
+        label="ML Forecasting Service",
+        icon="chart-timeline-variant",
+        realm=ENV.ML_OR_REALM,
+        homepageUrl=f"{ENV.ML_SERVICE_HOSTNAME}{ENV.ML_API_ROOT_PATH}/ui/{{realm}}",
+        status=ServiceStatus.AVAILABLE,
+    )
+
+    # Start the OpenRemote Service Registrar, service is global so it can be accessed from any realm
+    service_registrar = OpenRemoteServiceRegistrar(get_openremote_client(), service_info, is_global=True)
+    service_registrar.start()
+
 
 # Entrypoint for the service
 if __name__ == "__main__":
@@ -118,5 +134,5 @@ if __name__ == "__main__":
     # Initialize any services that run separately from the FastAPI app
     initialize_background_services()
 
-    reload = IS_DEV  # Enable auto-reload in development mode
-    uvicorn.run("service_ml_forecast.main:app", host=ENV.ML_WEBSERVER_HOST, port=ENV.ML_WEBSERVER_PORT, reload=reload)
+    # Run the FastAPI app, enable auto-reload in development mode
+    uvicorn.run("service_ml_forecast.main:app", host="0.0.0.0", port=ENV.ML_WEBSERVER_PORT, reload=IS_DEV)

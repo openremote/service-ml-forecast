@@ -2,6 +2,12 @@ version = 1
 revision = 1
 requires-python = ">=3.13"
 
+[manifest]
+members = [
+    "openremote-client",
+    "service-ml-forecast",
+]
+
 [[package]]
 name = "aiocache"
 version = "0.12.3"
@@ -479,6 +485,23 @@ wheels = [
 ]
 
 [[package]]
+name = "openremote-client"
+version = "0.1.0"
+source = { editable = "packages/openremote_client" }
+dependencies = [
+    { name = "apscheduler" },
+    { name = "httpx" },
+    { name = "pydantic" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "apscheduler", specifier = ">=3.11.0" },
+    { name = "httpx", specifier = ">=0.24.0" },
+    { name = "pydantic", specifier = ">=2.0.0" },
+]
+
+[[package]]
 name = "packaging"
 version = "24.2"
 source = { registry = "https://pypi.org/simple" }
@@ -844,6 +867,7 @@ dependencies = [
     { name = "httpx" },
     { name = "isodate" },
     { name = "numpy" },
+    { name = "openremote-client" },
     { name = "pandas" },
     { name = "plotly" },
     { name = "prophet" },
@@ -876,6 +900,7 @@ requires-dist = [
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "isodate", specifier = ">=0.7.2" },
     { name = "numpy", specifier = ">=2.2.4" },
+    { name = "openremote-client", editable = "packages/openremote_client" },
     { name = "pandas", specifier = ">=2.2.3" },
     { name = "plotly", specifier = ">=6.0.1" },
     { name = "prophet", specifier = ">=1.1.6" },

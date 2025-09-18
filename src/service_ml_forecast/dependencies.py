@@ -22,8 +22,8 @@ This module contains the dependency injectors and constants for the service.
 import logging
 
 from fastapi.security import OAuth2PasswordBearer
+from openremote_client import OpenRemoteClient
 
-from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 from service_ml_forecast.config import ENV
 from service_ml_forecast.services.model_config_service import ModelConfigService
 from service_ml_forecast.services.openremote_service import OpenRemoteService
@@ -55,6 +55,13 @@ def get_openremote_service() -> OpenRemoteService:
     Get the openremote service dependency.
     """
     return __openremote_service
+
+
+def get_openremote_client() -> OpenRemoteClient:
+    """
+    Get the openremote client dependency.
+    """
+    return __openremote_client
 
 
 def get_openremote_issuers() -> list[str] | None:
