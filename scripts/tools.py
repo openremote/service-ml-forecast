@@ -43,9 +43,8 @@ def get_package_dirs() -> list[Path]:
     """Get all package directories."""
     if not PACKAGES_DIR.exists():
         return []
-    
-    return [pkg_dir for pkg_dir in PACKAGES_DIR.iterdir() 
-            if pkg_dir.is_dir() and (pkg_dir / "pyproject.toml").exists()]
+
+    return [pkg_dir for pkg_dir in PACKAGES_DIR.iterdir() if pkg_dir.is_dir() and (pkg_dir / "pyproject.toml").exists()]
 
 
 def step(cmd: str, description: str = "", dir: Path | None = _PROJECT_ROOT) -> None:
@@ -92,7 +91,7 @@ def lint() -> None:
     # Lint main project
     step(f"uv run ruff check {SRC_DIR} {TEST_DIR}", "ruff checks (main)")
     step(f"uv run mypy --cache-fine-grained {SRC_DIR} {TEST_DIR}", "mypy checks (main)")
-    
+
     # Lint packages
     lint_packages()
 
@@ -100,19 +99,19 @@ def lint() -> None:
 def lint_packages() -> None:
     """Run linting only on packages."""
     package_dirs = get_package_dirs()
-    
+
     for pkg_dir in package_dirs:
         pkg_name = pkg_dir.name
         print(f"\n--- Linting package: {pkg_name} ---")
-        
+
         # Check if package has src directory
         src_dir = pkg_dir / "src"
         test_dir = pkg_dir / "tests"
-        
+
         if src_dir.exists():
             step(f"uv run ruff check {src_dir}", f"ruff checks ({pkg_name})", pkg_dir)
             step(f"uv run mypy --cache-fine-grained {src_dir}", f"mypy checks ({pkg_name})", pkg_dir)
-        
+
         if test_dir.exists():
             step(f"uv run ruff check {test_dir}", f"ruff checks tests ({pkg_name})", pkg_dir)
             step(f"uv run mypy --cache-fine-grained {test_dir}", f"mypy checks tests ({pkg_name})", pkg_dir)
@@ -124,7 +123,7 @@ def format() -> None:
     # Format main project
     step(f"uv run ruff format {SRC_DIR} {TEST_DIR}", "ruff formatting (main)")
     step(f"uv run ruff check --fix {SRC_DIR} {TEST_DIR}", "ruff check and fix (main)")
-    
+
     # Format packages
     format_packages()
 
@@ -132,19 +131,19 @@ def format() -> None:
 def format_packages() -> None:
     """Format only packages."""
     package_dirs = get_package_dirs()
-    
+
     for pkg_dir in package_dirs:
         pkg_name = pkg_dir.name
         print(f"\n--- Formatting package: {pkg_name} ---")
-        
+
         # Check if package has src directory
         src_dir = pkg_dir / "src"
         test_dir = pkg_dir / "tests"
-        
+
         if src_dir.exists():
             step(f"uv run ruff format {src_dir}", f"ruff formatting ({pkg_name})", pkg_dir)
             step(f"uv run ruff check --fix {src_dir}", f"ruff check and fix ({pkg_name})", pkg_dir)
-        
+
         if test_dir.exists():
             step(f"uv run ruff format {test_dir}", f"ruff formatting tests ({pkg_name})", pkg_dir)
             step(f"uv run ruff check --fix {test_dir}", f"ruff check and fix tests ({pkg_name})", pkg_dir)
@@ -154,8 +153,8 @@ def test() -> None:
     """Run pytest on main project and all packages."""
 
     # Test main project
-    step(f"uv run pytest {TEST_DIR} -vv --cache-clear", "pytest (main)")
-    
+    step(f"uv run pytest {TEST_DIR} -v --cache-clear -s", "pytest (main)")
+
     # Test packages
     test_packages()
 
@@ -163,33 +162,37 @@ def test() -> None:
 def test_packages() -> None:
     """Run tests only on packages."""
     package_dirs = get_package_dirs()
-    
+
     for pkg_dir in package_dirs:
         pkg_name = pkg_dir.name
         test_dir = pkg_dir / "tests"
-        
+
         if test_dir.exists():
             print(f"\n--- Testing package: {pkg_name} ---")
-            step(f"uv run pytest {test_dir} -vv --cache-clear", f"pytest ({pkg_name})", pkg_dir)
+            step(f"uv run pytest {test_dir} -v --cache-clear -s", f"pytest ({pkg_name})", pkg_dir)
 
 
 def test_coverage() -> None:
     """Run tests with coverage on main project and all packages."""
 
     # Test main project with coverage
-    step(f"uv run pytest {TEST_DIR} -vv --cache-clear --cov {SRC_DIR}", "pytest with coverage (main)")
-    
+    step(f"uv run pytest {TEST_DIR} -v --cache-clear --cov {SRC_DIR} -s", "pytest with coverage (main)")
+
     # Test packages with coverage
     package_dirs = get_package_dirs()
-    
+
     for pkg_dir in package_dirs:
         pkg_name = pkg_dir.name
         src_dir = pkg_dir / "src"
         test_dir = pkg_dir / "tests"
-        
+
         if test_dir.exists() and src_dir.exists():
             print(f"\n--- Testing package with coverage: {pkg_name} ---")
-            step(f"uv run pytest {test_dir} -vv --cache-clear --cov {src_dir}", f"pytest with coverage ({pkg_name})", pkg_dir)
+            step(
+                f"uv run pytest {test_dir} -vv --cache-clear --cov {src_dir} -s",
+                f"pytest with coverage ({pkg_name})",
+                pkg_dir,
+            )
 
 
 def build() -> None:
@@ -202,7 +205,7 @@ def build() -> None:
 def build_packages() -> None:
     """Build all packages."""
     package_dirs = get_package_dirs()
-    
+
     for pkg_dir in package_dirs:
         pkg_name = pkg_dir.name
         print(f"\n--- Building package: {pkg_name} ---")
@@ -228,10 +231,10 @@ def build_frontend_dev() -> None:
 def _copy_frontend_dist() -> None:
     """Copy the frontend dist to the deployment/web directory."""
     DEPLOYMENT_WEB_DIR.mkdir(parents=True, exist_ok=True)
-    
+
     if DEPLOYMENT_WEB_DIR.exists():
         shutil.rmtree(DEPLOYMENT_WEB_DIR)
 
     shutil.copytree(FRONTEND_DIR / "dist", DEPLOYMENT_WEB_DIR / "dist")
-    
+
     print(f"Frontend dist copied to {DEPLOYMENT_WEB_DIR}")

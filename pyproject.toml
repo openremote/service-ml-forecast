@@ -26,7 +26,8 @@ dependencies = [
     "isodate>=0.7.2",
     "pyjwt>=2.10.1",
     "aiocache>=0.12.3",
-    "openremote-client", # local package
+    "openremote-client",
+    "scikit-learn>=1.7.2",
 ]
 
 
@@ -116,6 +117,10 @@ combine-as-imports = true
 testpaths = ["tests"]
 python_files = "test_*.py"
 filterwarnings = ["ignore:.*"]
+log_cli = true
+log_cli_level = "INFO"
+log_cli_format = "%(asctime)s [%(levelname)8s] %(name)s: %(message)s"
+log_cli_date_format = "%Y-%m-%d %H:%M:%S"
 
 [project.scripts]
 service_ml_forecast = "service_ml_forecast.main:app"
