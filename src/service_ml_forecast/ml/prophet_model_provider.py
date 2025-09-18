@@ -21,9 +21,12 @@ from uuid import UUID
 import pandas as pd
 from openremote_client import AssetDatapoint
 from prophet import Prophet
+from prophet.diagnostics import cross_validation, performance_metrics
 from prophet.serialize import model_from_json, model_to_json
+from sklearn.metrics import r2_score
 
 from service_ml_forecast.common.time_util import TimeUtil
+from service_ml_forecast.ml.evaluation_metrics import EvaluationMetrics
 from service_ml_forecast.ml.model_provider import ModelProvider
 from service_ml_forecast.models.feature_data_wrappers import ForecastDataSet, ForecastResult, TrainingDataSet
 from service_ml_forecast.models.model_config import ProphetModelConfig
@@ -80,6 +83,12 @@ class ProphetModelProvider(ModelProvider[Prophet]):
         # Train the model
         model.fit(dataframe)
 
+        # Perform quick evaluation of the model using cross-validation
+        try:
+            self.evaluate_model(model)
+        except Exception as e:
+            logger.error(f"Failed to evaluate model {self.config.id} using cross-validation: {e}", exc_info=True)
+
         return model
 
     def load_model(self, model_id: UUID) -> Prophet:
@@ -128,6 +137,71 @@ class ProphetModelProvider(ModelProvider[Prophet]):
             attribute_name=self.config.target.attribute_name,
             datapoints=datapoints,
         )
+
+    def evaluate_model(self, model: Prophet) -> EvaluationMetrics | None:
+        """Evaluate the model using Prophet's cross-validation."""
+        # Calculate horizon from config
+        try:
+            horizon_delta = pd.Timedelta(self.config.forecast_frequency) * self.config.forecast_periods
+            secs = int(horizon_delta.total_seconds())
+            horizon_str = f"{secs} seconds"
+        except ValueError:
+            logger.warning(f"Invalid forecast_frequency '{self.config.forecast_frequency}', using 30 days")
+            horizon_str = "30 days"
+
+        # Get training data info
+        training_df = model.history
+        training_duration = training_df["ds"].max() - training_df["ds"].min()
+
+        # Set initial training period (min 30 days, max 60% of data)
+        min_initial = pd.Timedelta(days=30)
+        initial_duration = max(pd.Timedelta(horizon_str) * 3, min_initial)
+        initial_duration = min(initial_duration, training_duration * 0.6)
+        initial_str = f"{int(initial_duration.total_seconds())} seconds"
+
+        # Check if we have enough data
+        if training_duration < pd.Timedelta(initial_str) + pd.Timedelta(horizon_str):
+            logger.warning(f"Training data too short for CV (need {initial_str} + {horizon_str})")
+            return None
+
+        # Calculate period between folds (limit to 20 folds max)
+        remaining_duration = training_duration - pd.Timedelta(initial_str)
+        max_folds = 20
+        period_duration = remaining_duration / max_folds
+        period_str = f"{int(period_duration.total_seconds())} seconds"
+
+        expected_folds = min(max_folds, max(1, int(remaining_duration / period_duration)))
+        logger.info(
+            f"Running CV with {expected_folds} folds "
+            f"(initial={initial_str}, period={period_str}, horizon={horizon_str})"
+        )
+
+        # Run cross-validation
+        df_cv = cross_validation(
+            model, initial=initial_str, period=period_str, horizon=horizon_str, parallel="processes", disable_tqdm=True
+        )
+
+        # Calculate and return metrics
+        df_p = performance_metrics(df_cv, rolling_window=0.1)
+
+        # Calculate R² using sklearn, prophet does not provide R²
+        y_true = df_cv["y"].to_numpy()
+        y_pred = df_cv["yhat"].to_numpy()
+        r2 = r2_score(y_true, y_pred)
+
+        metrics = EvaluationMetrics(
+            rmse=df_p["rmse"].iloc[-1],
+            mae=df_p["mae"].iloc[-1],
+            mape=df_p["mape"].iloc[-1],
+            mdape=df_p["mdape"].iloc[-1],
+            r2=r2,
+        )
+
+        logger.info(
+            f"RMSE: {metrics.rmse:.4f}, MAE: {metrics.mae:.4f}, "
+            f"MAPE: {metrics.mape:.4f}, MdAPE: {metrics.mdape:.4f}, R²: {metrics.r2:.4f}"
+        )
+        return metrics
 
 
 def _convert_prophet_forecast_to_datapoints(dataframe: pd.DataFrame) -> list[AssetDatapoint]:

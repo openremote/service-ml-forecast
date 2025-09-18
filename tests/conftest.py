@@ -128,6 +128,14 @@ def tariff_mock_datapoints() -> list[AssetDatapoint]:
 
 
 @pytest.fixture
+def power_grid_mock_datapoints() -> list[AssetDatapoint]:
+    power_grid_data_path = Path(__file__).parent / "ml/resources/mock-datapoints-power-grid.json"
+    with open(power_grid_data_path) as f:
+        raw_data = json.load(f)
+        return [AssetDatapoint(x=point["x"], y=point["y"]) for point in raw_data]
+
+
+@pytest.fixture
 def openremote_service(openremote_client: OpenRemoteClient) -> OpenRemoteService:
     return OpenRemoteService(openremote_client)
 
