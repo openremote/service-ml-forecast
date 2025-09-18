@@ -23,7 +23,7 @@ from openremote_client import AssetDatapoint
 from prophet import Prophet
 from prophet.diagnostics import cross_validation, performance_metrics
 from prophet.serialize import model_from_json, model_to_json
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from sklearn.metrics import r2_score
 
 from service_ml_forecast.common.time_util import TimeUtil
 from service_ml_forecast.ml.data_processing import (

@@ -191,9 +191,8 @@ def align_training_data(
     result = result.set_index(timestamp_col)
     result = result.reindex(full_index)
 
-
     numeric_columns = result.select_dtypes(include=["float64", "int64"]).columns
-    
+
     if len(numeric_columns) > 0 and result[numeric_columns].isna().any().any():
         # Try and apply KNN imputation if we have missing values
         try:

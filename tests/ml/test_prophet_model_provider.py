@@ -1,6 +1,7 @@
 import pytest
 from openremote_client import AssetDatapoint
 
+from service_ml_forecast.common.exceptions import ResourceNotFoundError
 from service_ml_forecast.ml.model_provider_factory import ModelProviderFactory
 from service_ml_forecast.models.feature_data_wrappers import AssetFeatureDatapoints, ForecastDataSet, TrainingDataSet
 from service_ml_forecast.models.model_config import ProphetModelConfig
@@ -179,7 +180,7 @@ def test_forecast_without_trained_model(
     model_provider = ModelProviderFactory.create_provider(prophet_basic_config)
 
     # Try to generate forecast without training a model first
-    with pytest.raises(RuntimeError):  # Should raise an exception when model doesn't exist
+    with pytest.raises(ResourceNotFoundError):  # Should raise an exception when model doesn't exist
         model_provider.generate_forecast()
 
 
