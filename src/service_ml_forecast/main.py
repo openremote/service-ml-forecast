@@ -102,7 +102,7 @@ register_exception_handlers(app)
 def initialize_background_services() -> None:
     """Initialize background services, these run in the background and are not part of the FastAPI lifecycle"""
 
-    # Setup the ML Model Scheduler
+    # Setup the Model Scheduler
     model_scheduler = ModelScheduler(get_openremote_service())
     model_scheduler.start()
 
