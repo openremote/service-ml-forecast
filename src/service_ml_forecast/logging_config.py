@@ -35,7 +35,7 @@ LOGGING_CONFIG = {
         },
     },
     "loggers": {
-        # Service ML Forecast logs
+        # Service logs
         "": {
             "handlers": ["default"],
             "level": ENV.ML_LOG_LEVEL,

@@ -26,9 +26,9 @@ ModelType = TypeVar("ModelType")
 
 
 class ModelProvider(Protocol[ModelType]):
-    """Base protocol for all ML models.
+    """Base protocol for all models.
 
-    This protocol defines the methods that all ML model providers must implement.
+    This protocol defines the methods that all model providers must implement.
     """
 
     def train_model(self, training_dataset: TrainingDataSet) -> ModelType | None:
