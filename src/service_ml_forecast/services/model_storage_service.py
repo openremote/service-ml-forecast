@@ -35,7 +35,7 @@ class ModelStorageService:
     DEFAULT_MODEL_FILE_EXTENSION = "pkl"  # Changed default to pkl for Darts models
 
     def save(self, model: ForecastingModel, model_id: UUID) -> None:
-        """Save a Darts model using its native save method.
+        """Save a Darts model.
         
         Args:
             model: The Darts model to save.
@@ -51,7 +51,7 @@ class ModelStorageService:
         logger.info(f"Saved Darts model to {path} -- {model_id}")
 
     def load(self, model_class: Type[ForecastingModel], model_id: UUID) -> ForecastingModel:
-        """Load a Darts model using its native load method.
+        """Load a Darts model.
         
         Args:
             model_class: The Darts model class (e.g., DartsProphet).

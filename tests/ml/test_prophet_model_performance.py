@@ -17,6 +17,8 @@ from service_ml_forecast.models.model_type import ModelTypeEnum
 logger = logging.getLogger(__name__)
 
 
+# TODO: Regressors tests
+
 def test_prophet_model_performance(power_grid_mock_datapoints: list[AssetDatapoint]) -> None:
     """Test Prophet model performance with power grid data.
 
@@ -45,10 +47,10 @@ def test_prophet_model_performance(power_grid_mock_datapoints: list[AssetDatapoi
         forecast_periods=24,
         weekly_seasonality=True,
         yearly_seasonality=False,
-        daily_seasonality=True,
-        seasonality_mode=ProphetSeasonalityModeEnum.MULTIPLICATIVE, # Better for volatile data
-        changepoint_range=1.0, # Allow changepoints throughout full data
-        changepoint_prior_scale=0.65, # Allow more flexibility in trend changes
+        daily_seasonality=False,
+        seasonality_mode=ProphetSeasonalityModeEnum.ADDITIVE,
+        changepoint_range=0.8,
+        changepoint_prior_scale=0.05,
     )
 
     # Use power grid data (based on real data) - sort by timestamp first
@@ -67,10 +69,6 @@ def test_prophet_model_performance(power_grid_mock_datapoints: list[AssetDatapoi
 
     logger.info("Data source: power grid measurements")
 
-    # Use full dataset - Darts backtesting will walk forward through time with retraining
-    # This ensures no data leakage while using all available data efficiently
-    logger.info(f"Using full dataset: {len(dataset)} points for backtesting")
-
     # Train model and measure time
     train_start_time = time.time()
 
@@ -78,7 +76,7 @@ def test_prophet_model_performance(power_grid_mock_datapoints: list[AssetDatapoi
     training_dataset = TrainingDataSet(
         target=AssetFeatureDatapoints(
             feature_name=config.target.attribute_name,
-            datapoints=dataset,  # Use full dataset - Darts backtesting handles temporal splits
+            datapoints=dataset,
         ),
     )
 
@@ -98,7 +96,6 @@ def test_prophet_model_performance(power_grid_mock_datapoints: list[AssetDatapoi
 
     # Generate forecast and measure time
     forecast_start_time = time.time()
-
     forecast = model_provider.generate_forecast()
     forecast_time = time.time() - forecast_start_time
 
