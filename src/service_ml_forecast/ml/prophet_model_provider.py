@@ -15,21 +15,23 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
+import json
 import logging
 from uuid import UUID
 
+import numpy as np
 import pandas as pd
+from darts import TimeSeries
+from darts.models import Prophet as DartsProphet
 from openremote_client import AssetDatapoint
-from prophet import Prophet
-from prophet.diagnostics import cross_validation, performance_metrics
-from prophet.serialize import model_from_json, model_to_json
-from sklearn.metrics import r2_score
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 from service_ml_forecast.common.time_util import TimeUtil
 from service_ml_forecast.ml.data_processing import (
     align_forecast_data,
     align_training_data,
 )
+from service_ml_forecast.ml.backtesting import calculate_backtest_parameters, run_darts_backtest
 from service_ml_forecast.ml.evaluation_metrics import EvaluationMetrics
 from service_ml_forecast.ml.model_provider import ModelProvider
 from service_ml_forecast.models.feature_data_wrappers import (
@@ -50,7 +52,7 @@ VALUE_COLUMN_NAME = "y"
 FORECAST_COLUMN_NAME = "yhat"
 
 
-class ProphetModelProvider(ModelProvider[Prophet]):
+class ProphetModelProvider(ModelProvider[DartsProphet]):
     """Prophet model provider.
     
     Prophet is an additive regression model, widely used for time series forecasting.
@@ -60,10 +62,12 @@ class ProphetModelProvider(ModelProvider[Prophet]):
         self.config = config
         self.model_storage_service = ModelStorageService()
 
+        # All training data and covariates are stored in the Darts model itself
+
         # Suppress Prophet's verbose logging
         logging.getLogger("cmdstanpy").disabled = True
 
-    def train_model(self, training_dataset: TrainingDataSet) -> Prophet | None:
+    def train_model(self, training_dataset: TrainingDataSet) -> DartsProphet | None:
         if training_dataset.target.datapoints is None or len(training_dataset.target.datapoints) == 0:
             logger.error("No target data provided, cannot train model")
             return None
@@ -90,77 +94,101 @@ class ProphetModelProvider(ModelProvider[Prophet]):
                 f"after resampling (minimum recommended: {MIN_RECOMMENDED_DATAPOINTS})."
             )
 
-        # Construct model and apply hyperparameters from the model config``
-        model = Prophet()
-        model.weekly_seasonality = self.config.weekly_seasonality
-        model.yearly_seasonality = self.config.yearly_seasonality
-        model.daily_seasonality = self.config.daily_seasonality
-        model.seasonality_mode = self.config.seasonality_mode
-        model.changepoint_prior_scale = self.config.changepoint_prior_scale
-        model.changepoint_range = self.config.changepoint_range
-
-        # Add regressors to the model if provided
-        if training_dataset.regressors is not None:
+        # Convert to Darts TimeSeries format
+        target_series = TimeSeries.from_dataframe(
+            dataframe, 
+            time_col=TIMESTAMP_COLUMN_NAME, 
+            value_cols=[VALUE_COLUMN_NAME]
+        )
+        
+        # Prepare covariates if available
+        covariates = None
+        if training_dataset.regressors is not None and len(training_dataset.regressors) > 0:
             logger.info(f"Training with {len(training_dataset.regressors)} regressor(s) -- {self.config.id}")
-            for regressor in training_dataset.regressors:
-                model.add_regressor(regressor.feature_name)
+            covariate_cols = [regressor.feature_name for regressor in training_dataset.regressors]
+            # Check if regressor columns exist in dataframe
+            available_cols = [col for col in covariate_cols if col in dataframe.columns]
+            if available_cols:
+                covariates = TimeSeries.from_dataframe(
+                    dataframe,
+                    time_col=TIMESTAMP_COLUMN_NAME,
+                    value_cols=available_cols
+                )
 
-        # Train the model
-        model.fit(dataframe)
+        # Construct Darts Prophet model with hyperparameters from config
+        model = DartsProphet(
+            weekly_seasonality=self.config.weekly_seasonality,
+            yearly_seasonality=self.config.yearly_seasonality,
+            daily_seasonality=self.config.daily_seasonality,
+            seasonality_mode=self.config.seasonality_mode,
+            changepoint_prior_scale=self.config.changepoint_prior_scale,
+            changepoint_range=self.config.changepoint_range,
+        )
 
-        # Perform quick evaluation of the model using cross-validation
-        try:
-            self.evaluate_model(model)
-        except Exception as e:
-            logger.error(f"Failed to evaluate model {self.config.id} using cross-validation: {e}", exc_info=True)
-
+        # Train the model (Darts will store training data and covariates automatically)
+        model.fit(target_series, future_covariates=covariates)
+        
         return model
 
-    def load_model(self, model_id: UUID) -> Prophet:
-        model_json = self.model_storage_service.get(model_id)
-        return model_from_json(model_json)
+    def load_model(self, model_id: UUID) -> DartsProphet:
+        # Use the storage service's Darts-native load method
+        return self.model_storage_service.load(DartsProphet, model_id)
 
-    def save_model(self, model: Prophet) -> None:
-        model_json = model_to_json(model)
-        self.model_storage_service.save(model_json, self.config.id)
-        logger.info(f"Saved model -- {self.config.id}")
+    def save_model(self, model: DartsProphet) -> None:
+        # Use the storage service's Darts-native save method
+        self.model_storage_service.save(model, self.config.id)
 
     def generate_forecast(self, forecast_dataset: ForecastDataSet | None = None) -> ForecastResult:
         model = self.load_model(self.config.id)
 
-        # Create the future dataframe (this creates a dataframe starting from the last datapoint in the training set!)
-        future_base = model.make_future_dataframe(
-            periods=self.config.forecast_periods,
-            freq=self.config.forecast_frequency,
-            include_history=False,
+        # Prepare future covariates if available
+        future_covariates = None
+        if forecast_dataset is not None and forecast_dataset.regressors:
+            logger.info(f"Generating forecast with {len(forecast_dataset.regressors)} regressor(s) -- {self.config.id}")
+            
+            # Create a base future dataframe starting after the training data ends
+            if model.training_series is not None:
+                last_training_time = model.training_series.end_time()
+                start_time = last_training_time + pd.Timedelta(self.config.forecast_frequency)
+            else:
+                start_time = pd.Timestamp.now().round(self.config.forecast_frequency)
+                logger.warning(f"No training data available in model, using current time for future covariates -- {self.config.id}")
+
+            future_base = pd.DataFrame({
+                TIMESTAMP_COLUMN_NAME: pd.date_range(
+                    start=start_time,
+                    periods=self.config.forecast_periods,
+                    freq=self.config.forecast_frequency
+                )
+            })
+            
+            # Prepare the future dataframe with regressors
+            future_prepared = align_forecast_data(
+                future_base,
+                forecast_dataset,
+                self.config.forecast_frequency,
+                self.config.id,
+                timestamp_col=TIMESTAMP_COLUMN_NAME,
+            )
+            
+            # Convert to Darts TimeSeries for covariates
+            covariate_cols = [regressor.feature_name for regressor in forecast_dataset.regressors]
+            available_cols = [col for col in covariate_cols if col in future_prepared.columns]
+            if available_cols:
+                future_covariates = TimeSeries.from_dataframe(
+                    future_prepared,
+                    time_col=TIMESTAMP_COLUMN_NAME,
+                    value_cols=available_cols
+                )
+
+        # Generate forecast using Darts
+        forecast_series = model.predict(
+            n=self.config.forecast_periods,
+            future_covariates=future_covariates
         )
 
-        # round the future timestamps to the forecast frequency for a clean and consistent forecast
-        original_times = future_base[TIMESTAMP_COLUMN_NAME].copy()
-        future_base[TIMESTAMP_COLUMN_NAME] = future_base[TIMESTAMP_COLUMN_NAME].dt.round(self.config.forecast_frequency)
-
-        # Log timestamp rounding effects
-        time_shift = (future_base[TIMESTAMP_COLUMN_NAME] - original_times).abs().max()
-        if time_shift > pd.Timedelta(minutes=1):
-            logger.warning(f"Timestamp rounding shifted forecasts by up to {time_shift} for model {self.config.id}")
-
-        # Prepare the future dataframe with regressors if available
-        future_prepared = align_forecast_data(
-            future_base,
-            forecast_dataset,
-            self.config.forecast_frequency,
-            self.config.id,
-            timestamp_col=TIMESTAMP_COLUMN_NAME,
-        )
-
-        # Generate the forecast using the prepared future dataframe, doesn't matter if its none or empty
-        forecast = model.predict(future_prepared)
-
-        # Validate forecast quality
-        self._validate_forecast_quality(forecast)
-
-        # noinspection PyTypeChecker
-        datapoints = _convert_prophet_forecast_to_datapoints(forecast)
+        # Convert to datapoints
+        datapoints = _convert_darts_forecast_to_datapoints(forecast_series.to_dataframe())
 
         return ForecastResult(
             asset_id=self.config.target.asset_id,
@@ -168,97 +196,51 @@ class ProphetModelProvider(ModelProvider[Prophet]):
             datapoints=datapoints,
         )
 
-    def evaluate_model(self, model: Prophet) -> EvaluationMetrics | None:
-        """Evaluate the model using Prophet's cross-validation."""
-        # Calculate horizon from config
+    def evaluate_model(self, model: DartsProphet) -> EvaluationMetrics | None:
+        """Evaluate the model using Darts backtesting"""
+
         try:
-            horizon_delta = pd.Timedelta(self.config.forecast_frequency) * self.config.forecast_periods
-            secs = int(horizon_delta.total_seconds())
-            horizon_str = f"{secs} seconds"
-        except ValueError:
-            logger.warning(f"Invalid forecast_frequency '{self.config.forecast_frequency}', using 30 days")
-            horizon_str = "30 days"
-
-        # Get training data info
-        training_df = model.history
-        training_duration = training_df[TIMESTAMP_COLUMN_NAME].max() - training_df[TIMESTAMP_COLUMN_NAME].min()
-
-        # Set initial training period (min 30 days, max 60% of data)
-        min_initial = pd.Timedelta(days=30)
-        initial_duration = max(pd.Timedelta(horizon_str) * 3, min_initial)
-        initial_duration = min(initial_duration, training_duration * 0.6)
-        initial_str = f"{int(initial_duration.total_seconds())} seconds"
-
-        # Check if we have enough data
-        if training_duration < pd.Timedelta(initial_str) + pd.Timedelta(horizon_str):
-            logger.warning(f"Training data too short for CV (need {initial_str} + {horizon_str})")
+            # Calculate backtesting parameters using model's training data
+            if model.training_series is None:
+                logger.warning("No training data available for evaluation")
+                return None
+                
+            backtest_config = calculate_backtest_parameters(
+                series_length=len(model.training_series),
+                forecast_periods=self.config.forecast_periods,
+            )
+            if not backtest_config:
+                return None
+                
+            # Run comprehensive evaluation using Darts backtesting (model handles its own data)
+            return run_darts_backtest(
+                model=model,
+                backtest_config=backtest_config,
+            )
+            
+        except Exception as e:
+            logger.error(f"Error during model evaluation: {e}")
             return None
 
-        # Calculate period between folds (limit to 20 folds max)
-        remaining_duration = training_duration - pd.Timedelta(initial_str)
-        max_folds = 20
-        period_duration = remaining_duration / max_folds
-        period_str = f"{int(period_duration.total_seconds())} seconds"
-
-        expected_folds = min(max_folds, max(1, int(remaining_duration / period_duration)))
-        logger.info(
-            f"Running CV with {expected_folds} folds "
-            f"(initial={initial_str}, period={period_str}, horizon={horizon_str})"
-        )
-
-        # Run cross-validation
-        df_cv = cross_validation(
-            model, initial=initial_str, period=period_str, horizon=horizon_str, parallel="processes", disable_tqdm=True
-        )
-
-        # Calculate and return metrics
-        df_p = performance_metrics(df_cv, rolling_window=0.1)
-
-        # Calculate R2 using sklearn, prophet does not provide R2
-        y_true = df_cv["y"].to_numpy()
-        y_pred = df_cv["yhat"].to_numpy()
-        r2 = r2_score(y_true, y_pred)
-
-        metrics = EvaluationMetrics(
-            rmse=df_p["rmse"].iloc[-1],
-            mae=df_p["mae"].iloc[-1],
-            mape=df_p["mape"].iloc[-1],
-            mdape=df_p["mdape"].iloc[-1],
-            r2=r2,
-        )
-
-        logger.info(
-            f"RMSE: {metrics.rmse:.4f}, MAE: {metrics.mae:.4f}, "
-            f"MAPE: {metrics.mape:.4f}, MdAPE: {metrics.mdape:.4f}, R²: {metrics.r2:.4f}"
-        )
-        return metrics
-
-    def _validate_forecast_quality(self, forecast: pd.DataFrame) -> None:
-        """Validate forecast quality and log warnings for potential issues."""
-
-        # Check for NaN values
-        if forecast[FORECAST_COLUMN_NAME].isna().any():
-            nan_count = forecast[FORECAST_COLUMN_NAME].isna().sum()
-            logger.warning(f"Forecast contains {nan_count} NaN values for model {self.config.id}")
-
-        # Check for extreme outliers (values > 10x the mean) - generic check
-        forecast_mean = forecast[FORECAST_COLUMN_NAME].mean()
-        if forecast_mean != 0:  # Avoid division by zero
-            extreme_threshold = abs(forecast_mean) * 10
-            extreme_count = (forecast[FORECAST_COLUMN_NAME].abs() > extreme_threshold).sum()
-            if extreme_count > 0:
-                logger.warning(
-                    f"Forecast contains {extreme_count} extreme outliers (>10x mean) for model {self.config.id}"
-                )
-
-
-def _convert_prophet_forecast_to_datapoints(
+def _convert_darts_forecast_to_datapoints(
     dataframe: pd.DataFrame,
 ) -> list[AssetDatapoint]:
+    """Convert Darts TimeSeries DataFrame to OpenRemote AssetDatapoints.
+    
+    Darts TimeSeries.to_dataframe() returns a DataFrame with:
+    - DatetimeIndex as the index
+    - Column name(s) for the series values
+    """
     datapoints = []
-    for _, row in dataframe.iterrows():
+    
+    # Reset index to get timestamp as a column
+    df_reset = dataframe.reset_index()
+    timestamp_col = df_reset.columns[0]
+    value_col = df_reset.columns[1]
+    
+    for _, row in df_reset.iterrows():
         # Convert the timestamp to milliseconds since that is what OpenRemote expects
-        millis = TimeUtil.sec_to_ms(int(row[TIMESTAMP_COLUMN_NAME].timestamp()))
-        datapoints.append(AssetDatapoint(x=millis, y=row[FORECAST_COLUMN_NAME]))
+        millis = TimeUtil.sec_to_ms(int(row[timestamp_col].timestamp()))
+        datapoints.append(AssetDatapoint(x=millis, y=row[value_col]))
 
     return datapoints

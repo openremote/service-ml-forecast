@@ -28,6 +28,7 @@ dependencies = [
     "aiocache>=0.12.3",
     "openremote-client",
     "scikit-learn>=1.7.2",
+    "darts>=0.37.1",
 ]
 
 
