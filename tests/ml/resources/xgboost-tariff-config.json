@@ -17,7 +17,6 @@
     }
   ],
   "forecast_interval": "PT1H",
-  "training_interval": "PT1H",
   "forecast_frequency": "1h",
   "forecast_periods": 7,
   "lags": 3,

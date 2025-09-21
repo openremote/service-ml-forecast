@@ -10,7 +10,6 @@
     "training_data_period": "P6M"
   },
   "forecast_interval": "PT1H",
-  "training_interval": "PT1H",
   "forecast_frequency": "1h",
   "forecast_periods": 7,
   "lags": 3,

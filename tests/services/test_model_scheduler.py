@@ -87,7 +87,7 @@ def test_scheduler_job_management(
     training_job = model_scheduler.scheduler.get_job(f"{TRAINING_JOB_ID_PREFIX}:{prophet_basic_config.id}")
     assert training_job is not None
     assert training_job.func == _model_training_job
-    expected_interval = datetime.timedelta(seconds=TimeUtil.parse_iso_duration(prophet_basic_config.training_interval))
+    expected_interval = datetime.timedelta(seconds=TimeUtil.parse_iso_duration(prophet_basic_config.forecast_interval))
     assert training_job.trigger.interval == expected_interval
 
     # Remove the config and check that the jobs are removed

@@ -31,7 +31,6 @@ def test_xgboost_model_performance(power_grid_mock_datapoints: list[AssetDatapoi
             training_data_period="P6M",
         ),
         forecast_interval="PT1H",
-        training_interval="PT1H",
         forecast_frequency="1h",
         forecast_periods=24,
         lags=24,

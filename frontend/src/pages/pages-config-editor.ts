@@ -20,7 +20,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { map } from 'lit/directives/map.js';
 import { when } from 'lit/directives/when.js';
 import { ModelTypeEnum, ProphetSeasonalityModeEnum } from '../services/models';
-import type { ProphetModelConfig } from '../services/models';
+import type { ModelConfig, ProphetModelConfig, XGBoostModelConfig } from '../services/models';
 import { APIService } from '../services/api-service';
 import { Router, RouterLocation } from '@vaadin/router';
 import { InputType, OrInputChangedEvent } from '@openremote/or-mwc-components/or-mwc-input';
@@ -108,7 +108,7 @@ export class PageConfigEditor extends LitElement {
     configId?: string;
 
     @state()
-    protected modelConfig: ProphetModelConfig | null = null;
+    protected modelConfig: ModelConfig | null = null;
 
     @state()
     protected assetSelectList: Map<string, string> = new Map();
@@ -131,7 +131,7 @@ export class PageConfigEditor extends LitElement {
     protected readonly rootPath = getRootPath();
 
     @state()
-    protected formData: ProphetModelConfig = {
+    protected formData: ModelConfig = {
         type: ModelTypeEnum.PROPHET,
         realm: '', // Set during setup
         name: 'New Model Config',
@@ -145,14 +145,13 @@ export class PageConfigEditor extends LitElement {
         forecast_interval: 'PT1H',
         forecast_periods: 24,
         forecast_frequency: '1h',
-        training_interval: 'PT1H',
         daily_seasonality: true,
         weekly_seasonality: true,
         yearly_seasonality: true,
         changepoint_range: 0.8,
         changepoint_prior_scale: 0.05,
         seasonality_mode: ProphetSeasonalityModeEnum.ADDITIVE
-    };
+    } as ProphetModelConfig;
 
     // Handle basic form field updates
     protected handleBasicInput(ev: OrInputChangedEvent | CustomEvent<{ value: string }>) {
@@ -163,10 +162,60 @@ export class PageConfigEditor extends LitElement {
             return;
         }
 
+        // Handle model type change specially
+        if (target.name === 'type') {
+            this.handleModelTypeChange(value as ModelTypeEnum);
+            return;
+        }
+
         this.formData = {
             ...this.formData,
             [target.name]: value
         };
+    }
+
+    // Handle model type changes and reset to appropriate defaults
+    protected handleModelTypeChange(newType: ModelTypeEnum) {
+        const baseConfig = {
+            type: newType,
+            realm: this.formData.realm,
+            name: this.formData.name,
+            enabled: this.formData.enabled,
+            target: this.formData.target,
+            forecast_interval: this.formData.forecast_interval,
+            forecast_periods: this.formData.forecast_periods,
+            forecast_frequency: this.formData.forecast_frequency,
+        };
+
+        if (newType === ModelTypeEnum.PROPHET) {
+            this.formData = {
+                ...baseConfig,
+                type: ModelTypeEnum.PROPHET,
+                regressors: null,
+                daily_seasonality: true,
+                weekly_seasonality: true,
+                yearly_seasonality: true,
+                changepoint_range: 0.8,
+                changepoint_prior_scale: 0.05,
+                seasonality_mode: ProphetSeasonalityModeEnum.ADDITIVE
+            } as ProphetModelConfig;
+        } else if (newType === ModelTypeEnum.XGBOOST) {
+            this.formData = {
+                ...baseConfig,
+                type: ModelTypeEnum.XGBOOST,
+                past_covariates: null,
+                future_covariates: null,
+                lags: 1,
+                lags_past_covariates: null,
+                lags_future_covariates: null,
+                output_chunk_length: 1,
+                n_estimators: 100,
+                max_depth: 6,
+                learning_rate: 0.1,
+                subsample: 1.0,
+                random_state: 42
+            } as XGBoostModelConfig;
+        }
     }
 
     // Handle target-specific updates
@@ -207,21 +256,22 @@ export class PageConfigEditor extends LitElement {
         const value = ev.detail?.value;
         const target = ev.target as HTMLInputElement;
 
-        if (!target || value === undefined || !this.formData.regressors) {
+        const prophetConfig = this.formData as ProphetModelConfig;
+        if (!target || value === undefined || !prophetConfig.regressors) {
             return;
         }
 
         // Auto-select first attribute when asset changes
         if (target.name === 'asset_id') {
-            this.formData.regressors[index].attribute_name =
+            prophetConfig.regressors[index].attribute_name =
                 this.attributeSelectList
                     .get(value as string)
                     ?.values()
                     .next().value ?? '';
         }
 
-        this.formData.regressors[index] = {
-            ...this.formData.regressors[index],
+        prophetConfig.regressors[index] = {
+            ...prophetConfig.regressors[index],
             [target.name]: value
         };
         this.requestUpdate();
@@ -355,11 +405,30 @@ export class PageConfigEditor extends LitElement {
             return false;
         }
 
-        // check all regressors
-        if (this.formData.regressors) {
-            for (const regressor of this.formData.regressors) {
-                if (!regressor.asset_id || !regressor.attribute_name) {
-                    return false;
+        // check all covariates/regressors based on model type
+        if (this.formData.type === ModelTypeEnum.PROPHET) {
+            const prophetConfig = this.formData as ProphetModelConfig;
+            if (prophetConfig.regressors) {
+                for (const regressor of prophetConfig.regressors) {
+                    if (!regressor.asset_id || !regressor.attribute_name) {
+                        return false;
+                    }
+                }
+            }
+        } else if (this.formData.type === ModelTypeEnum.XGBOOST) {
+            const xgboostConfig = this.formData as XGBoostModelConfig;
+            if (xgboostConfig.past_covariates) {
+                for (const covariate of xgboostConfig.past_covariates) {
+                    if (!covariate.asset_id || !covariate.attribute_name) {
+                        return false;
+                    }
+                }
+            }
+            if (xgboostConfig.future_covariates) {
+                for (const covariate of xgboostConfig.future_covariates) {
+                    if (!covariate.asset_id || !covariate.attribute_name) {
+                        return false;
+                    }
                 }
             }
         }
@@ -377,11 +446,231 @@ export class PageConfigEditor extends LitElement {
         return JSON.stringify(this.formData) !== JSON.stringify(this.modelConfig);
     }
 
+    // Get the parameters template based on model type
+    getParametersTemplate() {
+        if (this.formData.type === ModelTypeEnum.PROPHET) {
+            return this.getProphetParametersTemplate();
+        } else if (this.formData.type === ModelTypeEnum.XGBOOST) {
+            return this.getXGBoostParametersTemplate();
+        }
+        return html``;
+    }
+
+    // Prophet-specific parameters
+    getProphetParametersTemplate() {
+        const prophetConfig = this.formData as ProphetModelConfig;
+        return html`
+            <or-panel heading="PROPHET PARAMETERS">
+                <div class="column">
+                    <div class="row">
+                        <!-- changepoint_range -->
+                        <or-mwc-input
+                            type="${InputType.NUMBER}"
+                            name="changepoint_range"
+                            @or-mwc-input-changed="${this.handleBasicInput}"
+                            label="Changepoint range"
+                            .value="${prophetConfig.changepoint_range}"
+                            max="1.0"
+                            min="0.0"
+                            step="0.01"
+                            required
+                        ></or-mwc-input>
+                        <!-- changepoint_prior_scale -->
+                        <or-mwc-input
+                            type="${InputType.NUMBER}"
+                            name="changepoint_prior_scale"
+                            @or-mwc-input-changed="${this.handleBasicInput}"
+                            label="Changepoint prior scale"
+                            .value="${prophetConfig.changepoint_prior_scale}"
+                            max="1.0"
+                            min="0.0"
+                            step="0.01"
+                            required
+                        ></or-mwc-input>
+                    </div>
+                    <div class="row">
+                        <!-- seasonality_mode -->
+                        <or-mwc-input
+                            type="${InputType.SELECT}"
+                            .options="${[
+                                [ProphetSeasonalityModeEnum.ADDITIVE, 'Additive'],
+                                [ProphetSeasonalityModeEnum.MULTIPLICATIVE, 'Multiplicative']
+                            ]}"
+                            name="seasonality_mode"
+                            @or-mwc-input-changed="${this.handleBasicInput}"
+                            label="Seasonality mode"
+                            .value="${prophetConfig.seasonality_mode}"
+                            required
+                        ></or-mwc-input>
+                        <!-- daily_seasonality -->
+                        <or-mwc-input
+                            type="${InputType.CHECKBOX}"
+                            name="daily_seasonality"
+                            @or-mwc-input-changed="${this.handleBasicInput}"
+                            label="Daily seasonality"
+                            .value="${prophetConfig.daily_seasonality}"
+                        ></or-mwc-input>
+                        <!-- weekly_seasonality -->
+                        <or-mwc-input
+                            type="${InputType.CHECKBOX}"
+                            name="weekly_seasonality"
+                            @or-mwc-input-changed="${this.handleBasicInput}"
+                            label="Weekly seasonality"
+                            .value="${prophetConfig.weekly_seasonality}"
+                        ></or-mwc-input>
+                        <!-- yearly_seasonality -->
+                        <or-mwc-input
+                            type="${InputType.CHECKBOX}"
+                            name="yearly_seasonality"
+                            @or-mwc-input-changed="${this.handleBasicInput}"
+                            label="Yearly seasonality"
+                            .value="${prophetConfig.yearly_seasonality}"
+                        ></or-mwc-input>
+                    </div>
+                </div>
+            </or-panel>
+        `;
+    }
+
+    // XGBoost-specific parameters
+    getXGBoostParametersTemplate() {
+        const xgboostConfig = this.formData as XGBoostModelConfig;
+        return html`
+            <or-panel heading="XGBOOST PARAMETERS">
+                <div class="column">
+                    <div class="row">
+                        <!-- lags -->
+                        <or-mwc-input
+                            type="${InputType.NUMBER}"
+                            name="lags"
+                            @or-mwc-input-changed="${this.handleBasicInput}"
+                            label="Lags"
+                            .value="${xgboostConfig.lags}"
+                            min="1"
+                            required
+                        ></or-mwc-input>
+                        <!-- output_chunk_length -->
+                        <or-mwc-input
+                            type="${InputType.NUMBER}"
+                            name="output_chunk_length"
+                            @or-mwc-input-changed="${this.handleBasicInput}"
+                            label="Output chunk length"
+                            .value="${xgboostConfig.output_chunk_length}"
+                            min="1"
+                            required
+                        ></or-mwc-input>
+                        <!-- n_estimators -->
+                        <or-mwc-input
+                            type="${InputType.NUMBER}"
+                            name="n_estimators"
+                            @or-mwc-input-changed="${this.handleBasicInput}"
+                            label="Number of estimators"
+                            .value="${xgboostConfig.n_estimators}"
+                            min="1"
+                            required
+                        ></or-mwc-input>
+                    </div>
+                    <div class="row">
+                        <!-- max_depth -->
+                        <or-mwc-input
+                            type="${InputType.NUMBER}"
+                            name="max_depth"
+                            @or-mwc-input-changed="${this.handleBasicInput}"
+                            label="Max depth"
+                            .value="${xgboostConfig.max_depth}"
+                            min="1"
+                            required
+                        ></or-mwc-input>
+                        <!-- learning_rate -->
+                        <or-mwc-input
+                            type="${InputType.NUMBER}"
+                            name="learning_rate"
+                            @or-mwc-input-changed="${this.handleBasicInput}"
+                            label="Learning rate"
+                            .value="${xgboostConfig.learning_rate}"
+                            min="0.001"
+                            max="1.0"
+                            step="0.001"
+                            required
+                        ></or-mwc-input>
+                        <!-- subsample -->
+                        <or-mwc-input
+                            type="${InputType.NUMBER}"
+                            name="subsample"
+                            @or-mwc-input-changed="${this.handleBasicInput}"
+                            label="Subsample"
+                            .value="${xgboostConfig.subsample}"
+                            min="0.1"
+                            max="1.0"
+                            step="0.1"
+                            required
+                        ></or-mwc-input>
+                    </div>
+                    <div class="row">
+                        <!-- random_state -->
+                        <or-mwc-input
+                            type="${InputType.NUMBER}"
+                            name="random_state"
+                            @or-mwc-input-changed="${this.handleBasicInput}"
+                            label="Random state"
+                            .value="${xgboostConfig.random_state}"
+                            min="0"
+                        ></or-mwc-input>
+                    </div>
+                </div>
+            </or-panel>
+        `;
+    }
+
+    // Get covariates template based on model type
+    getCovariatesTemplate() {
+        if (this.formData.type === ModelTypeEnum.PROPHET) {
+            return this.getProphetCovariatesTemplate();
+        } else if (this.formData.type === ModelTypeEnum.XGBOOST) {
+            return this.getXGBoostCovariatesTemplate();
+        }
+        return html``;
+    }
+
+    // Prophet regressors template
+    getProphetCovariatesTemplate() {
+        const prophetConfig = this.formData as ProphetModelConfig;
+        return html`
+            ${when(
+                prophetConfig.regressors,
+                () => map(prophetConfig.regressors ?? [], (_regressor, index) => this.getRegressorTemplate(index)),
+                () => html``
+            )}
+            ${this.getAddRegressorTemplate()}
+        `;
+    }
+
+    // XGBoost covariates template
+    getXGBoostCovariatesTemplate() {
+        const xgboostConfig = this.formData as XGBoostModelConfig;
+        return html`
+            ${when(
+                xgboostConfig.past_covariates,
+                () => map(xgboostConfig.past_covariates ?? [], (_covariate, index) => this.getPastCovariateTemplate(index)),
+                () => html``
+            )}
+            ${this.getAddPastCovariateTemplate()}
+            
+            ${when(
+                xgboostConfig.future_covariates,
+                () => map(xgboostConfig.future_covariates ?? [], (_covariate, index) => this.getFutureCovariateTemplate(index)),
+                () => html``
+            )}
+            ${this.getAddFutureCovariateTemplate()}
+        `;
+    }
+
     // Handle adding a regressor
     handleAddRegressor() {
-        this.formData.regressors = this.formData.regressors ?? [];
+        const prophetConfig = this.formData as ProphetModelConfig;
+        prophetConfig.regressors = prophetConfig.regressors ?? [];
 
-        this.formData.regressors.push({
+        prophetConfig.regressors.push({
             asset_id: '',
             attribute_name: '',
             training_data_period: 'P6M'
@@ -391,15 +680,16 @@ export class PageConfigEditor extends LitElement {
 
     // Handle deleting a regressor
     handleDeleteRegressor(index: number) {
-        if (!this.formData.regressors) {
+        const prophetConfig = this.formData as ProphetModelConfig;
+        if (!prophetConfig.regressors) {
             return;
         }
 
-        this.formData.regressors.splice(index, 1);
+        prophetConfig.regressors.splice(index, 1);
 
         // Clean up regressors if all are deleted
-        if (this.formData.regressors?.length === 0) {
-            this.formData.regressors = null;
+        if (prophetConfig.regressors?.length === 0) {
+            prophetConfig.regressors = null;
         }
 
         this.requestUpdate();
@@ -407,11 +697,12 @@ export class PageConfigEditor extends LitElement {
 
     // Get the regressor template
     getRegressorTemplate(index: number) {
-        if (!this.formData.regressors) {
+        const prophetConfig = this.formData as ProphetModelConfig;
+        if (!prophetConfig.regressors) {
             return;
         }
 
-        const regressor = this.formData.regressors[index];
+        const regressor = prophetConfig.regressors[index];
         return html`
             <or-panel heading="REGRESSOR ${index + 1}">
                 <div class="column">
@@ -479,6 +770,236 @@ export class PageConfigEditor extends LitElement {
                 </div>
             </or-panel>
         `;
+    }
+
+    // XGBoost Past Covariate methods
+    handleAddPastCovariate() {
+        const xgboostConfig = this.formData as XGBoostModelConfig;
+        xgboostConfig.past_covariates = xgboostConfig.past_covariates ?? [];
+        
+        xgboostConfig.past_covariates.push({
+            asset_id: '',
+            attribute_name: '',
+            training_data_period: 'P6M'
+        });
+        this.requestUpdate();
+    }
+
+    handleDeletePastCovariate(index: number) {
+        const xgboostConfig = this.formData as XGBoostModelConfig;
+        if (!xgboostConfig.past_covariates) return;
+        
+        xgboostConfig.past_covariates.splice(index, 1);
+        if (xgboostConfig.past_covariates.length === 0) {
+            xgboostConfig.past_covariates = null;
+        }
+        this.requestUpdate();
+    }
+
+    getPastCovariateTemplate(index: number) {
+        const xgboostConfig = this.formData as XGBoostModelConfig;
+        if (!xgboostConfig.past_covariates) return;
+        
+        const covariate = xgboostConfig.past_covariates[index];
+        return html`
+            <or-panel heading="PAST COVARIATE ${index + 1}">
+                <div class="column">
+                    <div class="row">
+                        <or-mwc-input
+                            type="${InputType.SELECT}"
+                            name="asset_id"
+                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.handlePastCovariateInput(e, index)}"
+                            label="Asset"
+                            .value="${covariate.asset_id}"
+                            .options="${[...this.assetSelectList.entries()]}"
+                            .searchProvider="${this.assetSelectList.size > 0 ? this.searchAssets.bind(this) : null}"
+                        ></or-mwc-input>
+
+                        ${when(
+                            covariate.asset_id,
+                            () => html`
+                                <or-mwc-input
+                                    type="${InputType.SELECT}"
+                                    name="attribute_name"
+                                    @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.handlePastCovariateInput(e, index)}"
+                                    label="Attribute"
+                                    .value="${covariate.attribute_name}"
+                                    .options="${[...(this.attributeSelectList.get(covariate.asset_id) ?? new Map())]}"
+                                ></or-mwc-input>
+                            `,
+                            () => html`
+                                <or-mwc-input type="${InputType.SELECT}" name="attribute_name" label="Attribute" disabled></or-mwc-input>
+                            `
+                        )}
+
+                        <custom-duration-input
+                            name="training_data_period"
+                            .type="${DurationInputType.ISO_8601}"
+                            @value-changed="${(e: OrInputChangedEvent) => this.handlePastCovariateInput(e, index)}"
+                            label="Training data period"
+                            .iso_units="${[TimeDurationUnit.DAY, TimeDurationUnit.WEEK, TimeDurationUnit.MONTH, TimeDurationUnit.YEAR]}"
+                            .value="${covariate.training_data_period}"
+                        ></custom-duration-input>
+
+                        <or-mwc-input
+                            style="max-width: 48px;"
+                            type="${InputType.BUTTON}"
+                            icon="delete"
+                            @click="${() => this.handleDeletePastCovariate(index)}"
+                        ></or-mwc-input>
+                    </div>
+                </div>
+            </or-panel>
+        `;
+    }
+
+    getAddPastCovariateTemplate() {
+        return html`
+            <or-panel>
+                <div class="row regressor-row">
+                    <or-mwc-input
+                        type="${InputType.BUTTON}"
+                        icon="plus"
+                        label="add past covariate"
+                        @click="${this.handleAddPastCovariate}"
+                    ></or-mwc-input>
+                </div>
+            </or-panel>
+        `;
+    }
+
+    handlePastCovariateInput(ev: OrInputChangedEvent, index: number) {
+        const value = ev.detail?.value;
+        const target = ev.target as HTMLInputElement;
+        const xgboostConfig = this.formData as XGBoostModelConfig;
+
+        if (!target || value === undefined || !xgboostConfig.past_covariates) return;
+
+        if (target.name === 'asset_id') {
+            xgboostConfig.past_covariates[index].attribute_name =
+                this.attributeSelectList.get(value as string)?.values().next().value ?? '';
+        }
+
+        xgboostConfig.past_covariates[index] = {
+            ...xgboostConfig.past_covariates[index],
+            [target.name]: value
+        };
+        this.requestUpdate();
+    }
+
+    // XGBoost Future Covariate methods (similar structure)
+    handleAddFutureCovariate() {
+        const xgboostConfig = this.formData as XGBoostModelConfig;
+        xgboostConfig.future_covariates = xgboostConfig.future_covariates ?? [];
+        
+        xgboostConfig.future_covariates.push({
+            asset_id: '',
+            attribute_name: '',
+            training_data_period: 'P6M'
+        });
+        this.requestUpdate();
+    }
+
+    handleDeleteFutureCovariate(index: number) {
+        const xgboostConfig = this.formData as XGBoostModelConfig;
+        if (!xgboostConfig.future_covariates) return;
+        
+        xgboostConfig.future_covariates.splice(index, 1);
+        if (xgboostConfig.future_covariates.length === 0) {
+            xgboostConfig.future_covariates = null;
+        }
+        this.requestUpdate();
+    }
+
+    getFutureCovariateTemplate(index: number) {
+        const xgboostConfig = this.formData as XGBoostModelConfig;
+        if (!xgboostConfig.future_covariates) return;
+        
+        const covariate = xgboostConfig.future_covariates[index];
+        return html`
+            <or-panel heading="FUTURE COVARIATE ${index + 1}">
+                <div class="column">
+                    <div class="row">
+                        <or-mwc-input
+                            type="${InputType.SELECT}"
+                            name="asset_id"
+                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.handleFutureCovariateInput(e, index)}"
+                            label="Asset"
+                            .value="${covariate.asset_id}"
+                            .options="${[...this.assetSelectList.entries()]}"
+                            .searchProvider="${this.assetSelectList.size > 0 ? this.searchAssets.bind(this) : null}"
+                        ></or-mwc-input>
+
+                        ${when(
+                            covariate.asset_id,
+                            () => html`
+                                <or-mwc-input
+                                    type="${InputType.SELECT}"
+                                    name="attribute_name"
+                                    @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.handleFutureCovariateInput(e, index)}"
+                                    label="Attribute"
+                                    .value="${covariate.attribute_name}"
+                                    .options="${[...(this.attributeSelectList.get(covariate.asset_id) ?? new Map())]}"
+                                ></or-mwc-input>
+                            `,
+                            () => html`
+                                <or-mwc-input type="${InputType.SELECT}" name="attribute_name" label="Attribute" disabled></or-mwc-input>
+                            `
+                        )}
+
+                        <custom-duration-input
+                            name="training_data_period"
+                            .type="${DurationInputType.ISO_8601}"
+                            @value-changed="${(e: OrInputChangedEvent) => this.handleFutureCovariateInput(e, index)}"
+                            label="Training data period"
+                            .iso_units="${[TimeDurationUnit.DAY, TimeDurationUnit.WEEK, TimeDurationUnit.MONTH, TimeDurationUnit.YEAR]}"
+                            .value="${covariate.training_data_period}"
+                        ></custom-duration-input>
+
+                        <or-mwc-input
+                            style="max-width: 48px;"
+                            type="${InputType.BUTTON}"
+                            icon="delete"
+                            @click="${() => this.handleDeleteFutureCovariate(index)}"
+                        ></or-mwc-input>
+                    </div>
+                </div>
+            </or-panel>
+        `;
+    }
+
+    getAddFutureCovariateTemplate() {
+        return html`
+            <or-panel>
+                <div class="row regressor-row">
+                    <or-mwc-input
+                        type="${InputType.BUTTON}"
+                        icon="plus"
+                        label="add future covariate"
+                        @click="${this.handleAddFutureCovariate}"
+                    ></or-mwc-input>
+                </div>
+            </or-panel>
+        `;
+    }
+
+    handleFutureCovariateInput(ev: OrInputChangedEvent, index: number) {
+        const value = ev.detail?.value;
+        const target = ev.target as HTMLInputElement;
+        const xgboostConfig = this.formData as XGBoostModelConfig;
+
+        if (!target || value === undefined || !xgboostConfig.future_covariates) return;
+
+        if (target.name === 'asset_id') {
+            xgboostConfig.future_covariates[index].attribute_name =
+                this.attributeSelectList.get(value as string)?.values().next().value ?? '';
+        }
+
+        xgboostConfig.future_covariates[index] = {
+            ...xgboostConfig.future_covariates[index],
+            [target.name]: value
+        };
+        this.requestUpdate();
     }
 
     // Search provider for the asset select list
@@ -567,7 +1088,7 @@ export class PageConfigEditor extends LitElement {
                                 @or-mwc-input-changed="${this.handleBasicInput}"
                                 label="Model Type"
                                 type="${InputType.SELECT}"
-                                .options="${[['prophet', 'Prophet']]}"
+                                .options="${[['prophet', 'Prophet'], ['xgboost', 'XGBoost']]}"
                                 .value="${this.formData.type}"
                             >
                             </or-mwc-input>
@@ -662,100 +1183,12 @@ export class PageConfigEditor extends LitElement {
                     </div>
                 </or-panel>
 
-                <!-- Model training, e.g the schedule-->
-                <or-panel heading="MODEL TRAINING">
-                    <div class="column">
-                        <div class="row">
-                            <!-- Training interval (ISO 8601) -->
-                            <custom-duration-input
-                                name="training_interval"
-                                .type="${DurationInputType.ISO_8601}"
-                                @value-changed="${this.handleBasicInput}"
-                                label="Train model every"
-                                .value="${this.formData.training_interval}"
-                            ></custom-duration-input>
-                        </div>
-                    </div>
-                </or-panel>
 
                 <!-- Model parameters, these will be dynamic based on the model type -->
-                <or-panel heading="PARAMETERS">
-                    <div class="column">
-                        <div class="row">
-                            <!-- changepoint_range -->
-                            <or-mwc-input
-                                type="${InputType.NUMBER}"
-                                name="changepoint_range"
-                                @or-mwc-input-changed="${this.handleBasicInput}"
-                                label="Changepoint range"
-                                .value="${this.formData.changepoint_range}"
-                                max="1.0"
-                                min="0.0"
-                                step="0.01"
-                                required
-                            ></or-mwc-input>
-                            <!-- changepoint_prior_scale -->
-                            <or-mwc-input
-                                type="${InputType.NUMBER}"
-                                name="changepoint_prior_scale"
-                                @or-mwc-input-changed="${this.handleBasicInput}"
-                                label="Changepoint prior scale"
-                                .value="${this.formData.changepoint_prior_scale}"
-                                max="1.0"
-                                min="0.0"
-                                step="0.01"
-                                required
-                            ></or-mwc-input>
-                        </div>
-                        <div class="row">
-                            <!-- seasonality_mode -->
-                            <or-mwc-input
-                                type="${InputType.SELECT}"
-                                .options="${[
-                                    [ProphetSeasonalityModeEnum.ADDITIVE, 'Additive'],
-                                    [ProphetSeasonalityModeEnum.MULTIPLICATIVE, 'Multiplicative']
-                                ]}"
-                                name="seasonality_mode"
-                                @or-mwc-input-changed="${this.handleBasicInput}"
-                                label="Seasonality mode"
-                                .value="${this.formData.seasonality_mode}"
-                                required
-                            ></or-mwc-input>
-                            <!-- daily_seasonality -->
-                            <or-mwc-input
-                                type="${InputType.CHECKBOX}"
-                                name="daily_seasonality"
-                                @or-mwc-input-changed="${this.handleBasicInput}"
-                                label="Daily seasonality"
-                                .value="${this.formData.daily_seasonality}"
-                            ></or-mwc-input>
-                            <!-- weekly_seasonality -->
-                            <or-mwc-input
-                                type="${InputType.CHECKBOX}"
-                                name="weekly_seasonality"
-                                @or-mwc-input-changed="${this.handleBasicInput}"
-                                label="Weekly seasonality"
-                                .value="${this.formData.weekly_seasonality}"
-                            ></or-mwc-input>
-                            <!-- yearly_seasonality -->
-                            <or-mwc-input
-                                type="${InputType.CHECKBOX}"
-                                name="yearly_seasonality"
-                                @or-mwc-input-changed="${this.handleBasicInput}"
-                                label="Yearly seasonality"
-                                .value="${this.formData.yearly_seasonality}"
-                            ></or-mwc-input>
-                        </div>
-                    </div>
-                </or-panel>
+                ${this.getParametersTemplate()}
                 <hr />
-                <!-- Regressors -->
-                ${when(
-                    this.formData.regressors,
-                    () => map(this.formData.regressors ?? [], (_regressor, index) => this.getRegressorTemplate(index)),
-                    () => html``
-                )}
-                ${this.getAddRegressorTemplate()}
+                <!-- Covariates/Regressors -->
+                ${this.getCovariatesTemplate()}
             </form>
         `;
     }

@@ -92,7 +92,9 @@ class ModelScheduler(Singleton):
         """Add a training job for the given model config."""
 
         job_id = f"{TRAINING_JOB_ID_PREFIX}:{config.id}"
-        seconds = TimeUtil.parse_iso_duration(config.training_interval)
+        # Training job is scheduled based on the forecast interval
+        # Training is always executed before the forecast job
+        seconds = TimeUtil.parse_iso_duration(config.forecast_interval)
 
         if not self._is_job_scheduling_needed(job_id, config):
             return
@@ -195,7 +197,7 @@ def _model_training_job(config: ModelConfig, data_service: OpenRemoteService) ->
     if model is None:
         logger.error(
             f"Model training failed for {config.id} - no model returned. "
-            f"Type: {config.type}, Training Interval: {config.training_interval}"
+            f"Type: {config.type}, Training Interval: {config.forecast_interval}"
         )
         return
 
@@ -209,7 +211,7 @@ def _model_training_job(config: ModelConfig, data_service: OpenRemoteService) ->
     end_time = time.perf_counter()
     logger.info(
         f"Training job for {config.id} completed - duration: {end_time - start_time}s, "
-        f"Type: {config.type}, Training Interval: {config.training_interval}, "
+        f"Type: {config.type}, Training Interval: {config.forecast_interval}, "
         f"Target first datapoint datetime: {target_first_datapoint_datetime}, "
         f"Target last datapoint datetime: {target_last_datapoint_datetime}"
     )
