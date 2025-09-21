@@ -18,11 +18,10 @@
 import logging
 from pathlib import Path
 from uuid import UUID
-from typing import Union, Any, Type
+
 from darts.models.forecasting.forecasting_model import ForecastingModel
 
 from service_ml_forecast.common.exceptions import ResourceNotFoundError
-from service_ml_forecast.common.fs_util import FsUtil
 from service_ml_forecast.config import DIRS
 
 logger = logging.getLogger(__name__)
@@ -36,39 +35,39 @@ class ModelStorageService:
 
     def save(self, model: ForecastingModel, model_id: UUID) -> None:
         """Save a Darts model.
-        
+
         Args:
             model: The Darts model to save.
             model_id: The ID of the model.
         """
         path = self._get_model_file_path(model_id, self.DEFAULT_MODEL_FILE_EXTENSION)
-        
+
         # Ensure the directory exists
         path.parent.mkdir(parents=True, exist_ok=True)
-        
+
         # Use Darts native save method
         model.save(path)
         logger.info(f"Saved Darts model to {path} -- {model_id}")
 
-    def load(self, model_class: Type[ForecastingModel], model_id: UUID) -> ForecastingModel:
+    def load(self, model_class: type[ForecastingModel], model_id: UUID) -> ForecastingModel:
         """Load a Darts model.
-        
+
         Args:
             model_class: The Darts model class (e.g., DartsProphet).
             model_id: The ID of the model.
-            
+
         Returns:
             The loaded Darts model.
-            
+
         Raises:
             ResourceNotFoundError: Model file was not found.
         """
         path = self._get_model_file_path(model_id, self.DEFAULT_MODEL_FILE_EXTENSION)
-        
+
         if not path.exists():
             logger.error(f"Cannot get model file: {model_id} - does not exist")
             raise ResourceNotFoundError(f"Cannot get model file: {model_id} - does not exist")
-        
+
         # Use Darts native load method
         model = model_class.load(path)
         logger.info(f"Loaded Darts model from {path} -- {model_id}")

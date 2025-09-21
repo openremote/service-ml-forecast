@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 # TODO: Regressors tests
 
+
 def test_prophet_model_performance(power_grid_mock_datapoints: list[AssetDatapoint]) -> None:
     """Test Prophet model performance with power grid data.
 

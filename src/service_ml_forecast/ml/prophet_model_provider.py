@@ -15,23 +15,20 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-import json
 import logging
 from uuid import UUID
 
-import numpy as np
 import pandas as pd
 from darts import TimeSeries
 from darts.models import Prophet as DartsProphet
 from openremote_client import AssetDatapoint
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 from service_ml_forecast.common.time_util import TimeUtil
+from service_ml_forecast.ml.backtesting import calculate_backtest_parameters, run_darts_backtest
 from service_ml_forecast.ml.data_processing import (
     align_forecast_data,
     align_training_data,
 )
-from service_ml_forecast.ml.backtesting import calculate_backtest_parameters, run_darts_backtest
 from service_ml_forecast.ml.evaluation_metrics import EvaluationMetrics
 from service_ml_forecast.ml.model_provider import ModelProvider
 from service_ml_forecast.models.feature_data_wrappers import (
@@ -77,12 +74,14 @@ class ProphetModelProvider(ModelProvider[DartsProphet]):
             logger.error(f"Insufficient training data for model {self.config.id}")
             return None
         elif len(dataframe) < MIN_RECOMMENDED_DATAPOINTS:
-            logger.warning(f"Limited training data: {len(dataframe)} points (recommended: {MIN_RECOMMENDED_DATAPOINTS})")
+            logger.warning(
+                f"Limited training data: {len(dataframe)} points (recommended: {MIN_RECOMMENDED_DATAPOINTS})"
+            )
 
         target_series = TimeSeries.from_dataframe(
             dataframe, time_col=TIMESTAMP_COLUMN_NAME, value_cols=[VALUE_COLUMN_NAME]
         )
-        
+
         covariates = None
         if training_dataset.regressors and len(training_dataset.regressors) > 0:
             logger.info(f"Training with {len(training_dataset.regressors)} regressors")
@@ -103,7 +102,7 @@ class ProphetModelProvider(ModelProvider[DartsProphet]):
         )
 
         model.fit(target_series, future_covariates=covariates)
-        
+
         return model
 
     def load_model(self, model_id: UUID) -> DartsProphet:
@@ -113,31 +112,42 @@ class ProphetModelProvider(ModelProvider[DartsProphet]):
         self.model_storage_service.save(model, self.config.id)
 
     def generate_forecast(self, forecast_dataset: ForecastDataSet | None = None) -> ForecastResult:
+        """Generate a forecast for the given forecast dataset.
+
+        Args:
+            forecast_dataset: The forecast dataset to use for forecasting.
+
+        Returns:
+            The forecast result.
+        """
         model = self.load_model(self.config.id)
 
         future_covariates = None
         if forecast_dataset and forecast_dataset.regressors:
             logger.info(f"Generating forecast with {len(forecast_dataset.regressors)} regressors")
-            
+
             if model.training_series is not None:
                 start_time = model.training_series.end_time() + pd.Timedelta(self.config.forecast_frequency)
             else:
                 start_time = pd.Timestamp.now().round(self.config.forecast_frequency)
                 logger.warning("No training data available, using current time")
 
-            future_base = pd.DataFrame({
-                TIMESTAMP_COLUMN_NAME: pd.date_range(
-                    start=start_time,
-                    periods=self.config.forecast_periods,
-                    freq=self.config.forecast_frequency
-                )
-            })
-            
-            future_prepared = align_forecast_data(
-                future_base, forecast_dataset, self.config.forecast_frequency, 
-                self.config.id, timestamp_col=TIMESTAMP_COLUMN_NAME,
+            future_base = pd.DataFrame(
+                {
+                    TIMESTAMP_COLUMN_NAME: pd.date_range(
+                        start=start_time, periods=self.config.forecast_periods, freq=self.config.forecast_frequency
+                    )
+                }
             )
-            
+
+            future_prepared = align_forecast_data(
+                future_base,
+                forecast_dataset,
+                self.config.forecast_frequency,
+                self.config.id,
+                timestamp_col=TIMESTAMP_COLUMN_NAME,
+            )
+
             covariate_cols = [r.feature_name for r in forecast_dataset.regressors]
             available_cols = [col for col in covariate_cols if col in future_prepared.columns]
             if available_cols:
@@ -155,31 +165,46 @@ class ProphetModelProvider(ModelProvider[DartsProphet]):
         )
 
     def evaluate_model(self, model: DartsProphet) -> EvaluationMetrics | None:
-        """Evaluate model using Darts backtesting."""
+        """Evaluate model using Darts backtesting.
+
+        Args:
+            model: The Darts forecasting model to evaluate.
+
+        Returns:
+            The evaluation metrics or None if evaluation could not be performed.
+        """
         try:
             if model.training_series is None:
                 logger.warning("No training data available for evaluation")
                 return None
-                
+
             backtest_config = calculate_backtest_parameters(
                 series_length=len(model.training_series),
                 forecast_periods=self.config.forecast_periods,
             )
             if not backtest_config:
                 return None
-                
+
             return run_darts_backtest(model=model, backtest_config=backtest_config)
-            
+
         except Exception as e:
             logger.error(f"Error during model evaluation: {e}")
             return None
 
+
 def _convert_darts_forecast_to_datapoints(dataframe: pd.DataFrame) -> list[AssetDatapoint]:
-    """Convert Darts TimeSeries DataFrame to OpenRemote AssetDatapoints."""
+    """Convert Darts TimeSeries DataFrame to OpenRemote AssetDatapoints.
+
+    Args:
+        dataframe: The Darts TimeSeries DataFrame to convert.
+
+    Returns:
+        The list of AssetDatapoints.
+    """
     df_reset = dataframe.reset_index()
     timestamp_col = df_reset.columns[0]
     value_col = df_reset.columns[1]
-    
+
     datapoints = []
     for _, row in df_reset.iterrows():
         millis = TimeUtil.sec_to_ms(int(row[timestamp_col].timestamp()))
