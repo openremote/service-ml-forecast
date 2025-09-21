@@ -19,6 +19,7 @@ import logging
 from uuid import UUID
 
 import pandas as pd
+import numpy as np
 from openremote_client import AssetDatapoint
 from prophet import Prophet
 from prophet.diagnostics import cross_validation, performance_metrics
@@ -105,14 +106,8 @@ class ProphetModelProvider(ModelProvider[Prophet]):
             for regressor in training_dataset.regressors:
                 model.add_regressor(regressor.feature_name)
 
-        # Train the model
+        # Train/fit the model
         model.fit(dataframe)
-
-        # Perform quick evaluation of the model using cross-validation
-        try:
-            self.evaluate_model(model)
-        except Exception as e:
-            logger.error(f"Failed to evaluate model {self.config.id} using cross-validation: {e}", exc_info=True)
 
         return model
 
@@ -169,61 +164,95 @@ class ProphetModelProvider(ModelProvider[Prophet]):
         )
 
     def evaluate_model(self, model: Prophet) -> EvaluationMetrics | None:
-        """Evaluate the model using Prophet's cross-validation."""
-        # Calculate horizon from config
+        """Evaluate the model using Prophet's cross-validation (RMSE, MAE, MAPE, MdAPE, R²)."""
+
         try:
             horizon_delta = pd.Timedelta(self.config.forecast_frequency) * self.config.forecast_periods
             secs = int(horizon_delta.total_seconds())
             horizon_str = f"{secs} seconds"
-        except ValueError:
-            logger.warning(f"Invalid forecast_frequency '{self.config.forecast_frequency}', using 30 days")
+        except Exception:
+            logger.warning(
+                f"Invalid forecast_frequency '{self.config.forecast_frequency}', using 30 days"
+            )
             horizon_str = "30 days"
 
-        # Get training data info
-        training_df = model.history
-        training_duration = training_df[TIMESTAMP_COLUMN_NAME].max() - training_df[TIMESTAMP_COLUMN_NAME].min()
+        horizon_td = pd.to_timedelta(horizon_str)
 
-        # Set initial training period (min 30 days, max 60% of data)
+        training_df = model.history
+        training_duration = (
+            training_df[TIMESTAMP_COLUMN_NAME].max()
+            - training_df[TIMESTAMP_COLUMN_NAME].min()
+        )
+
         min_initial = pd.Timedelta(days=30)
-        initial_duration = max(pd.Timedelta(horizon_str) * 3, min_initial)
+        initial_duration = max(horizon_td * 3, min_initial)
         initial_duration = min(initial_duration, training_duration * 0.6)
         initial_str = f"{int(initial_duration.total_seconds())} seconds"
 
-        # Check if we have enough data
-        if training_duration < pd.Timedelta(initial_str) + pd.Timedelta(horizon_str):
-            logger.warning(f"Training data too short for CV (need {initial_str} + {horizon_str})")
+        # Enough data?
+        if training_duration < initial_duration + horizon_td:
+            logger.warning(
+                f"Training data too short for CV (need {initial_duration} + {horizon_td})"
+            )
             return None
 
-        # Calculate period between folds (limit to 20 folds max)
-        remaining_duration = training_duration - pd.Timedelta(initial_str)
+        remaining_duration = training_duration - initial_duration
         max_folds = 20
-        period_duration = remaining_duration / max_folds
+        raw_period = remaining_duration / max_folds
+        period_duration = max(raw_period, horizon_td)
         period_str = f"{int(period_duration.total_seconds())} seconds"
 
-        expected_folds = min(max_folds, max(1, int(remaining_duration / period_duration)))
+        # Approximate folds count
+        usable = training_duration - initial_duration - horizon_td
+        expected_folds = max(1, int(usable / period_duration) + 1)
+
+        if expected_folds > max_folds:
+            logger.info(
+                f"Capping folds to {max_folds} (dataset would allow ~{expected_folds})"
+            )
+            expected_folds = max_folds
+
         logger.info(
-            f"Running CV with {expected_folds} folds "
-            f"(initial={initial_str}, period={period_str}, horizon={horizon_str})"
+            f"Running CV with ~{expected_folds} folds "
+            f"(initial={initial_duration}, period={period_duration}, horizon={horizon_td})"
         )
 
-        # Run cross-validation
-        df_cv = cross_validation(
-            model, initial=initial_str, period=period_str, horizon=horizon_str, parallel="processes", disable_tqdm=True
-        )
 
-        # Calculate and return metrics
+        try:
+            df_cv = cross_validation(
+                model,
+                initial=initial_str,
+                period=period_str,
+                horizon=horizon_str,
+                parallel="processes",
+                disable_tqdm=True,
+            )
+        except Exception as e:
+            logger.warning(f"Cross-validation failed: {e}")
+            return None
+
+        if df_cv.empty:
+            logger.warning("Cross-validation returned no rows")
+            return None
+
+        # -------------------------------------------------------------------------
+        # Metrics
+        # -------------------------------------------------------------------------
         df_p = performance_metrics(df_cv, rolling_window=0.1)
 
-        # Calculate R2 using sklearn, prophet does not provide R2
+        # R² (extra check for finite values)
         y_true = df_cv["y"].to_numpy()
         y_pred = df_cv["yhat"].to_numpy()
-        r2 = r2_score(y_true, y_pred)
+        if y_true.size == 0 or np.allclose(y_true.var(), 0):
+            r2 = float("nan")
+        else:
+            r2 = r2_score(y_true, y_pred)
 
         metrics = EvaluationMetrics(
-            rmse=df_p["rmse"].iloc[-1],
-            mae=df_p["mae"].iloc[-1],
-            mape=df_p["mape"].iloc[-1],
-            mdape=df_p["mdape"].iloc[-1],
+            rmse=float(df_p["rmse"].iloc[-1]),
+            mae=float(df_p["mae"].iloc[-1]),
+            mape=float(df_p["mape"].iloc[-1]),
+            mdape=float(df_p["mdape"].iloc[-1]),
             r2=r2,
         )
 

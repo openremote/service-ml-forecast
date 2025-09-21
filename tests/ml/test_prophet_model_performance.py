@@ -51,13 +51,13 @@ def test_prophet_model_performance(power_grid_mock_datapoints: list[AssetDatapoi
         changepoint_prior_scale=0.05,
     )
 
-    # Use power grid data (based on real data) - sort by timestamp first
+    # Use power grid data
     dataset = sorted(power_grid_mock_datapoints, key=lambda dp: dp.x)
 
     logger.info("Prophet Model Performance Test - Power Grid Data")
     logger.info(f"Dataset: {len(dataset)} data points")
 
-    # Get time range from actual data
+    # Get time range from data
     if dataset:
         first_timestamp = dataset[0].x
         last_timestamp = dataset[-1].x
@@ -67,18 +67,11 @@ def test_prophet_model_performance(power_grid_mock_datapoints: list[AssetDatapoi
 
     logger.info("Data source: power grid measurements")
 
-    # Split data for training and testing
+    # Split data for training
     split_point = int(len(dataset) * 0.8)
     train_data = dataset[:split_point]
-    test_data = dataset[split_point:]
 
     logger.info(f"Training data: {len(train_data)} points (first: {train_data[0].x}, last: {train_data[-1].x})")
-    logger.info(
-        f"Test data: {len(test_data)} points (first datapoint: {test_data[0].x}, last datapoint: {test_data[-1].x})"
-    )
-
-    # Ensure there is no data overlap/leakage between training and test data
-    assert train_data[-1].x < test_data[0].x, "Training and test data overlap"
 
     # Train model and measure time
     train_start_time = time.time()
@@ -116,7 +109,7 @@ def test_prophet_model_performance(power_grid_mock_datapoints: list[AssetDatapoi
     assert len(forecast.datapoints) > 0, "Forecast is empty"
 
     # Performance summary
-    logger.info(f"Training Time: {training_time:.2f}s")
+    logger.info(f"Train/Fit Time: {training_time:.2f}s")
     logger.info(f"Forecast Time: {forecast_time:.2f}s")
     logger.info(f"RMSE: {metrics.rmse:.1f}kW (typical forecast error)")
     logger.info(f"MAE: {metrics.mae:.1f}kW (average absolute error)")
