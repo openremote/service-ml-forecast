@@ -90,7 +90,7 @@ class ProphetModelProvider(ModelProvider[Prophet]):
 
         # Train the model
         model.fit(dataframe)
-        
+
         return model
 
     def load_model(self, model_id: UUID) -> Prophet:
