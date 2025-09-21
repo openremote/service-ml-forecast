@@ -29,7 +29,7 @@ import { DurationInputType, TimeDurationUnit } from '../../components/custom-dur
  */
 export const XGBoostConfig: ModelTypeConfig = {
     label: 'XGBoost',
-    
+
     defaultConfig: {
         type: ModelTypeEnum.XGBOOST,
         past_covariates: null,
@@ -44,7 +44,7 @@ export const XGBoostConfig: ModelTypeConfig = {
         subsample: 1.0,
         random_state: 42
     } as Partial<XGBoostModelConfig>,
-    
+
     getParametersTemplate: (config, handleInput) => {
         const xgboostConfig = config as XGBoostModelConfig;
         return html`
@@ -61,7 +61,7 @@ export const XGBoostConfig: ModelTypeConfig = {
                             min="1"
                             required
                         ></or-mwc-input>
-                        
+
                         <!-- output_chunk_length -->
                         <or-mwc-input
                             type="${InputType.NUMBER}"
@@ -72,7 +72,7 @@ export const XGBoostConfig: ModelTypeConfig = {
                             min="1"
                             required
                         ></or-mwc-input>
-                        
+
                         <!-- n_estimators -->
                         <or-mwc-input
                             type="${InputType.NUMBER}"
@@ -84,7 +84,7 @@ export const XGBoostConfig: ModelTypeConfig = {
                             required
                         ></or-mwc-input>
                     </div>
-                    
+
                     <div class="row">
                         <!-- max_depth -->
                         <or-mwc-input
@@ -96,7 +96,7 @@ export const XGBoostConfig: ModelTypeConfig = {
                             min="1"
                             required
                         ></or-mwc-input>
-                        
+
                         <!-- learning_rate -->
                         <or-mwc-input
                             type="${InputType.NUMBER}"
@@ -109,7 +109,7 @@ export const XGBoostConfig: ModelTypeConfig = {
                             step="0.001"
                             required
                         ></or-mwc-input>
-                        
+
                         <!-- subsample -->
                         <or-mwc-input
                             type="${InputType.NUMBER}"
@@ -123,7 +123,7 @@ export const XGBoostConfig: ModelTypeConfig = {
                             required
                         ></or-mwc-input>
                     </div>
-                    
+
                     <div class="row">
                         <!-- random_state -->
                         <or-mwc-input
@@ -139,10 +139,10 @@ export const XGBoostConfig: ModelTypeConfig = {
             </or-panel>
         `;
     },
-    
+
     getCovariatesTemplate: (config, context) => {
         const xgboostConfig = config as XGBoostModelConfig;
-        
+
         // Past Covariates Handlers
         const handleAddPastCovariate = () => {
             xgboostConfig.past_covariates = xgboostConfig.past_covariates ?? [];
@@ -171,7 +171,10 @@ export const XGBoostConfig: ModelTypeConfig = {
 
             if (target.name === 'asset_id') {
                 xgboostConfig.past_covariates[index].attribute_name =
-                    context.attributeSelectList.get(value as string)?.values().next().value ?? '';
+                    context.attributeSelectList
+                        .get(value as string)
+                        ?.values()
+                        .next().value ?? '';
             }
 
             xgboostConfig.past_covariates[index] = {
@@ -209,7 +212,10 @@ export const XGBoostConfig: ModelTypeConfig = {
 
             if (target.name === 'asset_id') {
                 xgboostConfig.future_covariates[index].attribute_name =
-                    context.attributeSelectList.get(value as string)?.values().next().value ?? '';
+                    context.attributeSelectList
+                        .get(value as string)
+                        ?.values()
+                        .next().value ?? '';
             }
 
             xgboostConfig.future_covariates[index] = {
@@ -222,7 +228,7 @@ export const XGBoostConfig: ModelTypeConfig = {
         // Template Generators
         const getPastCovariateTemplate = (index: number) => {
             if (!xgboostConfig.past_covariates) return html``;
-            
+
             const covariate = xgboostConfig.past_covariates[index];
             return html`
                 <or-panel heading="PAST COVARIATE ${index + 1}">
@@ -251,7 +257,12 @@ export const XGBoostConfig: ModelTypeConfig = {
                                     ></or-mwc-input>
                                 `,
                                 () => html`
-                                    <or-mwc-input type="${InputType.SELECT}" name="attribute_name" label="Attribute" disabled></or-mwc-input>
+                                    <or-mwc-input
+                                        type="${InputType.SELECT}"
+                                        name="attribute_name"
+                                        label="Attribute"
+                                        disabled
+                                    ></or-mwc-input>
                                 `
                             )}
 
@@ -278,7 +289,7 @@ export const XGBoostConfig: ModelTypeConfig = {
 
         const getFutureCovariateTemplate = (index: number) => {
             if (!xgboostConfig.future_covariates) return html``;
-            
+
             const covariate = xgboostConfig.future_covariates[index];
             return html`
                 <or-panel heading="FUTURE COVARIATE ${index + 1}">
@@ -307,7 +318,12 @@ export const XGBoostConfig: ModelTypeConfig = {
                                     ></or-mwc-input>
                                 `,
                                 () => html`
-                                    <or-mwc-input type="${InputType.SELECT}" name="attribute_name" label="Attribute" disabled></or-mwc-input>
+                                    <or-mwc-input
+                                        type="${InputType.SELECT}"
+                                        name="attribute_name"
+                                        label="Attribute"
+                                        disabled
+                                    ></or-mwc-input>
                                 `
                             )}
 
@@ -365,7 +381,6 @@ export const XGBoostConfig: ModelTypeConfig = {
                 () => html``
             )}
             ${getAddPastCovariateTemplate()}
-            
             ${when(
                 xgboostConfig.future_covariates,
                 () => map(xgboostConfig.future_covariates ?? [], (_covariate, index) => getFutureCovariateTemplate(index)),
@@ -374,10 +389,10 @@ export const XGBoostConfig: ModelTypeConfig = {
             ${getAddFutureCovariateTemplate()}
         `;
     },
-    
+
     validateConfig: (config) => {
         const xgboostConfig = config as XGBoostModelConfig;
-        
+
         // Validate past covariates
         if (xgboostConfig.past_covariates) {
             for (const covariate of xgboostConfig.past_covariates) {
@@ -386,7 +401,7 @@ export const XGBoostConfig: ModelTypeConfig = {
                 }
             }
         }
-        
+
         // Validate future covariates
         if (xgboostConfig.future_covariates) {
             for (const covariate of xgboostConfig.future_covariates) {
@@ -395,7 +410,7 @@ export const XGBoostConfig: ModelTypeConfig = {
                 }
             }
         }
-        
+
         return true;
     }
 };

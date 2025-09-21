@@ -29,7 +29,7 @@ import { DurationInputType, TimeDurationUnit } from '../../components/custom-dur
  */
 export const ProphetConfig: ModelTypeConfig = {
     label: 'Prophet',
-    
+
     defaultConfig: {
         type: ModelTypeEnum.PROPHET,
         regressors: null,
@@ -40,7 +40,7 @@ export const ProphetConfig: ModelTypeConfig = {
         changepoint_prior_scale: 0.05,
         seasonality_mode: ProphetSeasonalityModeEnum.ADDITIVE
     } as Partial<ProphetModelConfig>,
-    
+
     getParametersTemplate: (config, handleInput) => {
         const prophetConfig = config as ProphetModelConfig;
         return html`
@@ -59,7 +59,7 @@ export const ProphetConfig: ModelTypeConfig = {
                             step="0.01"
                             required
                         ></or-mwc-input>
-                        
+
                         <!-- changepoint_prior_scale -->
                         <or-mwc-input
                             type="${InputType.NUMBER}"
@@ -73,7 +73,7 @@ export const ProphetConfig: ModelTypeConfig = {
                             required
                         ></or-mwc-input>
                     </div>
-                    
+
                     <div class="row">
                         <!-- seasonality_mode -->
                         <or-mwc-input
@@ -88,7 +88,7 @@ export const ProphetConfig: ModelTypeConfig = {
                             .value="${prophetConfig.seasonality_mode}"
                             required
                         ></or-mwc-input>
-                        
+
                         <!-- daily_seasonality -->
                         <or-mwc-input
                             type="${InputType.CHECKBOX}"
@@ -97,7 +97,7 @@ export const ProphetConfig: ModelTypeConfig = {
                             label="Daily seasonality"
                             .value="${prophetConfig.daily_seasonality}"
                         ></or-mwc-input>
-                        
+
                         <!-- weekly_seasonality -->
                         <or-mwc-input
                             type="${InputType.CHECKBOX}"
@@ -106,7 +106,7 @@ export const ProphetConfig: ModelTypeConfig = {
                             label="Weekly seasonality"
                             .value="${prophetConfig.weekly_seasonality}"
                         ></or-mwc-input>
-                        
+
                         <!-- yearly_seasonality -->
                         <or-mwc-input
                             type="${InputType.CHECKBOX}"
@@ -120,10 +120,10 @@ export const ProphetConfig: ModelTypeConfig = {
             </or-panel>
         `;
     },
-    
+
     getCovariatesTemplate: (config, context) => {
         const prophetConfig = config as ProphetModelConfig;
-        
+
         // Helper functions for Prophet regressor handling
         const handleAddRegressor = () => {
             prophetConfig.regressors = prophetConfig.regressors ?? [];
@@ -170,7 +170,7 @@ export const ProphetConfig: ModelTypeConfig = {
 
         const getRegressorTemplate = (index: number) => {
             if (!prophetConfig.regressors) return html``;
-            
+
             const regressor = prophetConfig.regressors[index];
             return html`
                 <or-panel heading="REGRESSOR ${index + 1}">
@@ -199,7 +199,12 @@ export const ProphetConfig: ModelTypeConfig = {
                                     ></or-mwc-input>
                                 `,
                                 () => html`
-                                    <or-mwc-input type="${InputType.SELECT}" name="attribute_name" label="Attribute" disabled></or-mwc-input>
+                                    <or-mwc-input
+                                        type="${InputType.SELECT}"
+                                        name="attribute_name"
+                                        label="Attribute"
+                                        disabled
+                                    ></or-mwc-input>
                                 `
                             )}
 
@@ -246,7 +251,7 @@ export const ProphetConfig: ModelTypeConfig = {
             ${getAddRegressorTemplate()}
         `;
     },
-    
+
     validateConfig: (config) => {
         const prophetConfig = config as ProphetModelConfig;
         if (prophetConfig.regressors) {

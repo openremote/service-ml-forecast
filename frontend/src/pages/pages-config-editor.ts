@@ -194,7 +194,7 @@ export class PageConfigEditor extends LitElement {
             target: this.formData.target,
             forecast_interval: this.formData.forecast_interval,
             forecast_periods: this.formData.forecast_periods,
-            forecast_frequency: this.formData.forecast_frequency,
+            forecast_frequency: this.formData.forecast_frequency
         };
 
         this.formData = {
@@ -235,7 +235,6 @@ export class PageConfigEditor extends LitElement {
             }
         };
     }
-
 
     willUpdate(_changedProperties: PropertyValues): void {
         void _changedProperties; // Explicitly acknowledge unused parameter
@@ -393,8 +392,6 @@ export class PageConfigEditor extends LitElement {
         return modelTypeConfig.getParametersTemplate(this.formData, this.handleBasicInput.bind(this));
     }
 
-
-
     // Get covariates template based on model type
     getCovariatesTemplate() {
         const modelTypeConfig = ModelTypeRegistry.get(this.formData.type);
@@ -407,13 +404,9 @@ export class PageConfigEditor extends LitElement {
             attributeSelectList: this.attributeSelectList,
             searchAssets: this.searchAssets.bind(this),
             requestUpdate: this.requestUpdate.bind(this),
-            handleInput: () => { } // Not used in current implementation
+            handleInput: () => {} // Not used in current implementation
         });
     }
-
-
-
-
 
     // Search provider for the asset select list
     protected async searchAssets(search?: string): Promise<[any, string][]> {
@@ -473,8 +466,8 @@ export class PageConfigEditor extends LitElement {
                     <!-- Note: I know this is odd, but the disable state would not update properly via the disabled/.disabled/?disabled attribute -->
                     <div class="config-header-controls">
                         ${when(
-            this.isValid && this.modified,
-            () => html`
+                            this.isValid && this.modified,
+                            () => html`
                                 <or-mwc-input
                                     type="${InputType.BUTTON}"
                                     id="save-btn"
@@ -483,10 +476,10 @@ export class PageConfigEditor extends LitElement {
                                     @click="${this.onSave}"
                                 ></or-mwc-input>
                             `,
-            () => html`
+                            () => html`
                                 <or-mwc-input type="${InputType.BUTTON}" id="save-btn" label="save" raised disabled></or-mwc-input>
                             `
-        )}
+                        )}
                     </div>
                 </div>
 
@@ -562,8 +555,8 @@ export class PageConfigEditor extends LitElement {
 
                             <!-- Render the attribute select list if the asset is selected -->
                             ${when(
-            this.formData.target.asset_id,
-            () => html`
+                                this.formData.target.asset_id,
+                                () => html`
                                     <or-mwc-input
                                         type="${InputType.SELECT}"
                                         name="target.attribute_name"
@@ -573,7 +566,7 @@ export class PageConfigEditor extends LitElement {
                                         .options="${[...(this.attributeSelectList.get(this.formData.target.asset_id) ?? new Map())]}"
                                     ></or-mwc-input>
                                 `,
-            () => html`
+                                () => html`
                                     <or-mwc-input
                                         type="${InputType.SELECT}"
                                         name="target.attribute_name"
@@ -581,7 +574,7 @@ export class PageConfigEditor extends LitElement {
                                         disabled
                                     ></or-mwc-input>
                                 `
-        )}
+                            )}
 
                             <!-- target.training_data_period -->
                             <custom-duration-input
@@ -595,7 +588,6 @@ export class PageConfigEditor extends LitElement {
                         </div>
                     </div>
                 </or-panel>
-
 
                 <!-- Model parameters, these will be dynamic based on the model type -->
                 ${this.getParametersTemplate()}

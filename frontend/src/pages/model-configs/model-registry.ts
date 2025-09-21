@@ -28,16 +28,13 @@ import { XGBoostConfig } from './xgboost-config';
 export interface ModelTypeConfig {
     /** Human-readable label for the model type */
     label: string;
-    
+
     /** Default configuration values for this model type */
     defaultConfig: Partial<ModelConfig>;
-    
+
     /** Generate the parameters template for this model type */
-    getParametersTemplate: (
-        config: ModelConfig, 
-        handleInput: (ev: OrInputChangedEvent) => void
-    ) => TemplateResult;
-    
+    getParametersTemplate: (config: ModelConfig, handleInput: (ev: OrInputChangedEvent) => void) => TemplateResult;
+
     /** Generate the covariates template for this model type */
     getCovariatesTemplate: (
         config: ModelConfig,
@@ -49,7 +46,7 @@ export interface ModelTypeConfig {
             handleInput: (ev: OrInputChangedEvent, index: number, type?: string) => void;
         }
     ) => TemplateResult;
-    
+
     /** Validate the configuration for this model type */
     validateConfig: (config: ModelConfig) => boolean;
 }
