@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 class ProphetModelProvider(ModelProvider[Prophet]):
     """Prophet model provider.
-    
+
     Prophet is an additive regression model, widely used for time series forecasting.
     """
 
