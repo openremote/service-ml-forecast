@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "service-ml-forecast"
 version = "0.2.0"
-description = "Machine Learning Forecast Service"
+description = "ML Forecast Service"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
@@ -26,7 +26,18 @@ dependencies = [
     "isodate>=0.7.2",
     "pyjwt>=2.10.1",
     "aiocache>=0.12.3",
+    "openremote-client",
+    "scikit-learn>=1.7.2",
 ]
+
+
+# Workspace and sources for local packages
+[tool.uv.workspace]
+members = ["packages/*"]
+
+[tool.uv.sources]
+openremote-client = { workspace = true }
+
 
 [dependency-groups]
 dev = [
@@ -106,17 +117,30 @@ combine-as-imports = true
 testpaths = ["tests"]
 python_files = "test_*.py"
 filterwarnings = ["ignore:.*"]
+log_cli = true
+log_cli_level = "INFO"
+log_cli_format = "%(asctime)s [%(levelname)8s] %(name)s: %(message)s"
+log_cli_date_format = "%Y-%m-%d %H:%M:%S"
 
 [project.scripts]
 service_ml_forecast = "service_ml_forecast.main:app"
 
-# CLI commands for development tasks
-lint = "scripts.tools:lint"
-start = "scripts.tools:start"
-test = "scripts.tools:test"
-test-coverage = "scripts.tools:test_coverage"
-format = "scripts.tools:format"
-build = "scripts.tools:build"
-build-frontend = "scripts.tools:build_frontend"
-build-all = "scripts.tools:build_all"
+# CLI helpers
 help = "scripts.tools:help"
+
+lint = "scripts.tools:lint" # lint backend and packages
+format = "scripts.tools:format" # format backend and packages
+test = "scripts.tools:test" # test backend and packages
+test-coverage = "scripts.tools:test_coverage" # test backend and packages with coverage
+build = "scripts.tools:build" # build backend and packages
+start = "scripts.tools:start" # start backend server
+
+build-frontend = "scripts.tools:build_frontend" # build frontend bundle
+build-frontend-dev = "scripts.tools:build_frontend_dev" # build frontend bundle for development
+
+# Package-specific commands
+lint-packages = "scripts.tools:lint_packages" # lint packages
+test-packages = "scripts.tools:test_packages" # test packages
+build-packages = "scripts.tools:build_packages" # build packages
+
+

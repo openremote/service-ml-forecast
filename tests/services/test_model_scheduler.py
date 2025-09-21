@@ -4,8 +4,8 @@ from uuid import uuid4
 
 import pytest
 import respx
+from openremote_client import AssetDatapoint
 
-from service_ml_forecast.clients.openremote.models import AssetDatapoint
 from service_ml_forecast.common.exceptions import ResourceNotFoundError
 from service_ml_forecast.common.time_util import TimeUtil
 from service_ml_forecast.ml.model_provider_factory import ModelProviderFactory
@@ -136,7 +136,7 @@ def test_training_execution(
         ).mock(
             return_value=respx.MockResponse(
                 HTTPStatus.OK,
-                json=windspeed_mock_datapoints,
+                json=[{"x": point.x, "y": point.y} for point in windspeed_mock_datapoints],
             ),
         )
         _model_training_job(prophet_basic_config, mock_openremote_service)
@@ -288,7 +288,7 @@ def trained_basic_model(
         ).mock(
             return_value=respx.MockResponse(
                 HTTPStatus.OK,
-                json=windspeed_mock_datapoints,
+                json=[{"x": point.x, "y": point.y} for point in windspeed_mock_datapoints],
             ),
         )
         _model_training_job(prophet_basic_config, mock_openremote_service)
@@ -319,7 +319,7 @@ def trained_regressor_model(
         ).mock(
             return_value=respx.MockResponse(
                 HTTPStatus.OK,
-                json=tariff_mock_datapoints,
+                json=[{"x": point.x, "y": point.y} for point in tariff_mock_datapoints],
             ),
         )
         # mock historical datapoints retrieval for regressor
@@ -328,7 +328,7 @@ def trained_regressor_model(
         ).mock(
             return_value=respx.MockResponse(
                 HTTPStatus.OK,
-                json=windspeed_mock_datapoints,
+                json=[{"x": point.x, "y": point.y} for point in windspeed_mock_datapoints],
             ),
         )
         _model_training_job(prophet_multi_variable_config, mock_openremote_service)

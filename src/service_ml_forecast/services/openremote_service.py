@@ -17,8 +17,8 @@
 
 import logging
 
-from service_ml_forecast.clients.openremote.models import AssetDatapoint, BasicAsset, Realm
-from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
+from openremote_client import AssetDatapoint, BasicAsset, OpenRemoteClient, Realm
+
 from service_ml_forecast.common.time_util import TimeUtil
 from service_ml_forecast.models.feature_data_wrappers import AssetFeatureDatapoints, ForecastDataSet, TrainingDataSet
 from service_ml_forecast.models.model_config import ModelConfig
@@ -27,10 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 class OpenRemoteService:
-    """Service for interacting with the OpenRemote Manager API.
-
-    Provides a wrapper around the OpenRemoteClient to provide a more convenient interface for the ML Forecast service.
-    """
+    """Service for interacting with the OpenRemote Manager API."""
 
     def __init__(self, client: OpenRemoteClient):
         self.client = client
@@ -45,7 +42,7 @@ class OpenRemoteService:
         Returns:
             True if the datapoints were written successfully, False otherwise.
         """
-        return self.client.write_predicted_datapoints(
+        return self.client.assets.write_predicted_datapoints(
             config.target.asset_id,
             config.target.attribute_name,
             asset_datapoints,
@@ -143,7 +140,7 @@ class OpenRemoteService:
 
         # Single requests for sub-monthly periods
         if months_diff <= 1:
-            return self.client.get_historical_datapoints(asset_id, attribute_name, from_timestamp, to_timestamp)
+            return self.client.assets.get_historical_datapoints(asset_id, attribute_name, from_timestamp, to_timestamp)
         # Split into monthly chunks if more than 1 month to avoid hitting datapoint limits on the OpenRemote side
         else:
             all_datapoints = []
@@ -161,7 +158,7 @@ class OpenRemoteService:
                 # Don't exceed the original to_timestamp
                 current_to = min(current_to, to_timestamp)
 
-                chunk_datapoints = self.client.get_historical_datapoints(
+                chunk_datapoints = self.client.assets.get_historical_datapoints(
                     asset_id, attribute_name, current_from, current_to
                 )
 
@@ -196,7 +193,7 @@ class OpenRemoteService:
                 # Get the start timestamp for the regressor
                 start_timestamp = TimeUtil.get_period_start_timestamp_ms(regressor.training_data_period)
 
-                regressor_datapoints = self.client.get_predicted_datapoints(
+                regressor_datapoints = self.client.assets.get_predicted_datapoints(
                     regressor.asset_id,
                     regressor.attribute_name,
                     start_timestamp,
@@ -229,7 +226,7 @@ class OpenRemoteService:
         Returns:
             A list of all assets from OpenRemote.
         """
-        assets = self.client.get_assets_by_ids(asset_ids, realm)
+        assets = self.client.assets.get_by_ids(asset_ids, realm)
         if assets is None:
             logger.warning(f"Unable to retrieve assets by ids for realm {realm}")
             return []
@@ -240,6 +237,6 @@ class OpenRemoteService:
         """Get all accessible realms from OpenRemote for the current authenticated user.
 
         Returns:
-            A list of all realms from OpenRemote.
+            A list of all accessible realms from OpenRemote.
         """
-        return self.client.get_accessible_realms()
+        return self.client.realms.get_accessible()
