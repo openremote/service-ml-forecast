@@ -18,8 +18,8 @@
 import logging
 from uuid import UUID
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 from openremote_client import AssetDatapoint
 from prophet import Prophet
 from prophet.diagnostics import cross_validation, performance_metrics
@@ -53,7 +53,7 @@ FORECAST_COLUMN_NAME = "yhat"
 
 class ProphetModelProvider(ModelProvider[Prophet]):
     """Prophet model provider.
-    
+
     Prophet is an additive regression model, widely used for time series forecasting.
     """
 
@@ -171,18 +171,13 @@ class ProphetModelProvider(ModelProvider[Prophet]):
             secs = int(horizon_delta.total_seconds())
             horizon_str = f"{secs} seconds"
         except Exception:
-            logger.warning(
-                f"Invalid forecast_frequency '{self.config.forecast_frequency}', using 30 days"
-            )
+            logger.warning(f"Invalid forecast_frequency '{self.config.forecast_frequency}', using 30 days")
             horizon_str = "30 days"
 
         horizon_td = pd.to_timedelta(horizon_str)
 
         training_df = model.history
-        training_duration = (
-            training_df[TIMESTAMP_COLUMN_NAME].max()
-            - training_df[TIMESTAMP_COLUMN_NAME].min()
-        )
+        training_duration = training_df[TIMESTAMP_COLUMN_NAME].max() - training_df[TIMESTAMP_COLUMN_NAME].min()
 
         min_initial = pd.Timedelta(days=30)
         initial_duration = max(horizon_td * 3, min_initial)
@@ -191,9 +186,7 @@ class ProphetModelProvider(ModelProvider[Prophet]):
 
         # Enough data?
         if training_duration < initial_duration + horizon_td:
-            logger.warning(
-                f"Training data too short for CV (need {initial_duration} + {horizon_td})"
-            )
+            logger.warning(f"Training data too short for CV (need {initial_duration} + {horizon_td})")
             return None
 
         remaining_duration = training_duration - initial_duration
@@ -207,16 +200,13 @@ class ProphetModelProvider(ModelProvider[Prophet]):
         expected_folds = max(1, int(usable / period_duration) + 1)
 
         if expected_folds > max_folds:
-            logger.info(
-                f"Capping folds to {max_folds} (dataset would allow ~{expected_folds})"
-            )
+            logger.info(f"Capping folds to {max_folds} (dataset would allow ~{expected_folds})")
             expected_folds = max_folds
 
         logger.info(
             f"Running CV with ~{expected_folds} folds "
             f"(initial={initial_duration}, period={period_duration}, horizon={horizon_td})"
         )
-
 
         try:
             df_cv = cross_validation(
