@@ -29,6 +29,7 @@ dependencies = [
     "openremote-client",
     "scikit-learn>=1.7.2",
     "darts>=0.37.1",
+    "xgboost>=3.0.5",
 ]
 
 

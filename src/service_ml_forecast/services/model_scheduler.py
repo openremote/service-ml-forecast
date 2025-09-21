@@ -25,7 +25,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 from service_ml_forecast.common.singleton import Singleton
 from service_ml_forecast.common.time_util import TimeUtil
-from service_ml_forecast.ml.model_provider_factory import ModelProviderFactory
+from service_ml_forecast.ml.model_provider_factory import ModelProviderFactory, get_all_covariates
 from service_ml_forecast.models.model_config import ModelConfig
 from service_ml_forecast.services.model_config_service import ModelConfigService
 from service_ml_forecast.services.openremote_service import OpenRemoteService
@@ -229,11 +229,12 @@ def _model_forecast_job(config: ModelConfig, data_service: OpenRemoteService) ->
     # Retrieve the forecast dataset
     forecast_dataset = data_service.get_forecast_dataset(config)
 
-    if config.regressors is not None and forecast_dataset is None:
+    all_covariates = get_all_covariates(config)
+    if len(all_covariates) > 0 and forecast_dataset is None:
         logger.error(
-            f"Cannot forecast model {config.id} - config has regressors but no forecast dataset. "
+            f"Cannot forecast model {config.id} - config has covariates but no forecast dataset. "
             f"Asset ID: {config.target.asset_id}, Attribute: {config.target.attribute_name}, "
-            f"Regressors: {', '.join(r.attribute_name for r in config.regressors)}"
+            f"Covariates: {', '.join(r.attribute_name for r in all_covariates)}"
         )
         return
 

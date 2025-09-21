@@ -19,8 +19,33 @@ from typing import Any, cast
 
 from service_ml_forecast.ml.model_provider import ModelProvider
 from service_ml_forecast.ml.prophet_model_provider import ProphetModelProvider
-from service_ml_forecast.models.model_config import ModelConfig
+from service_ml_forecast.ml.xgboost_model_provider import XGBoostModelProvider
+from service_ml_forecast.models.model_config import AssetDatapointFeature, ModelConfig
 from service_ml_forecast.models.model_type import ModelTypeEnum
+
+
+def get_all_covariates(config: ModelConfig) -> list[AssetDatapointFeature]:
+    """Extract all covariates from any model configuration.
+
+    Args:
+        config: The model configuration (Prophet or XGBoost).
+
+    Returns:
+        List of all covariate features from the model configuration.
+    """
+    all_covariates: list[AssetDatapointFeature] = []
+
+    # Prophet model uses 'regressors'
+    if hasattr(config, "regressors") and config.regressors is not None:
+        all_covariates.extend(config.regressors)
+
+    # XGBoost model uses 'past_covariates' and 'future_covariates'
+    if hasattr(config, "past_covariates") and config.past_covariates is not None:
+        all_covariates.extend(config.past_covariates)
+    if hasattr(config, "future_covariates") and config.future_covariates is not None:
+        all_covariates.extend(config.future_covariates)
+
+    return all_covariates
 
 
 class ModelProviderFactory:
@@ -44,6 +69,14 @@ class ModelProviderFactory:
             except Exception as e:
                 raise ValueError(
                     f"Failed to create Prophet model provider for config {config.id}. "
+                    f"Error: {e!s}. Config details: {config.model_dump_json()}"
+                ) from e
+        elif config.type == ModelTypeEnum.XGBOOST:
+            try:
+                return cast("ModelProvider[Any]", XGBoostModelProvider(config=config))
+            except Exception as e:
+                raise ValueError(
+                    f"Failed to create XGBoost model provider for config {config.id}. "
                     f"Error: {e!s}. Config details: {config.model_dump_json()}"
                 ) from e
 

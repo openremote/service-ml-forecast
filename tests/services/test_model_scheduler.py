@@ -4,6 +4,7 @@ from uuid import uuid4
 
 import pytest
 import respx
+from darts.models import Prophet as DartsProphet
 from openremote_client import AssetDatapoint
 
 from service_ml_forecast.common.exceptions import ResourceNotFoundError
@@ -141,7 +142,7 @@ def test_training_execution(
         )
         _model_training_job(prophet_basic_config, mock_openremote_service)
 
-    assert model_storage.get(prophet_basic_config.id) is not None
+    assert model_storage.load(DartsProphet, prophet_basic_config.id) is not None
 
 
 def test_training_execution_with_missing_datapoints(
@@ -171,8 +172,9 @@ def test_training_execution_with_missing_datapoints(
         )
         _model_training_job(prophet_basic_config, mock_openremote_service)
 
+    # Verify model was not saved by expecting ResourceNotFoundError when loading
     with pytest.raises(ResourceNotFoundError):
-        model_storage.get(prophet_basic_config.id)
+        model_storage.load(DartsProphet, prophet_basic_config.id)
 
 
 def test_forecast_execution(

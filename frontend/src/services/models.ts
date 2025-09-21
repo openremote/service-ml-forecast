@@ -99,12 +99,6 @@ interface BaseModelConfig {
      */
     target: TargetFeature;
     /**
-     * List of asset attributes that will be used as regressors.
-     * There must be historical data available for training.
-     * @default null
-     */
-    regressors?: RegressorFeature[] | null; // Optional as it has a default
-    /**
      * Forecast generation interval. Expects ISO 8601 duration strings.
      */
     forecast_interval: string;
@@ -141,6 +135,13 @@ export interface ProphetModelConfig extends BaseModelConfig {
      * Discriminator field indicating the model type is Prophet.
      */
     type: ModelTypeEnum.PROPHET; // Use literal type for discriminator
+    /**
+     * List of asset attributes that will be used as regressors.
+     * There must be historical data available for training.
+     * There must also be future data available for forecasting.
+     * @default null
+     */
+    regressors?: RegressorFeature[] | null; // Optional as it has a default
     /**
      * Include yearly seasonality in the model.
      * @default true

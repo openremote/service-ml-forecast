@@ -8,24 +8,23 @@ from openremote_client import AssetDatapoint
 from service_ml_forecast.ml.model_provider_factory import ModelProviderFactory
 from service_ml_forecast.models.feature_data_wrappers import AssetFeatureDatapoints, TrainingDataSet
 from service_ml_forecast.models.model_config import (
-    ProphetModelConfig,
-    ProphetSeasonalityModeEnum,
     TargetAssetDatapointsFeature,
+    XGBoostModelConfig,
 )
 from service_ml_forecast.models.model_type import ModelTypeEnum
 
 logger = logging.getLogger(__name__)
 
 
-def test_prophet_model_performance(power_grid_mock_datapoints: list[AssetDatapoint]) -> None:
-    """Test Prophet model performance with power grid data."""
+def test_xgboost_model_performance(power_grid_mock_datapoints: list[AssetDatapoint]) -> None:
+    """Test XGBoost model performance with power grid data."""
 
-    config = ProphetModelConfig(
+    config = XGBoostModelConfig(
         id=UUID("12345678-1234-5678-9abc-def012345678"),
         realm="test",
-        name="Power Performance Test",
+        name="XGBoost Performance Test",
         enabled=True,
-        type=ModelTypeEnum.PROPHET,
+        type=ModelTypeEnum.XGBOOST,
         target=TargetAssetDatapointsFeature(
             asset_id="41ORIhkDVAlT97dYGUD3n5",
             attribute_name="power",
@@ -35,17 +34,18 @@ def test_prophet_model_performance(power_grid_mock_datapoints: list[AssetDatapoi
         training_interval="PT1H",
         forecast_frequency="1h",
         forecast_periods=24,
-        weekly_seasonality=True,
-        yearly_seasonality=False,
-        daily_seasonality=False,
-        seasonality_mode=ProphetSeasonalityModeEnum.ADDITIVE,
-        changepoint_range=0.8,
-        changepoint_prior_scale=0.05,
+        lags=24,
+        output_chunk_length=1,
+        n_estimators=100,
+        max_depth=6,
+        learning_rate=0.1,
+        subsample=0.8,
+        random_state=42,
     )
 
     dataset = sorted(power_grid_mock_datapoints, key=lambda dp: dp.x)
 
-    logger.info("Prophet Model Performance Test - Power Grid Data")
+    logger.info("XGBoost Model Performance Test - Power Grid Data")
     logger.info(f"Dataset: {len(dataset)} data points")
 
     if dataset:
@@ -98,5 +98,5 @@ def test_prophet_model_performance(power_grid_mock_datapoints: list[AssetDatapoi
     assert metrics.mae >= 0, "MAE should be non-negative"
     assert metrics.r2 <= 1, "R² should be <= 1 (can be negative if model is worse than mean)"
 
-    MAX_ACCEPTABLE_PERCENTAGE = 20
+    MAX_ACCEPTABLE_PERCENTAGE = 30
     assert metrics.mape < MAX_ACCEPTABLE_PERCENTAGE, "MAPE should be reasonable"

@@ -20,3 +20,4 @@ from enum import Enum
 
 class ModelTypeEnum(str, Enum):
     PROPHET = "prophet"
+    XGBOOST = "xgboost"

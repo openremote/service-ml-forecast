@@ -19,7 +19,7 @@ from openremote_client import AssetDatapoint, OpenRemoteClient
 from service_ml_forecast.config import DIRS
 from service_ml_forecast.dependencies import get_config_service
 from service_ml_forecast.logging_config import LOGGING_CONFIG
-from service_ml_forecast.models.model_config import ProphetModelConfig
+from service_ml_forecast.models.model_config import ProphetModelConfig, XGBoostModelConfig
 from service_ml_forecast.services.model_config_service import ModelConfigService
 from service_ml_forecast.services.model_storage_service import ModelStorageService
 from service_ml_forecast.services.openremote_service import OpenRemoteService
@@ -109,6 +109,27 @@ def prophet_multi_variable_config() -> ProphetModelConfig:
     config_path = Path(__file__).parent / "ml/resources/prophet-tariff-config.json"
     with open(config_path) as f:
         return ProphetModelConfig(**json.load(f))
+
+
+@pytest.fixture
+def xgboost_basic_config() -> XGBoostModelConfig:
+    config_path = Path(__file__).parent / "ml/resources/xgboost-windspeed-config.json"
+    with open(config_path) as f:
+        return XGBoostModelConfig(**json.load(f))
+
+
+@pytest.fixture
+def xgboost_multi_variable_config() -> XGBoostModelConfig:
+    config_path = Path(__file__).parent / "ml/resources/xgboost-tariff-config.json"
+    with open(config_path) as f:
+        return XGBoostModelConfig(**json.load(f))
+
+
+@pytest.fixture
+def xgboost_future_covariate_config() -> XGBoostModelConfig:
+    config_path = Path(__file__).parent / "ml/resources/xgboost-tariff-future-covariate-config.json"
+    with open(config_path) as f:
+        return XGBoostModelConfig(**json.load(f))
 
 
 @pytest.fixture

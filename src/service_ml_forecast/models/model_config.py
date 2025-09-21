@@ -24,10 +24,10 @@ from pydantic import BaseModel, Field
 from service_ml_forecast.models.model_type import ModelTypeEnum
 
 
-class RegressorAssetDatapointsFeature(BaseModel):
-    """Asset regressor feature with the asset id, attribute name and the cutoff timestamp.
+class AssetDatapointFeature(BaseModel):
+    """Base asset feature with the asset id, attribute name and the training data period.
 
-    The asset regressor is a covariate that is used to predict the target asset.
+    The asset feature is a covariate that is used for model training and forecasting.
     """
 
     asset_id: str = Field(description="ID of the asset from OpenRemote.", min_length=22, max_length=22)
@@ -46,10 +46,31 @@ class RegressorAssetDatapointsFeature(BaseModel):
         deprecated=True,
     )
 
-    # Used for model training and forecasting -- requiring unique feature name
     def get_feature_name(self) -> str:
-        """Get the feature name for the regressor feature."""
-        return f"{self.asset_id}.{self.attribute_name}"
+        """Get the feature name for the feature."""
+        return f"asset_{self.asset_id}.{self.attribute_name}"
+
+
+class FutureAssetDatapointFeature(AssetDatapointFeature):
+    """Asset feature with the asset id, attribute name and the training data period.
+
+    The asset feature is a covariate that is used for model training and forecasting.
+    """
+
+    def get_feature_name(self) -> str:
+        """Get the feature name for the feature."""
+        return f"future_{self.asset_id}.{self.attribute_name}"
+
+
+class PastAssetDatapointFeature(AssetDatapointFeature):
+    """Asset feature with the asset id, attribute name and the training data period.
+
+    The asset feature is a covariate that is used for model training and forecasting.
+    """
+
+    def get_feature_name(self) -> str:
+        """Get the feature name for the feature."""
+        return f"past_{self.asset_id}.{self.attribute_name}"
 
 
 class TargetAssetDatapointsFeature(BaseModel):
@@ -93,12 +114,6 @@ class BaseModelConfig(BaseModel):
         description="The asset attribute to generate datapoints for. "
         "There must be historical data available for training.",
     )
-    regressors: list[RegressorAssetDatapointsFeature] | None = Field(
-        default=None,
-        description="List of optional asset attributes that will be used as regressors. "
-        "There must be historical data available for training. "
-        "There must also be future data available for forecasting.",
-    )
     forecast_interval: str = Field(description="Forecast generation interval. Expects ISO 8601 duration strings.")
     training_interval: str = Field(description="Model training interval. Expects ISO 8601 duration strings.")
     forecast_periods: int = Field(description="Number of periods to forecast.")
@@ -121,6 +136,12 @@ class ProphetModelConfig(BaseModelConfig):
     """Prophet specific configuration."""
 
     type: Literal[ModelTypeEnum.PROPHET] = ModelTypeEnum.PROPHET
+    regressors: list[FutureAssetDatapointFeature] | None = Field(
+        default=None,
+        description="List of optional asset attributes that will be used as regressors. "
+        "There must be historical data available for training. "
+        "There must also be future data available for forecasting.",
+    )
     yearly_seasonality: bool = Field(
         default=True,
         description="Include yearly seasonality in the model.",
@@ -154,7 +175,68 @@ class ProphetModelConfig(BaseModelConfig):
     )
 
 
+class XGBoostModelConfig(BaseModelConfig):
+    """XGBoost specific configuration."""
+
+    type: Literal[ModelTypeEnum.XGBOOST] = ModelTypeEnum.XGBOOST
+    past_covariates: list[PastAssetDatapointFeature] | None = Field(
+        default=None,
+        description="List of optional asset attributes that will be used as past covariates. "
+        "Historical data is required for training. Only historical data is used for forecasting. "
+        "Use this when future data cannot be provided.",
+    )
+    future_covariates: list[FutureAssetDatapointFeature] | None = Field(
+        default=None,
+        description="List of optional asset attributes that will be used as future covariates. "
+        "Both historical and future data must be available for training and forecasting.",
+    )
+    lags: int | list[int] | None = Field(
+        default=24,
+        description="Number of lagged observations to use as features. "
+        "Can be an integer (number of lags) or list of specific lag values.",
+    )
+    lags_future_covariates: int | list[int] | None = Field(
+        default=None,
+        description="Number of lagged future covariates to use as features (non-negative values).",
+    )
+    lags_past_covariates: int | list[int] | None = Field(
+        default=None,
+        description="Number of lagged past covariates to use as features (negative values).",
+    )
+    output_chunk_length: int = Field(
+        default=1,
+        description="Number of time steps predicted at once by the internal model.",
+        ge=1,
+    )
+    n_estimators: int = Field(
+        default=100,
+        description="Number of gradient boosted trees.",
+        ge=1,
+    )
+    max_depth: int = Field(
+        default=6,
+        description="Maximum tree depth for base learners.",
+        ge=1,
+    )
+    learning_rate: float = Field(
+        default=0.1,
+        description="Boosting learning rate.",
+        gt=0.0,
+        le=1.0,
+    )
+    subsample: float = Field(
+        default=1.0,
+        description="Subsample ratio of the training instances.",
+        gt=0.0,
+        le=1.0,
+    )
+    random_state: int = Field(
+        default=42,
+        description="Random seed for reproducibility.",
+    )
+
+
 ModelConfig = Annotated[
-    ProphetModelConfig,
+    ProphetModelConfig | XGBoostModelConfig,
     Field(discriminator="type"),
 ]

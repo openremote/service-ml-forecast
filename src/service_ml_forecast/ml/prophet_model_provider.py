@@ -83,9 +83,9 @@ class ProphetModelProvider(ModelProvider[DartsProphet]):
         )
 
         covariates = None
-        if training_dataset.regressors and len(training_dataset.regressors) > 0:
-            logger.info(f"Training with {len(training_dataset.regressors)} regressors")
-            covariate_cols = [r.feature_name for r in training_dataset.regressors]
+        if training_dataset.covariates and len(training_dataset.covariates) > 0:
+            logger.info(f"Training with {len(training_dataset.covariates)} regressors")
+            covariate_cols = [r.feature_name for r in training_dataset.covariates]
             available_cols = [col for col in covariate_cols if col in dataframe.columns]
             if available_cols:
                 covariates = TimeSeries.from_dataframe(
@@ -123,8 +123,8 @@ class ProphetModelProvider(ModelProvider[DartsProphet]):
         model = self.load_model(self.config.id)
 
         future_covariates = None
-        if forecast_dataset and forecast_dataset.regressors:
-            logger.info(f"Generating forecast with {len(forecast_dataset.regressors)} regressors")
+        if forecast_dataset and forecast_dataset.covariates:
+            logger.info(f"Generating forecast with {len(forecast_dataset.covariates)} regressors")
 
             if model.training_series is not None:
                 start_time = model.training_series.end_time() + pd.Timedelta(self.config.forecast_frequency)
@@ -148,7 +148,7 @@ class ProphetModelProvider(ModelProvider[DartsProphet]):
                 timestamp_col=TIMESTAMP_COLUMN_NAME,
             )
 
-            covariate_cols = [r.feature_name for r in forecast_dataset.regressors]
+            covariate_cols = [r.feature_name for r in forecast_dataset.covariates]
             available_cols = [col for col in covariate_cols if col in future_prepared.columns]
             if available_cols:
                 future_covariates = TimeSeries.from_dataframe(

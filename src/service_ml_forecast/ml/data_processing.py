@@ -99,7 +99,7 @@ def align_training_data(
         value_col: Name for the target value column in output DataFrame
     """
     target = training_dataset.target
-    regressors = training_dataset.regressors
+    regressors = training_dataset.covariates
     dataframes = []
 
     target_df = resample_and_interpolate(
@@ -176,14 +176,14 @@ def align_forecast_data(
         config_id: Model configuration ID for logging
         timestamp_col: Name of the timestamp column in the future DataFrame
     """
-    if forecast_dataset is None or not forecast_dataset.regressors:
+    if forecast_dataset is None or not forecast_dataset.covariates:
         logger.info(f"No regressors for forecast {config_id}")
         return future_df
 
-    logger.info(f"Preparing forecast with {len(forecast_dataset.regressors)} regressors - {config_id}")
+    logger.info(f"Preparing forecast with {len(forecast_dataset.covariates)} regressors - {config_id}")
     prepared_future_df = future_df.copy()
 
-    for regressor in forecast_dataset.regressors:
+    for regressor in forecast_dataset.covariates:
         if not regressor.datapoints:
             logger.warning(f"Skipping regressor '{regressor.feature_name}': no data")
             continue

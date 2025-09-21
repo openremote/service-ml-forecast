@@ -1,0 +1,31 @@
+{
+  "id": "d3c119a6-1018-4ebd-932b-a509eb7ab842",
+  "realm": "test",
+  "name": "XGBoost Tariff Forecast with Future Windspeed Covariate",
+  "enabled": true,
+  "type": "xgboost",
+  "target": {
+    "asset_id": "44ORIhkDVAlT97dYGUD9n5",
+    "attribute_name": "tariff",
+    "training_data_period": "P6M"
+  },
+  "future_covariates": [
+    {
+      "asset_id": "44ORIhkDVAlT97dYGUD9n5",
+      "attribute_name": "windSpeed",
+      "training_data_period": "P6M"
+    }
+  ],
+  "forecast_interval": "PT1H",
+  "training_interval": "PT1H",
+  "forecast_frequency": "1h",
+  "forecast_periods": 7,
+  "lags": 3,
+  "lags_future_covariates": [0, 1, 2],
+  "output_chunk_length": 1,
+  "n_estimators": 100,
+  "max_depth": 6,
+  "learning_rate": 0.1,
+  "subsample": 0.8,
+  "random_state": 42
+}

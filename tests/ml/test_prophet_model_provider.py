@@ -97,7 +97,7 @@ def test_train_and_predict_with_regressor(
     ]
 
     tariff_model = tarrif_provider.train_model(
-        TrainingDataSet(target=tariff_target_datapoints, regressors=regressor_feature_datapoints),
+        TrainingDataSet(target=tariff_target_datapoints, covariates=regressor_feature_datapoints),
     )
     assert tariff_model is not None
 
@@ -110,7 +110,7 @@ def test_train_and_predict_with_regressor(
         feature_name=prophet_basic_config.target.attribute_name,
         datapoints=windspeed_forecast.datapoints,
     )
-    forecast_dataset = ForecastDataSet(regressors=[windspeed_regressor_datapoints])
+    forecast_dataset = ForecastDataSet(covariates=[windspeed_regressor_datapoints])
     forecast = tarrif_provider.generate_forecast(forecast_dataset)
     assert forecast is not None
     assert forecast.datapoints is not None
@@ -214,7 +214,7 @@ def test_data_resampling_and_alignment(
     model = model_provider.train_model(
         TrainingDataSet(
             target=target_datapoints,
-            regressors=[regressor_datapoints],
+            covariates=[regressor_datapoints],
         ),
     )
 
@@ -251,7 +251,7 @@ def test_forecast_with_missing_regressor_data(
     model = model_provider.train_model(
         TrainingDataSet(
             target=target_datapoints,
-            regressors=[regressor_datapoints],
+            covariates=[regressor_datapoints],
         ),
     )
     assert model is not None
@@ -265,7 +265,7 @@ def test_forecast_with_missing_regressor_data(
         datapoints=[tariff_mock_datapoints[0]],  # Just one point
     )
 
-    forecast_dataset = ForecastDataSet(regressors=[minimal_regressor])
+    forecast_dataset = ForecastDataSet(covariates=[minimal_regressor])
 
     # Should handle minimal regressor data gracefully
     forecast = model_provider.generate_forecast(forecast_dataset)

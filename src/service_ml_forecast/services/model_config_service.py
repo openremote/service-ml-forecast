@@ -28,6 +28,7 @@ from service_ml_forecast.common.exceptions import (
 )
 from service_ml_forecast.common.fs_util import FsUtil
 from service_ml_forecast.config import DIRS
+from service_ml_forecast.ml.model_provider_factory import get_all_covariates
 from service_ml_forecast.models.model_config import ModelConfig
 from service_ml_forecast.services.model_storage_service import ModelStorageService
 from service_ml_forecast.services.openremote_service import OpenRemoteService
@@ -209,9 +210,9 @@ class ModelConfigService:
 
         asset_ids_to_check.add(config.target.asset_id)
 
-        if config.regressors:
-            for regressor in config.regressors:
-                asset_ids_to_check.add(regressor.asset_id)
+        # Add all covariate asset IDs to check
+        for covariate in get_all_covariates(config):
+            asset_ids_to_check.add(covariate.asset_id)
 
         assets = self.openremote_service.get_assets_by_ids(config.realm, list(asset_ids_to_check))
 
