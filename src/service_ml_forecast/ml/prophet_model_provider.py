@@ -36,6 +36,13 @@ from service_ml_forecast.services.model_storage_service import ModelStorageServi
 logger = logging.getLogger(__name__)
 
 
+MIN_DATAPOINTS_FOR_PROPHET = 2
+MIN_RECOMMENDED_DATAPOINTS = 50
+TIMESTAMP_COLUMN_NAME = "ds"
+VALUE_COLUMN_NAME = "y"
+FORECAST_COLUMN_NAME = "yhat"
+
+
 class ProphetModelProvider(ModelProvider[Prophet]):
     """Prophet model provider."""
 
@@ -83,13 +90,7 @@ class ProphetModelProvider(ModelProvider[Prophet]):
 
         # Train the model
         model.fit(dataframe)
-
-        # Perform quick evaluation of the model using cross-validation
-        try:
-            self.evaluate_model(model)
-        except Exception as e:
-            logger.error(f"Failed to evaluate model {self.config.id} using cross-validation: {e}", exc_info=True)
-
+        
         return model
 
     def load_model(self, model_id: UUID) -> Prophet:

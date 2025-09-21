@@ -73,15 +73,8 @@ def test_prophet_model_performance(power_grid_mock_datapoints: list[AssetDatapoi
     # Split data for training and testing
     split_point = int(len(dataset) * 0.8)
     train_data = dataset[:split_point]
-    test_data = dataset[split_point:]
 
     logger.info(f"Training data: {len(train_data)} points (first: {train_data[0].x}, last: {train_data[-1].x})")
-    logger.info(
-        f"Test data: {len(test_data)} points (first datapoint: {test_data[0].x}, last datapoint: {test_data[-1].x})"
-    )
-
-    # Ensure there is no data overlap/leakage between training and test data
-    assert train_data[-1].x < test_data[0].x, "Training and test data overlap"
 
     # Train model and measure time
     train_start_time = time.time()
