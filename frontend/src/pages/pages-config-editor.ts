@@ -17,10 +17,9 @@
 
 import { css, html, LitElement, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { map } from 'lit/directives/map.js';
 import { when } from 'lit/directives/when.js';
 import { ModelTypeEnum, ProphetSeasonalityModeEnum } from '../services/models';
-import type { ProphetModelConfig } from '../services/models';
+import type { ModelConfig, ProphetModelConfig } from '../services/models';
 import { APIService } from '../services/api-service';
 import { Router, RouterLocation } from '@vaadin/router';
 import { InputType, OrInputChangedEvent } from '@openremote/or-mwc-components/or-mwc-input';
@@ -31,6 +30,10 @@ import { consume } from '@lit/context';
 import { realmContext } from './app-layout';
 import { manager } from '@openremote/core';
 import * as Model from '@openremote/model';
+import { ModelTypeRegistry } from './model-configs/model-registry';
+
+// Initialize model configurations
+ModelTypeRegistry.registerAllConfigs();
 
 @customElement('page-config-editor')
 export class PageConfigEditor extends LitElement {
@@ -108,7 +111,7 @@ export class PageConfigEditor extends LitElement {
     configId?: string;
 
     @state()
-    protected modelConfig: ProphetModelConfig | null = null;
+    protected modelConfig: ModelConfig | null = null;
 
     @state()
     protected assetSelectList: Map<string, string> = new Map();
@@ -131,7 +134,7 @@ export class PageConfigEditor extends LitElement {
     protected readonly rootPath = getRootPath();
 
     @state()
-    protected formData: ProphetModelConfig = {
+    protected formData: ModelConfig = {
         type: ModelTypeEnum.PROPHET,
         realm: '', // Set during setup
         name: 'New Model Config',
@@ -145,14 +148,13 @@ export class PageConfigEditor extends LitElement {
         forecast_interval: 'PT1H',
         forecast_periods: 24,
         forecast_frequency: '1h',
-        training_interval: 'PT1H',
         daily_seasonality: true,
         weekly_seasonality: true,
         yearly_seasonality: true,
         changepoint_range: 0.8,
         changepoint_prior_scale: 0.05,
         seasonality_mode: ProphetSeasonalityModeEnum.ADDITIVE
-    };
+    } as ProphetModelConfig;
 
     // Handle basic form field updates
     protected handleBasicInput(ev: OrInputChangedEvent | CustomEvent<{ value: string }>) {
@@ -163,10 +165,41 @@ export class PageConfigEditor extends LitElement {
             return;
         }
 
+        // Handle model type change specially
+        if (target.name === 'type') {
+            this.handleModelTypeChange(value as ModelTypeEnum);
+            return;
+        }
+
         this.formData = {
             ...this.formData,
             [target.name]: value
         };
+    }
+
+    // Handle model type changes and reset to appropriate defaults
+    protected handleModelTypeChange(newType: ModelTypeEnum) {
+        const modelTypeConfig = ModelTypeRegistry.get(newType);
+        if (!modelTypeConfig) {
+            console.error(`Unknown model type: ${newType}`);
+            return;
+        }
+
+        const baseConfig = {
+            id: this.formData.id, // Preserve the existing ID
+            realm: this.formData.realm,
+            name: this.formData.name,
+            enabled: this.formData.enabled,
+            target: this.formData.target,
+            forecast_interval: this.formData.forecast_interval,
+            forecast_periods: this.formData.forecast_periods,
+            forecast_frequency: this.formData.forecast_frequency
+        };
+
+        this.formData = {
+            ...baseConfig,
+            ...modelTypeConfig.defaultConfig
+        } as ModelConfig;
     }
 
     // Handle target-specific updates
@@ -200,31 +233,6 @@ export class PageConfigEditor extends LitElement {
                 [field]: value
             }
         };
-    }
-
-    // Handle regressor-specific updates
-    protected handleRegressorInput(ev: OrInputChangedEvent, index: number) {
-        const value = ev.detail?.value;
-        const target = ev.target as HTMLInputElement;
-
-        if (!target || value === undefined || !this.formData.regressors) {
-            return;
-        }
-
-        // Auto-select first attribute when asset changes
-        if (target.name === 'asset_id') {
-            this.formData.regressors[index].attribute_name =
-                this.attributeSelectList
-                    .get(value as string)
-                    ?.values()
-                    .next().value ?? '';
-        }
-
-        this.formData.regressors[index] = {
-            ...this.formData.regressors[index],
-            [target.name]: value
-        };
-        this.requestUpdate();
     }
 
     willUpdate(_changedProperties: PropertyValues): void {
@@ -355,13 +363,10 @@ export class PageConfigEditor extends LitElement {
             return false;
         }
 
-        // check all regressors
-        if (this.formData.regressors) {
-            for (const regressor of this.formData.regressors) {
-                if (!regressor.asset_id || !regressor.attribute_name) {
-                    return false;
-                }
-            }
+        // Use registry for model-specific validation
+        const modelTypeConfig = ModelTypeRegistry.get(this.formData.type);
+        if (modelTypeConfig && !modelTypeConfig.validateConfig(this.formData)) {
+            return false;
         }
 
         // Check other inputs
@@ -377,108 +382,29 @@ export class PageConfigEditor extends LitElement {
         return JSON.stringify(this.formData) !== JSON.stringify(this.modelConfig);
     }
 
-    // Handle adding a regressor
-    handleAddRegressor() {
-        this.formData.regressors = this.formData.regressors ?? [];
+    // Get the parameters template based on model type
+    getParametersTemplate() {
+        const modelTypeConfig = ModelTypeRegistry.get(this.formData.type);
+        if (!modelTypeConfig) {
+            return html`<div>Unknown model type: ${this.formData.type}</div>`;
+        }
+        return modelTypeConfig.getParametersTemplate(this.formData, this.handleBasicInput.bind(this));
+    }
 
-        this.formData.regressors.push({
-            asset_id: '',
-            attribute_name: '',
-            training_data_period: 'P6M'
+    // Get covariates template based on model type
+    getCovariatesTemplate() {
+        const modelTypeConfig = ModelTypeRegistry.get(this.formData.type);
+        if (!modelTypeConfig) {
+            return html`<div>Unknown model type: ${this.formData.type}</div>`;
+        }
+
+        return modelTypeConfig.getCovariatesTemplate(this.formData, {
+            assetSelectList: this.assetSelectList,
+            attributeSelectList: this.attributeSelectList,
+            searchAssets: this.searchAssets.bind(this),
+            requestUpdate: this.requestUpdate.bind(this),
+            handleInput: () => {} // Not used in current implementation
         });
-        this.requestUpdate();
-    }
-
-    // Handle deleting a regressor
-    handleDeleteRegressor(index: number) {
-        if (!this.formData.regressors) {
-            return;
-        }
-
-        this.formData.regressors.splice(index, 1);
-
-        // Clean up regressors if all are deleted
-        if (this.formData.regressors?.length === 0) {
-            this.formData.regressors = null;
-        }
-
-        this.requestUpdate();
-    }
-
-    // Get the regressor template
-    getRegressorTemplate(index: number) {
-        if (!this.formData.regressors) {
-            return;
-        }
-
-        const regressor = this.formData.regressors[index];
-        return html`
-            <or-panel heading="REGRESSOR ${index + 1}">
-                <div class="column">
-                    <div class="row">
-                        <or-mwc-input
-                            type="${InputType.SELECT}"
-                            name="asset_id"
-                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.handleRegressorInput(e, index)}"
-                            label="Asset"
-                            .value="${regressor.asset_id}"
-                            .options="${[...this.assetSelectList.entries()]}"
-                            .searchProvider="${this.assetSelectList.size > 0 ? this.searchAssets.bind(this) : null}"
-                        ></or-mwc-input>
-
-                        <!-- Render the attribute select list if the asset is selected -->
-                        ${when(
-                            regressor.asset_id,
-                            () => html`
-                                <or-mwc-input
-                                    type="${InputType.SELECT}"
-                                    name="attribute_name"
-                                    @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.handleRegressorInput(e, index)}"
-                                    label="Attribute"
-                                    .value="${regressor.attribute_name}"
-                                    .options="${[...(this.attributeSelectList.get(regressor.asset_id) ?? new Map())]}"
-                                ></or-mwc-input>
-                            `,
-                            () => html`
-                                <or-mwc-input type="${InputType.SELECT}" name="attribute_name" label="Attribute" disabled></or-mwc-input>
-                            `
-                        )}
-
-                        <custom-duration-input
-                            name="training_data_period"
-                            .type="${DurationInputType.ISO_8601}"
-                            @value-changed="${(e: OrInputChangedEvent) => this.handleRegressorInput(e, index)}"
-                            label="Training data period"
-                            .iso_units="${[TimeDurationUnit.DAY, TimeDurationUnit.WEEK, TimeDurationUnit.MONTH, TimeDurationUnit.YEAR]}"
-                            .value="${regressor.training_data_period}"
-                        ></custom-duration-input>
-
-                        <or-mwc-input
-                            style="max-width: 48px;"
-                            type="${InputType.BUTTON}"
-                            icon="delete"
-                            @click="${() => this.handleDeleteRegressor(index)}"
-                        ></or-mwc-input>
-                    </div>
-                </div>
-            </or-panel>
-        `;
-    }
-
-    // Get the add regressor template
-    getAddRegressorTemplate() {
-        return html`
-            <or-panel>
-                <div class="row regressor-row">
-                    <or-mwc-input
-                        type="${InputType.BUTTON}"
-                        icon="plus"
-                        label="add regressor"
-                        @click="${this.handleAddRegressor}"
-                    ></or-mwc-input>
-                </div>
-            </or-panel>
-        `;
     }
 
     // Search provider for the asset select list
@@ -567,7 +493,7 @@ export class PageConfigEditor extends LitElement {
                                 @or-mwc-input-changed="${this.handleBasicInput}"
                                 label="Model Type"
                                 type="${InputType.SELECT}"
-                                .options="${[['prophet', 'Prophet']]}"
+                                .options="${ModelTypeRegistry.getSelectOptions()}"
                                 .value="${this.formData.type}"
                             >
                             </or-mwc-input>
@@ -662,100 +588,11 @@ export class PageConfigEditor extends LitElement {
                     </div>
                 </or-panel>
 
-                <!-- Model training, e.g the schedule-->
-                <or-panel heading="MODEL TRAINING">
-                    <div class="column">
-                        <div class="row">
-                            <!-- Training interval (ISO 8601) -->
-                            <custom-duration-input
-                                name="training_interval"
-                                .type="${DurationInputType.ISO_8601}"
-                                @value-changed="${this.handleBasicInput}"
-                                label="Train model every"
-                                .value="${this.formData.training_interval}"
-                            ></custom-duration-input>
-                        </div>
-                    </div>
-                </or-panel>
-
                 <!-- Model parameters, these will be dynamic based on the model type -->
-                <or-panel heading="PARAMETERS">
-                    <div class="column">
-                        <div class="row">
-                            <!-- changepoint_range -->
-                            <or-mwc-input
-                                type="${InputType.NUMBER}"
-                                name="changepoint_range"
-                                @or-mwc-input-changed="${this.handleBasicInput}"
-                                label="Changepoint range"
-                                .value="${this.formData.changepoint_range}"
-                                max="1.0"
-                                min="0.0"
-                                step="0.01"
-                                required
-                            ></or-mwc-input>
-                            <!-- changepoint_prior_scale -->
-                            <or-mwc-input
-                                type="${InputType.NUMBER}"
-                                name="changepoint_prior_scale"
-                                @or-mwc-input-changed="${this.handleBasicInput}"
-                                label="Changepoint prior scale"
-                                .value="${this.formData.changepoint_prior_scale}"
-                                max="1.0"
-                                min="0.0"
-                                step="0.01"
-                                required
-                            ></or-mwc-input>
-                        </div>
-                        <div class="row">
-                            <!-- seasonality_mode -->
-                            <or-mwc-input
-                                type="${InputType.SELECT}"
-                                .options="${[
-                                    [ProphetSeasonalityModeEnum.ADDITIVE, 'Additive'],
-                                    [ProphetSeasonalityModeEnum.MULTIPLICATIVE, 'Multiplicative']
-                                ]}"
-                                name="seasonality_mode"
-                                @or-mwc-input-changed="${this.handleBasicInput}"
-                                label="Seasonality mode"
-                                .value="${this.formData.seasonality_mode}"
-                                required
-                            ></or-mwc-input>
-                            <!-- daily_seasonality -->
-                            <or-mwc-input
-                                type="${InputType.CHECKBOX}"
-                                name="daily_seasonality"
-                                @or-mwc-input-changed="${this.handleBasicInput}"
-                                label="Daily seasonality"
-                                .value="${this.formData.daily_seasonality}"
-                            ></or-mwc-input>
-                            <!-- weekly_seasonality -->
-                            <or-mwc-input
-                                type="${InputType.CHECKBOX}"
-                                name="weekly_seasonality"
-                                @or-mwc-input-changed="${this.handleBasicInput}"
-                                label="Weekly seasonality"
-                                .value="${this.formData.weekly_seasonality}"
-                            ></or-mwc-input>
-                            <!-- yearly_seasonality -->
-                            <or-mwc-input
-                                type="${InputType.CHECKBOX}"
-                                name="yearly_seasonality"
-                                @or-mwc-input-changed="${this.handleBasicInput}"
-                                label="Yearly seasonality"
-                                .value="${this.formData.yearly_seasonality}"
-                            ></or-mwc-input>
-                        </div>
-                    </div>
-                </or-panel>
+                ${this.getParametersTemplate()}
                 <hr />
-                <!-- Regressors -->
-                ${when(
-                    this.formData.regressors,
-                    () => map(this.formData.regressors ?? [], (_regressor, index) => this.getRegressorTemplate(index)),
-                    () => html``
-                )}
-                ${this.getAddRegressorTemplate()}
+                <!-- Covariates/Regressors -->
+                ${this.getCovariatesTemplate()}
             </form>
         `;
     }

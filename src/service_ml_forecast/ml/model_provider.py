@@ -18,6 +18,7 @@
 from typing import Protocol, TypeVar
 from uuid import UUID
 
+from service_ml_forecast.ml.evaluation_metrics import EvaluationMetrics
 from service_ml_forecast.models.feature_data_wrappers import ForecastDataSet, ForecastResult, TrainingDataSet
 
 # Define a generic type variable for the model
@@ -26,9 +27,9 @@ ModelType = TypeVar("ModelType")
 
 
 class ModelProvider(Protocol[ModelType]):
-    """Base protocol for all ML models.
+    """Base protocol for all models.
 
-    This protocol defines the methods that all ML model providers must implement.
+    This protocol defines the methods that all model providers must implement.
     """
 
     def train_model(self, training_dataset: TrainingDataSet) -> ModelType | None:
@@ -66,4 +67,14 @@ class ModelProvider(Protocol[ModelType]):
 
         Returns:
             The loaded model, or None if the model could not be loaded.
+        """
+
+    def evaluate_model(self, model: ModelType) -> EvaluationMetrics | None:
+        """Evaluate the trained model using cross-validation.
+
+        Args:
+            model: The trained model to evaluate.
+
+        Returns:
+            The evaluation metrics or None if evaluation could not be performed.
         """

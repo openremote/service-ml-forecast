@@ -19,69 +19,74 @@ import logging
 from pathlib import Path
 from uuid import UUID
 
+from darts.models.forecasting.forecasting_model import ForecastingModel
+
 from service_ml_forecast.common.exceptions import ResourceNotFoundError
-from service_ml_forecast.common.fs_util import FsUtil
 from service_ml_forecast.config import DIRS
 
 logger = logging.getLogger(__name__)
 
 
 class ModelStorageService:
-    """Manages the persistence of ML models."""
+    """Manages the persistence of models."""
 
     MODEL_FILE_PREFIX = "model"
-    DEFAULT_MODEL_FILE_EXTENSION = "json"
+    DEFAULT_MODEL_FILE_EXTENSION = "pkl"  # Changed default to pkl for Darts models
 
-    def save(
-        self, model_content: str, model_id: UUID, model_file_extension: str = DEFAULT_MODEL_FILE_EXTENSION
-    ) -> None:
-        """Save a model file. Will overwrite existing model file.
+    def save(self, model: ForecastingModel, model_id: UUID) -> None:
+        """Save a Darts model.
 
         Args:
-            model_content: The model in serialized format.
+            model: The Darts model to save.
             model_id: The ID of the model.
-            model_file_extension: The extension of the model file.
         """
-        path = self._get_model_file_path(model_id, model_file_extension)
+        path = self._get_model_file_path(model_id, self.DEFAULT_MODEL_FILE_EXTENSION)
 
-        # Overwrite the existing model file
-        FsUtil.create_file(path, model_content, overwrite=True)
+        # Ensure the directory exists
+        path.parent.mkdir(parents=True, exist_ok=True)
 
-    def get(self, model_id: UUID, model_file_extension: str = DEFAULT_MODEL_FILE_EXTENSION) -> str:
-        """Get a model file.
+        # Use Darts native save method
+        model.save(path)
+        logger.info(f"Saved Darts model to {path} -- {model_id}")
+
+    def load(self, model_class: type[ForecastingModel], model_id: UUID) -> ForecastingModel:
+        """Load a Darts model.
 
         Args:
+            model_class: The Darts model class (e.g., DartsProphet).
             model_id: The ID of the model.
-            model_file_extension: The extension of the model file.
 
         Returns:
-            The model file content.
+            The loaded Darts model.
 
         Raises:
             ResourceNotFoundError: Model file was not found.
         """
-        path = self._get_model_file_path(model_id, model_file_extension)
+        path = self._get_model_file_path(model_id, self.DEFAULT_MODEL_FILE_EXTENSION)
 
-        try:
-            return FsUtil.read_file(path)
-        except FileNotFoundError as e:
-            logger.error(f"Cannot get model file: {model_id} - does not exist: {e}")
-            raise ResourceNotFoundError(f"Cannot get model file: {model_id} - does not exist") from e
+        if not path.exists():
+            logger.error(f"Cannot get model file: {model_id} - does not exist")
+            raise ResourceNotFoundError(f"Cannot get model file: {model_id} - does not exist")
 
-    def delete(self, model_id: UUID, model_file_extension: str = DEFAULT_MODEL_FILE_EXTENSION) -> None:
-        """Delete a model file.
+        # Use Darts native load method
+        model = model_class.load(path)
+        logger.info(f"Loaded Darts model from {path} -- {model_id}")
+        return model
+
+    def delete(self, model_id: UUID) -> None:
+        """Delete a Darts model file.
 
         Args:
             model_id: The ID of the model.
-            model_file_extension: The extension of the model file.
 
         Raises:
             ResourceNotFoundError: Model file was not found.
         """
-        path = self._get_model_file_path(model_id, model_file_extension)
+        path = self._get_model_file_path(model_id, self.DEFAULT_MODEL_FILE_EXTENSION)
 
         try:
-            FsUtil.delete_file(path)
+            path.unlink()
+            logger.info(f"Deleted model file: {path}")
         except FileNotFoundError as e:
             logger.error(f"Cannot delete model file: {model_id} - does not exist: {e}")
             raise ResourceNotFoundError(f"Cannot delete model file: {model_id} - does not exist") from e

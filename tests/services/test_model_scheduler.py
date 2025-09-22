@@ -4,8 +4,9 @@ from uuid import uuid4
 
 import pytest
 import respx
+from darts.models import Prophet as DartsProphet
+from openremote_client import AssetDatapoint
 
-from service_ml_forecast.clients.openremote.models import AssetDatapoint
 from service_ml_forecast.common.exceptions import ResourceNotFoundError
 from service_ml_forecast.common.time_util import TimeUtil
 from service_ml_forecast.ml.model_provider_factory import ModelProviderFactory
@@ -86,7 +87,7 @@ def test_scheduler_job_management(
     training_job = model_scheduler.scheduler.get_job(f"{TRAINING_JOB_ID_PREFIX}:{prophet_basic_config.id}")
     assert training_job is not None
     assert training_job.func == _model_training_job
-    expected_interval = datetime.timedelta(seconds=TimeUtil.parse_iso_duration(prophet_basic_config.training_interval))
+    expected_interval = datetime.timedelta(seconds=TimeUtil.parse_iso_duration(prophet_basic_config.forecast_interval))
     assert training_job.trigger.interval == expected_interval
 
     # Remove the config and check that the jobs are removed
@@ -136,12 +137,12 @@ def test_training_execution(
         ).mock(
             return_value=respx.MockResponse(
                 HTTPStatus.OK,
-                json=windspeed_mock_datapoints,
+                json=[{"x": point.x, "y": point.y} for point in windspeed_mock_datapoints],
             ),
         )
         _model_training_job(prophet_basic_config, mock_openremote_service)
 
-    assert model_storage.get(prophet_basic_config.id) is not None
+    assert model_storage.load(DartsProphet, prophet_basic_config.id) is not None
 
 
 def test_training_execution_with_missing_datapoints(
@@ -171,8 +172,9 @@ def test_training_execution_with_missing_datapoints(
         )
         _model_training_job(prophet_basic_config, mock_openremote_service)
 
+    # Verify model was not saved by expecting ResourceNotFoundError when loading
     with pytest.raises(ResourceNotFoundError):
-        model_storage.get(prophet_basic_config.id)
+        model_storage.load(DartsProphet, prophet_basic_config.id)
 
 
 def test_forecast_execution(
@@ -288,7 +290,7 @@ def trained_basic_model(
         ).mock(
             return_value=respx.MockResponse(
                 HTTPStatus.OK,
-                json=windspeed_mock_datapoints,
+                json=[{"x": point.x, "y": point.y} for point in windspeed_mock_datapoints],
             ),
         )
         _model_training_job(prophet_basic_config, mock_openremote_service)
@@ -319,7 +321,7 @@ def trained_regressor_model(
         ).mock(
             return_value=respx.MockResponse(
                 HTTPStatus.OK,
-                json=tariff_mock_datapoints,
+                json=[{"x": point.x, "y": point.y} for point in tariff_mock_datapoints],
             ),
         )
         # mock historical datapoints retrieval for regressor
@@ -328,7 +330,7 @@ def trained_regressor_model(
         ).mock(
             return_value=respx.MockResponse(
                 HTTPStatus.OK,
-                json=windspeed_mock_datapoints,
+                json=[{"x": point.x, "y": point.y} for point in windspeed_mock_datapoints],
             ),
         )
         _model_training_job(prophet_multi_variable_config, mock_openremote_service)

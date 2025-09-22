@@ -25,7 +25,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 from service_ml_forecast.common.singleton import Singleton
 from service_ml_forecast.common.time_util import TimeUtil
-from service_ml_forecast.ml.model_provider_factory import ModelProviderFactory
+from service_ml_forecast.ml.model_provider_factory import ModelProviderFactory, get_all_covariates
 from service_ml_forecast.models.model_config import ModelConfig
 from service_ml_forecast.services.model_config_service import ModelConfigService
 from service_ml_forecast.services.openremote_service import OpenRemoteService
@@ -40,7 +40,7 @@ CONFIG_POLLING_INTERVAL = 30  # Poll configs for changes every 30 seconds
 
 
 class ModelScheduler(Singleton):
-    """Manages the scheduling of ML model training and forecasting jobs."""
+    """Manages the scheduling of model training and forecasting jobs."""
 
     def __init__(self, openremote_service: OpenRemoteService) -> None:
         self.config_storage = ModelConfigService(openremote_service)
@@ -63,12 +63,12 @@ class ModelScheduler(Singleton):
         )
 
     def start(self) -> None:
-        """Start the scheduler for ML model training and forecasting.
+        """Start the scheduler for model training and forecasting.
 
         Does not start the scheduler if it is already running.
         """
         if self.scheduler.running:
-            logger.warning("Scheduler for ML Model Training already running")
+            logger.warning("Scheduler for Model Training already running")
             return
 
         self.scheduler.start()
@@ -92,7 +92,9 @@ class ModelScheduler(Singleton):
         """Add a training job for the given model config."""
 
         job_id = f"{TRAINING_JOB_ID_PREFIX}:{config.id}"
-        seconds = TimeUtil.parse_iso_duration(config.training_interval)
+        # Training job is scheduled based on the forecast interval
+        # Training is always executed before the forecast job
+        seconds = TimeUtil.parse_iso_duration(config.forecast_interval)
 
         if not self._is_job_scheduling_needed(job_id, config):
             return
@@ -195,7 +197,7 @@ def _model_training_job(config: ModelConfig, data_service: OpenRemoteService) ->
     if model is None:
         logger.error(
             f"Model training failed for {config.id} - no model returned. "
-            f"Type: {config.type}, Training Interval: {config.training_interval}"
+            f"Type: {config.type}, Training Interval: {config.forecast_interval}"
         )
         return
 
@@ -209,7 +211,7 @@ def _model_training_job(config: ModelConfig, data_service: OpenRemoteService) ->
     end_time = time.perf_counter()
     logger.info(
         f"Training job for {config.id} completed - duration: {end_time - start_time}s, "
-        f"Type: {config.type}, Training Interval: {config.training_interval}, "
+        f"Type: {config.type}, Training Interval: {config.forecast_interval}, "
         f"Target first datapoint datetime: {target_first_datapoint_datetime}, "
         f"Target last datapoint datetime: {target_last_datapoint_datetime}"
     )
@@ -229,11 +231,12 @@ def _model_forecast_job(config: ModelConfig, data_service: OpenRemoteService) ->
     # Retrieve the forecast dataset
     forecast_dataset = data_service.get_forecast_dataset(config)
 
-    if config.regressors is not None and forecast_dataset is None:
+    all_covariates = get_all_covariates(config)
+    if len(all_covariates) > 0 and forecast_dataset is None:
         logger.error(
-            f"Cannot forecast model {config.id} - config has regressors but no forecast dataset. "
+            f"Cannot forecast model {config.id} - config has covariates but no forecast dataset. "
             f"Asset ID: {config.target.asset_id}, Attribute: {config.target.attribute_name}, "
-            f"Regressors: {', '.join(r.attribute_name for r in config.regressors)}"
+            f"Covariates: {', '.join(r.attribute_name for r in all_covariates)}"
         )
         return
 

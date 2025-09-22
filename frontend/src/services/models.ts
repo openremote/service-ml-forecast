@@ -18,11 +18,12 @@
 // TODO: Automatically generate the Models via OpenAPI spec -- See https://github.com/openremote/service-ml-forecast/issues/31
 
 /**
- * Enum representing the different types of machine learning models available.
+ * Enum representing the different types of models available.
  * Corresponds to service_ml_forecast.models.model_type.ModelTypeEnum
  */
 export enum ModelTypeEnum {
-    PROPHET = 'prophet'
+    PROPHET = 'prophet',
+    XGBOOST = 'xgboost'
 }
 
 /**
@@ -69,7 +70,7 @@ export interface RegressorFeature {
 }
 
 /**
- * Base configuration common to all ML models.
+ * Base configuration common to all models.
  */
 interface BaseModelConfig {
     /**
@@ -90,7 +91,7 @@ interface BaseModelConfig {
      */
     enabled?: boolean; // Optional as it has a default
     /**
-     * Which machine learning model to use.
+     * Which model to use.
      */
     type: ModelTypeEnum;
     /**
@@ -99,19 +100,9 @@ interface BaseModelConfig {
      */
     target: TargetFeature;
     /**
-     * List of asset attributes that will be used as regressors.
-     * There must be historical data available for training.
-     * @default null
-     */
-    regressors?: RegressorFeature[] | null; // Optional as it has a default
-    /**
      * Forecast generation interval. Expects ISO 8601 duration strings.
      */
     forecast_interval: string;
-    /**
-     * Model training interval. Expects ISO 8601 duration strings.
-     */
-    training_interval: string;
     /**
      * Number of periods to forecast into the future.
      */
@@ -141,6 +132,13 @@ export interface ProphetModelConfig extends BaseModelConfig {
      * Discriminator field indicating the model type is Prophet.
      */
     type: ModelTypeEnum.PROPHET; // Use literal type for discriminator
+    /**
+     * List of asset attributes that will be used as regressors.
+     * There must be historical data available for training.
+     * There must also be future data available for forecasting.
+     * @default null
+     */
+    regressors?: RegressorFeature[] | null; // Optional as it has a default
     /**
      * Include yearly seasonality in the model.
      * @default true
@@ -179,7 +177,78 @@ export interface ProphetModelConfig extends BaseModelConfig {
 }
 
 /**
+ * XGBoost specific model configuration.
+ */
+export interface XGBoostModelConfig extends BaseModelConfig {
+    /**
+     * Discriminator field indicating the model type is XGBoost.
+     */
+    type: ModelTypeEnum.XGBOOST;
+    /**
+     * List of asset attributes that will be used as past covariates.
+     * Historical data is required for training. Only historical data is used for forecasting.
+     * Use this when future data cannot be provided.
+     * @default null
+     */
+    past_covariates?: RegressorFeature[] | null;
+    /**
+     * List of asset attributes that will be used as future covariates.
+     * Historical data is required for training. Future data is required for forecasting.
+     * Use this when future data can be provided (e.g., weather forecasts).
+     * @default null
+     */
+    future_covariates?: RegressorFeature[] | null;
+    /**
+     * Number of lagged target values to use as features.
+     * @default 1
+     */
+    lags?: number;
+    /**
+     * Lags of past covariates to use as features.
+     * Can be a single number or list of numbers.
+     * @default null
+     */
+    lags_past_covariates?: number | number[] | null;
+    /**
+     * Lags of future covariates to use as features.
+     * Can be a single number or list of numbers.
+     * @default null
+     */
+    lags_future_covariates?: number | number[] | null;
+    /**
+     * Number of time steps the model outputs in one forward pass.
+     * @default 1
+     */
+    output_chunk_length?: number;
+    /**
+     * Number of gradient boosted trees.
+     * @default 100
+     */
+    n_estimators?: number;
+    /**
+     * Maximum depth of the individual regression estimators.
+     * @default 6
+     */
+    max_depth?: number;
+    /**
+     * Boosting learning rate.
+     * @default 0.1
+     */
+    learning_rate?: number;
+    /**
+     * Subsample ratio of the training instances.
+     * @default 1.0
+     */
+    subsample?: number;
+    /**
+     * Random state for reproducibility.
+     * @default 42
+     */
+    random_state?: number;
+}
+
+/**
  * Represents a model configuration, which can be one of the specific model types.
  * This uses a discriminated union based on the 'type' field.
  */
-export type ModelConfig = ProphetModelConfig;
+export type ModelConfig = ProphetModelConfig | XGBoostModelConfig;

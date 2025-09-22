@@ -17,20 +17,23 @@
 
 import logging
 
-from service_ml_forecast.clients.openremote.models import AssetDatapoint, BasicAsset, Realm
-from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
+from openremote_client import AssetDatapoint, BasicAsset, OpenRemoteClient, Realm
+
 from service_ml_forecast.common.time_util import TimeUtil
+from service_ml_forecast.ml.model_provider_factory import get_all_covariates
 from service_ml_forecast.models.feature_data_wrappers import AssetFeatureDatapoints, ForecastDataSet, TrainingDataSet
-from service_ml_forecast.models.model_config import ModelConfig
+from service_ml_forecast.models.model_config import (
+    AssetDatapointFeature,
+    FutureAssetDatapointFeature,
+    ModelConfig,
+    PastAssetDatapointFeature,
+)
 
 logger = logging.getLogger(__name__)
 
 
 class OpenRemoteService:
-    """Service for interacting with the OpenRemote Manager API.
-
-    Provides a wrapper around the OpenRemoteClient to provide a more convenient interface for the ML Forecast service.
-    """
+    """Service for interacting with the OpenRemote Manager API."""
 
     def __init__(self, client: OpenRemoteClient):
         self.client = client
@@ -45,7 +48,7 @@ class OpenRemoteService:
         Returns:
             True if the datapoints were written successfully, False otherwise.
         """
-        return self.client.write_predicted_datapoints(
+        return self.client.assets.write_predicted_datapoints(
             config.target.asset_id,
             config.target.attribute_name,
             asset_datapoints,
@@ -86,41 +89,42 @@ class OpenRemoteService:
             datapoints=datapoints,
         )
 
-        regressors: list[AssetFeatureDatapoints] = []
+        covariates: list[AssetFeatureDatapoints] = []
+        config_covariates: list[AssetDatapointFeature] = get_all_covariates(config)
 
-        # Retrieve regressor historical feature datapoints if configured
-        if config.regressors is not None:
-            for regressor in config.regressors:
-                # Get the start timestamp for the regressor historical data
-                start_timestamp = TimeUtil.get_period_start_timestamp_ms(regressor.training_data_period)
+        # Retrieve covariate historical feature datapoints if configured
+        if config_covariates is not None:
+            for covariate in config_covariates:
+                # Get the start timestamp for the covariate historical data
+                start_timestamp = TimeUtil.get_period_start_timestamp_ms(covariate.training_data_period)
 
-                regressor_datapoints = self._get_historical_datapoints(
-                    regressor.asset_id,
-                    regressor.attribute_name,
+                covariate_datapoints = self._get_historical_datapoints(
+                    covariate.asset_id,
+                    covariate.attribute_name,
                     start_timestamp,
                     end_timestamp,
                 )
 
-                if regressor_datapoints is None:
+                if covariate_datapoints is None:
                     logger.warning(
-                        f"Unable to retrieve regressor datapoints for {regressor.asset_id} "
-                        f"{regressor.get_feature_name()} - skipping"
+                        f"Unable to retrieve covariate datapoints for {covariate.asset_id} "
+                        f"{covariate.get_feature_name()} - skipping"
                     )
                     raise ValueError(
-                        f"Unable to retrieve regressor datapoints for {regressor.asset_id} "
-                        f"{regressor.get_feature_name()}"
+                        f"Unable to retrieve covariate datapoints for {covariate.asset_id} "
+                        f"{covariate.get_feature_name()}"
                     )
 
-                regressors.append(
+                covariates.append(
                     AssetFeatureDatapoints(
-                        feature_name=regressor.get_feature_name(),
-                        datapoints=regressor_datapoints,
+                        feature_name=covariate.get_feature_name(),
+                        datapoints=covariate_datapoints,
                     ),
                 )
 
         training_dataset = TrainingDataSet(
             target=target_feature_datapoints,
-            regressors=regressors if regressors else None,
+            covariates=covariates if covariates else None,
         )
 
         return training_dataset
@@ -143,7 +147,7 @@ class OpenRemoteService:
 
         # Single requests for sub-monthly periods
         if months_diff <= 1:
-            return self.client.get_historical_datapoints(asset_id, attribute_name, from_timestamp, to_timestamp)
+            return self.client.assets.get_historical_datapoints(asset_id, attribute_name, from_timestamp, to_timestamp)
         # Split into monthly chunks if more than 1 month to avoid hitting datapoint limits on the OpenRemote side
         else:
             all_datapoints = []
@@ -161,7 +165,7 @@ class OpenRemoteService:
                 # Don't exceed the original to_timestamp
                 current_to = min(current_to, to_timestamp)
 
-                chunk_datapoints = self.client.get_historical_datapoints(
+                chunk_datapoints = self.client.assets.get_historical_datapoints(
                     asset_id, attribute_name, current_from, current_to
                 )
 
@@ -188,37 +192,73 @@ class OpenRemoteService:
         Returns:
             The forecast dataset or None if the forecast dataset could not be retrieved.
         """
-        regressors: list[AssetFeatureDatapoints] = []
+        covariates: list[AssetFeatureDatapoints] = []
 
-        # Retrieve regressor predicted feature datapoints if configured
-        if config.regressors is not None:
-            for regressor in config.regressors:
+        config_covariates: list[AssetDatapointFeature] = get_all_covariates(config)
+
+        config_past_covariates: list[PastAssetDatapointFeature] = [
+            x for x in config_covariates if isinstance(x, PastAssetDatapointFeature)
+        ]
+        config_future_covariates: list[FutureAssetDatapointFeature] = [
+            x for x in config_covariates if isinstance(x, FutureAssetDatapointFeature)
+        ]
+
+        # Retrieve covariate predicted/future feature datapoints if configured
+        if config_future_covariates is not None:
+            for future_covariate in config_future_covariates:
                 # Get the start timestamp for the regressor
-                start_timestamp = TimeUtil.get_period_start_timestamp_ms(regressor.training_data_period)
+                start_timestamp = TimeUtil.get_period_start_timestamp_ms(future_covariate.training_data_period)
 
-                regressor_datapoints = self.client.get_predicted_datapoints(
-                    regressor.asset_id,
-                    regressor.attribute_name,
+                future_covariate_datapoints = self.client.assets.get_predicted_datapoints(
+                    future_covariate.asset_id,
+                    future_covariate.attribute_name,
                     start_timestamp,
                     TimeUtil.pd_future_timestamp(config.forecast_periods, config.forecast_frequency),
                 )
 
-                if regressor_datapoints is None:
+                if future_covariate_datapoints is None:
                     logger.warning(
-                        f"Unable to retrieve predicted datapoints for {regressor.asset_id} "
-                        f"{regressor.get_feature_name()} - skipping"
+                        f"Unable to retrieve predicted datapoints for {future_covariate.asset_id} "
+                        f"{future_covariate.get_feature_name()} - skipping"
                     )
-                    return None  # Return immediately, forecast will fail without regressor future data
+                    return None  # Return immediately, forecast will fail without future covariate data
 
-                regressors.append(
+                covariates.append(
                     AssetFeatureDatapoints(
-                        feature_name=regressor.get_feature_name(),
-                        datapoints=regressor_datapoints,
+                        feature_name=future_covariate.get_feature_name(),
+                        datapoints=future_covariate_datapoints,
+                    ),
+                )
+
+        # Retrieve past covariate historical feature datapoints if configured
+        if config_past_covariates is not None:
+            for past_covariate in config_past_covariates:
+                # Get the start timestamp for the past covariate
+                start_timestamp = TimeUtil.get_period_start_timestamp_ms(past_covariate.training_data_period)
+
+                past_covariate_datapoints = self.client.assets.get_historical_datapoints(
+                    past_covariate.asset_id,
+                    past_covariate.attribute_name,
+                    start_timestamp,
+                    TimeUtil.pd_future_timestamp(config.forecast_periods, config.forecast_frequency),
+                )
+
+                if past_covariate_datapoints is None:
+                    logger.warning(
+                        f"Unable to retrieve historical datapoints for {past_covariate.asset_id} "
+                        f"{past_covariate.get_feature_name()} - skipping"
+                    )
+                    return None  # Return immediately, forecast will fail without past covariate data
+
+                covariates.append(
+                    AssetFeatureDatapoints(
+                        feature_name=past_covariate.get_feature_name(),
+                        datapoints=past_covariate_datapoints,
                     ),
                 )
 
         forecast_dataset = ForecastDataSet(
-            regressors=regressors,
+            covariates=covariates,
         )
 
         return forecast_dataset
@@ -229,7 +269,7 @@ class OpenRemoteService:
         Returns:
             A list of all assets from OpenRemote.
         """
-        assets = self.client.get_assets_by_ids(asset_ids, realm)
+        assets = self.client.assets.get_by_ids(asset_ids, realm)
         if assets is None:
             logger.warning(f"Unable to retrieve assets by ids for realm {realm}")
             return []
@@ -240,6 +280,6 @@ class OpenRemoteService:
         """Get all accessible realms from OpenRemote for the current authenticated user.
 
         Returns:
-            A list of all realms from OpenRemote.
+            A list of all accessible realms from OpenRemote.
         """
-        return self.client.get_accessible_realms()
+        return self.client.realms.get_accessible()
