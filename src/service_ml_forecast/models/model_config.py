@@ -76,7 +76,7 @@ class TargetAssetDatapointsFeature(BaseModel):
 
 
 class BaseModelConfig(BaseModel):
-    """Base configuration for all models."""
+    """Base configuration for all ML models."""
 
     id: UUID = Field(
         default_factory=uuid4,
@@ -88,7 +88,7 @@ class BaseModelConfig(BaseModel):
         default=True,
         description="Whether the model is enabled and will be scheduled for training and forecasting.",
     )
-    type: ModelTypeEnum = Field(description="Which model to use.")
+    type: ModelTypeEnum = Field(description="Which machine learning model to use.")
     target: TargetAssetDatapointsFeature = Field(
         description="The asset attribute to generate datapoints for. "
         "There must be historical data available for training.",

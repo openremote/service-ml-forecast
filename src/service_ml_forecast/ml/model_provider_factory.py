@@ -24,7 +24,7 @@ from service_ml_forecast.models.model_type import ModelTypeEnum
 
 
 class ModelProviderFactory:
-    """Factory for creating model providers based on the provided model config."""
+    """Factory for creating ML model providers based on the provided model config."""
 
     @staticmethod
     def create_provider(

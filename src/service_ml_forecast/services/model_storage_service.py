@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 class ModelStorageService:
-    """Manages the persistence of models."""
+    """Manages the persistence of ML models."""
 
     MODEL_FILE_PREFIX = "model"
     DEFAULT_MODEL_FILE_EXTENSION = "json"

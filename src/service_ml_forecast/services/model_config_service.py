@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 
 
 class ModelConfigService:
-    """Manages the persistence of model configurations."""
+    """Manages the persistence of ML model configurations."""
 
     CONFIG_FILE_PREFIX = "config"
     CONFIG_FILE_EXTENSION = "json"
@@ -186,7 +186,7 @@ class ModelConfigService:
             logger.info(f"Config did not have a model file to delete: {config_id} - {e}")
 
     def _parse(self, json: str) -> ModelConfig:
-        """Parse the provided model config JSON string into the concrete type."""
+        """Parse the provided ML model config JSON string into the concrete type."""
 
         model_adapter: TypeAdapter[ModelConfig] = TypeAdapter(ModelConfig)
         return model_adapter.validate_json(json)

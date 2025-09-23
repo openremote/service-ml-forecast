@@ -18,7 +18,7 @@
 // TODO: Automatically generate the Models via OpenAPI spec -- See https://github.com/openremote/service-ml-forecast/issues/31
 
 /**
- * Enum representing the different types of models available.
+ * Enum representing the different types of machine learning models available.
  * Corresponds to service_ml_forecast.models.model_type.ModelTypeEnum
  */
 export enum ModelTypeEnum {
@@ -69,7 +69,7 @@ export interface RegressorFeature {
 }
 
 /**
- * Base configuration common to all models.
+ * Base configuration common to all ML models.
  */
 interface BaseModelConfig {
     /**
@@ -90,7 +90,7 @@ interface BaseModelConfig {
      */
     enabled?: boolean; // Optional as it has a default
     /**
-     * Which model to use.
+     * Which machine learning model to use.
      */
     type: ModelTypeEnum;
     /**

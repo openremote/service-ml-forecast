@@ -134,7 +134,7 @@ async def _verify_jwt_token(token: str, valid_issuers: list[str]) -> dict[str, A
         if unverified_header.get("alg") != JWT_ALGORITHM_RS256:
             raise jwt.exceptions.InvalidTokenError("Invalid token algorithm: Expected RS256")
 
-        # Decode the token without verifying (necessary so we can extract the issuer for retrieving the JWKS)
+        # Decode the token without verifying (we don't have the public key yet)
         unverified_payload = jwt.decode(token, options={"verify_signature": False, "verify_aud": False})
 
         # Extract required claims

@@ -17,27 +17,16 @@
 
 import { createContext, provide } from '@lit/context';
 import { PreventAndRedirectCommands, RouterLocation } from '@vaadin/router';
-import { css, html, LitElement, unsafeCSS } from 'lit';
+import { html, LitElement } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { setRealmTheme } from '../common/theme';
 import { manager } from '@openremote/core';
-import { IS_EMBEDDED, ML_OR_URL } from '../common/constants';
+import { ML_OR_URL } from '../common/constants';
 
 export const realmContext = createContext<string>(Symbol('realm'));
 
 @customElement('app-layout')
 export class AppLayout extends LitElement {
-    static get styles() {
-        const padding = IS_EMBEDDED ? '0 20px' : '20px';
-
-        return css`
-            :host {
-                display: block;
-                padding: ${unsafeCSS(padding)};
-            }
-        `;
-    }
-
     // Provide the realm to all child elements
     @provide({ context: realmContext })
     @state()

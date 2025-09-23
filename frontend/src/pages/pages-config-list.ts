@@ -58,16 +58,12 @@ export class PageConfigList extends LitElement {
                 --or-icon-fill: var(--or-app-color3);
             }
             .title {
-                font-size: 14px;
-                font-weight: bolder;
+                font-size: 18px;
+                font-weight: bold;
                 display: flex;
                 flex-direction: row;
                 align-items: center;
                 color: var(--or-app-color3);
-                text-transform: uppercase;
-                line-height: 1em;
-                flex: 0 0 auto;
-                letter-spacing: 0.025em;
             }
         `;
     }
@@ -170,8 +166,8 @@ export class PageConfigList extends LitElement {
             <or-panel heading="">
                 <div class="config-header">
                     <div class="title-container">
-                        <or-icon icon="chart-line"></or-icon>
-                        <span class="title">Forecast configurations</span>
+                        <or-icon icon="chart-bell-curve"></or-icon>
+                        <span class="title">Forecast Configurations</span>
                     </div>
 
                     <or-mwc-input
