@@ -108,22 +108,23 @@ def initialize_background_services() -> None:
 
     # Service details for registration
     service_info = ServiceInfo(
-        serviceId="ml-forecasting",
-        label="ML Forecasting Service",
-        icon="chart-timeline-variant",
+        serviceId=ENV.ML_OR_SERVICE_SERVICE_ID,
+        label=ENV.ML_OR_SERVICE_LABEL,
+        icon=ENV.ML_OR_SERVICE_ICON,
         realm=ENV.ML_OR_REALM,
-        homepageUrl=f"{ENV.ML_SERVICE_HOSTNAME}{ENV.ML_API_ROOT_PATH}/ui/{{realm}}",
+        homepageUrl=f"{ENV.ML_OR_SERVICE_URL}{ENV.ML_API_ROOT_PATH}/ui/{{realm}}",
         status=ServiceStatus.AVAILABLE,
     )
 
-    # Start the OpenRemote Service Registrar, service is global so it can be accessed from any realm
-    service_registrar = OpenRemoteServiceRegistrar(get_openremote_client(), service_info, is_global=True)
+    # Start the OpenRemote Service Registrar
+    service_registrar = OpenRemoteServiceRegistrar(
+        get_openremote_client(), service_info, is_global=ENV.ML_OR_SERVICE_GLOBAL
+    )
     service_registrar.start()
 
 
 # Entrypoint for the service
 if __name__ == "__main__":
-    # Check if the application is running in development mode
     IS_DEV = ENV.is_development()
 
     if IS_DEV:
@@ -135,4 +136,4 @@ if __name__ == "__main__":
     initialize_background_services()
 
     # Run the FastAPI app, enable auto-reload in development mode
-    uvicorn.run("service_ml_forecast.main:app", host="0.0.0.0", port=ENV.ML_WEBSERVER_PORT, reload=IS_DEV)
+    uvicorn.run("service_ml_forecast.main:app", host=ENV.ML_WEBSERVER_HOST, port=ENV.ML_WEBSERVER_PORT, reload=IS_DEV)

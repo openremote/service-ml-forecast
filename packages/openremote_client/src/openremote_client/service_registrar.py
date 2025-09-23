@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 HEARTBEAT_JOB_ID = "service:heartbeat"
 JOB_GRACE_PERIOD = 60
-HEARTBEAT_INTERVAL = 30
+HEARTBEAT_INTERVAL = 30  # 30 seconds between heartbeats
 
 
 class OpenRemoteServiceRegistrar:
