@@ -26,17 +26,15 @@ dependencies = [
     "isodate>=0.7.2",
     "pyjwt>=2.10.1",
     "aiocache>=0.12.3",
-    "openremote-client", # local package
+    "openremote-client",
 ]
 
 
-# Workspace and sources for local packages
 [tool.uv.workspace]
 members = ["packages/*"]
 
 [tool.uv.sources]
 openremote-client = { workspace = true }
-
 
 [dependency-groups]
 dev = [
@@ -122,20 +120,16 @@ service_ml_forecast = "service_ml_forecast.main:app"
 
 # CLI helpers
 help = "scripts.tools:help"
-
-lint = "scripts.tools:lint" # lint backend and packages
-format = "scripts.tools:format" # format backend and packages
-test = "scripts.tools:test" # test backend and packages
-test-coverage = "scripts.tools:test_coverage" # test backend and packages with coverage
-build = "scripts.tools:build" # build backend and packages
-start = "scripts.tools:start" # start backend server
-
-build-frontend = "scripts.tools:build_frontend" # build frontend bundle
-build-frontend-dev = "scripts.tools:build_frontend_dev" # build frontend bundle for development
-
-# Package-specific commands
-lint-packages = "scripts.tools:lint_packages" # lint packages
-test-packages = "scripts.tools:test_packages" # test packages
-build-packages = "scripts.tools:build_packages" # build packages
+lint = "scripts.tools:lint"
+format = "scripts.tools:format"
+test = "scripts.tools:test"
+test-coverage = "scripts.tools:test_coverage"
+build = "scripts.tools:build"
+start = "scripts.tools:start"
+build-frontend = "scripts.tools:build_frontend"
+build-frontend-dev = "scripts.tools:build_frontend_dev"
+lint-packages = "scripts.tools:lint_packages"
+test-packages = "scripts.tools:test_packages"
+build-packages = "scripts.tools:build_packages"
 
 
