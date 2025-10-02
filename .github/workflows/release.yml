@@ -1,7 +1,6 @@
 name: Release
 
 on:
-  # Manual trigger
   workflow_dispatch:
     inputs:
       VERSION_INCREMENT:
