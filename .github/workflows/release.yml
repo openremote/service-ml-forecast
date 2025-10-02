@@ -37,79 +37,35 @@ jobs:
         with:
           version: "0.6.11"
 
-      - name: Get current version
-        id: current_version
-        run: |
-          CURRENT_VERSION=$(grep -E '^version = ' pyproject.toml | cut -d'"' -f2)
-          echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
-          echo "Current version: $CURRENT_VERSION"
-
-      - name: Calculate new version
-        id: new_version
-        run: |
-          CURRENT_VERSION="${{ steps.current_version.outputs.version }}"
-          VERSION_OVERRIDE="${{ github.event.inputs.VERSION_OVERRIDE }}"
-          VERSION_INCREMENT="${{ github.event.inputs.VERSION_INCREMENT }}"
-
-          if [ -n "$VERSION_OVERRIDE" ]; then
-            NEW_VERSION="$VERSION_OVERRIDE"
-            echo "Using override version: $NEW_VERSION"
-          else
-            # Parse current version
-            IFS='.' read -r -a version_parts <<< "$CURRENT_VERSION"
-            major="${version_parts[0]}"
-            minor="${version_parts[1]}"
-            patch="${version_parts[2]}"
-            
-            # Increment based on input
-            case "$VERSION_INCREMENT" in
-              Major)
-                major=$((major + 1))
-                minor=0
-                patch=0
-                ;;
-              Minor)
-                minor=$((minor + 1))
-                patch=0
-                ;;
-              Patch)
-                patch=$((patch + 1))
-                ;;
-            esac
-            
-            NEW_VERSION="${major}.${minor}.${patch}"
-            echo "Incremented $VERSION_INCREMENT version: $NEW_VERSION"
-          fi
-
-          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
-
-      - name: Update version in pyproject.toml
-        run: |
-          NEW_VERSION="${{ steps.new_version.outputs.version }}"
-          sed -i.bak "s/^version = \".*\"/version = \"$NEW_VERSION\"/" pyproject.toml
-          rm pyproject.toml.bak
-          echo "Updated pyproject.toml to version $NEW_VERSION"
-
-          # Show the change
-          grep -E '^version = ' pyproject.toml
-
       - name: Configure git
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Commit version change
+      - name: Bump version
+        id: bump_version
         run: |
-          NEW_VERSION="${{ steps.new_version.outputs.version }}"
-          git add pyproject.toml
-          git commit -m "chore: bump version to $NEW_VERSION"
+          uv tool install bump-my-version
+          
+          if [ -n "$VERSION_OVERRIDE" ]; then
+            echo "Using override version: $VERSION_OVERRIDE"
+            uv tool run bump-my-version bump --new-version "$VERSION_OVERRIDE"
+            NEW_VERSION="$VERSION_OVERRIDE"
+          else
+            INCREMENT=$(echo "$VERSION_INCREMENT" | tr '[:upper:]' '[:lower:]')
+            uv tool run bump-my-version bump "$INCREMENT"
+            NEW_VERSION=$(grep -E '^version = ' pyproject.toml | cut -d'"' -f2)
+          fi
+          
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "Bumped to version: $NEW_VERSION"
+        env:
+          VERSION_INCREMENT: ${{ github.event.inputs.VERSION_INCREMENT }}
+          VERSION_OVERRIDE: ${{ github.event.inputs.VERSION_OVERRIDE }}
 
-      - name: Create and push tag
+      - name: Push changes
         run: |
-          NEW_VERSION="${{ steps.new_version.outputs.version }}"
-          git tag "$NEW_VERSION"
-          git push origin main
-          git push origin tag "$NEW_VERSION"
+          git push origin main --follow-tags
 
       # When the 'github.token' is used events are not generated to prevent users from accidentally creating recursive workflow runs.
       # See: https://docs.github.com/en/actions/security-for-github-actions/security-guides/automatic-token-authentication#using-the-github_token-in-a-workflow
@@ -117,7 +73,7 @@ jobs:
       # Creating a release will trigger the docker-image.yml workflow to build and push the docker image to Docker Hub with the tag of the release.
       - name: Create release
         run: |
-          NEW_VERSION="${{ steps.new_version.outputs.version }}"
+          NEW_VERSION="${{ steps.bump_version.outputs.version }}"
           gh release create "$NEW_VERSION" --generate-notes
         env:
           GH_TOKEN: ${{ github.token }}
