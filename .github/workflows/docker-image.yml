@@ -8,12 +8,12 @@ on:
   # Run when pushed to main, excluding tags and workflow changes
   push:
     branches:
-        - main
-        - cicd/release-workflow  # TODO: Remove after testing
+      - main
+      - cicd/release-workflow # TODO: Remove after testing
     tags-ignore:
-      - '*.*'
+      - "*.*"
     paths-ignore:
-      - '**/*.md'
+      - "**/*.md"
 
 permissions:
   actions: write
@@ -36,7 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PLATFORM: linux/amd64,linux/arm64 # amd64 and arm64
-    
+
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
@@ -93,4 +93,3 @@ jobs:
       #   uses: github/codeql-action/upload-sarif@e488e3c8239c26bf8e6704904a8cb59be658d450 # v3
       #   with:
       #     sarif_file: ${{ steps.anchore-scan.outputs.sarif }}
-          

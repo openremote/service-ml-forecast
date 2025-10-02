@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
     inputs:
       VERSION_INCREMENT:
-        description: 'The version number part to increment (major.minor.patch)'
-        default: 'Minor'
+        description: "The version number part to increment (major.minor.patch)"
+        default: "Minor"
         type: choice
         options:
           - Major
@@ -13,7 +13,7 @@ on:
           - Patch
         required: false
       VERSION_OVERRIDE:
-        description: 'Version override (when not incrementing the previous version)'
+        description: "Version override (when not incrementing the previous version)"
         type: string
         required: false
 
@@ -22,13 +22,11 @@ permissions:
   contents: write
 
 jobs:
-
   release:
     name: Release
     runs-on: ubuntu-latest
 
     steps:
-
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
@@ -52,7 +50,7 @@ jobs:
           CURRENT_VERSION="${{ steps.current_version.outputs.version }}"
           VERSION_OVERRIDE="${{ github.event.inputs.VERSION_OVERRIDE }}"
           VERSION_INCREMENT="${{ github.event.inputs.VERSION_INCREMENT }}"
-          
+
           if [ -n "$VERSION_OVERRIDE" ]; then
             NEW_VERSION="$VERSION_OVERRIDE"
             echo "Using override version: $NEW_VERSION"
@@ -82,7 +80,7 @@ jobs:
             NEW_VERSION="${major}.${minor}.${patch}"
             echo "Incremented $VERSION_INCREMENT version: $NEW_VERSION"
           fi
-          
+
           echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
 
       - name: Update version in pyproject.toml
@@ -91,7 +89,7 @@ jobs:
           sed -i.bak "s/^version = \".*\"/version = \"$NEW_VERSION\"/" pyproject.toml
           rm pyproject.toml.bak
           echo "Updated pyproject.toml to version $NEW_VERSION"
-          
+
           # Show the change
           grep -E '^version = ' pyproject.toml
 
