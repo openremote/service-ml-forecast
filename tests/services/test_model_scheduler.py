@@ -4,8 +4,8 @@ from uuid import uuid4
 
 import pytest
 import respx
+from openremote_client import AssetDatapoint
 
-from service_ml_forecast.clients.openremote.models import AssetDatapoint
 from service_ml_forecast.common.exceptions import ResourceNotFoundError
 from service_ml_forecast.common.time_util import TimeUtil
 from service_ml_forecast.ml.model_provider_factory import ModelProviderFactory

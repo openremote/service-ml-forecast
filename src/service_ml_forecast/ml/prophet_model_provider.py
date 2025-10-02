@@ -19,10 +19,10 @@ import logging
 from uuid import UUID
 
 import pandas as pd
+from openremote_client import AssetDatapoint
 from prophet import Prophet
 from prophet.serialize import model_from_json, model_to_json
 
-from service_ml_forecast.clients.openremote.models import AssetDatapoint
 from service_ml_forecast.common.time_util import TimeUtil
 from service_ml_forecast.ml.model_provider import ModelProvider
 from service_ml_forecast.models.feature_data_wrappers import ForecastDataSet, ForecastResult, TrainingDataSet
@@ -33,7 +33,10 @@ logger = logging.getLogger(__name__)
 
 
 class ProphetModelProvider(ModelProvider[Prophet]):
-    """Prophet model provider."""
+    """Prophet model provider.
+
+    Prophet is an additive regression model, widely used for time series forecasting.
+    """
 
     def __init__(
         self,
@@ -44,7 +47,7 @@ class ProphetModelProvider(ModelProvider[Prophet]):
 
     def train_model(self, training_dataset: TrainingDataSet) -> Prophet | None:
         if training_dataset.target.datapoints is None or len(training_dataset.target.datapoints) == 0:
-            logger.error("No target data provided, cannot train Prophet model")
+            logger.error("No target data provided, cannot train model")
             return None
 
         logger.info(f"Training model -- {self.config.id} with {len(training_dataset.target.datapoints)} datapoints")
@@ -89,7 +92,7 @@ class ProphetModelProvider(ModelProvider[Prophet]):
     def save_model(self, model: Prophet) -> None:
         model_json = model_to_json(model)
         self.model_storage_service.save(model_json, self.config.id)
-        logger.info(f"Saved trained model -- {self.config.id}")
+        logger.info(f"Saved model -- {self.config.id}")
 
     def generate_forecast(self, forecast_dataset: ForecastDataSet | None = None) -> ForecastResult:
         model = self.load_model(self.config.id)

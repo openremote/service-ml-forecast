@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "service-ml-forecast"
 version = "0.2.0"
-description = "Machine Learning Forecast Service"
+description = "ML Forecast Service"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
@@ -26,7 +26,15 @@ dependencies = [
     "isodate>=0.7.2",
     "pyjwt>=2.10.1",
     "aiocache>=0.12.3",
+    "openremote-client",
 ]
+
+
+[tool.uv.workspace]
+members = ["packages/*"]
+
+[tool.uv.sources]
+openremote-client = { workspace = true }
 
 [dependency-groups]
 dev = [
@@ -110,13 +118,18 @@ filterwarnings = ["ignore:.*"]
 [project.scripts]
 service_ml_forecast = "service_ml_forecast.main:app"
 
-# CLI commands for development tasks
+# CLI helpers
+help = "scripts.tools:help"
 lint = "scripts.tools:lint"
-start = "scripts.tools:start"
+format = "scripts.tools:format"
 test = "scripts.tools:test"
 test-coverage = "scripts.tools:test_coverage"
-format = "scripts.tools:format"
 build = "scripts.tools:build"
+start = "scripts.tools:start"
 build-frontend = "scripts.tools:build_frontend"
-build-all = "scripts.tools:build_all"
-help = "scripts.tools:help"
+build-frontend-dev = "scripts.tools:build_frontend_dev"
+lint-packages = "scripts.tools:lint_packages"
+test-packages = "scripts.tools:test_packages"
+build-packages = "scripts.tools:build_packages"
+
+

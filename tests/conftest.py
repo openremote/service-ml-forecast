@@ -14,9 +14,8 @@ import pytest
 import respx
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from openremote_client import AssetDatapoint, OpenRemoteClient
 
-from service_ml_forecast.clients.openremote.models import AssetDatapoint
-from service_ml_forecast.clients.openremote.openremote_client import OpenRemoteClient
 from service_ml_forecast.config import DIRS
 from service_ml_forecast.dependencies import get_config_service
 from service_ml_forecast.logging_config import LOGGING_CONFIG
@@ -37,6 +36,7 @@ MOCK_OPENREMOTE_URL = "https://openremote.local"
 MOCK_KEYCLOAK_URL = "https://keycloak.local/auth"
 MOCK_KEYCLOAK_REALM = "master"
 MOCK_SERVICE_USER = "service_user"
+MOCK_REALM = "master"
 MOCK_SERVICE_USER_SECRET = "service_user_secret"
 MOCK_ACCESS_TOKEN = "mock_access_token"
 MOCK_TOKEN_EXPIRY_SECONDS = 60
@@ -62,28 +62,6 @@ def cleanup_test_tmp_dir() -> Generator[None]:
 
 
 @pytest.fixture
-def openremote_client() -> OpenRemoteClient | None:
-    """Create an OpenRemote client for testing against a real instance."""
-    from service_ml_forecast.config import ENV
-
-    try:
-        client = OpenRemoteClient(
-            openremote_url=ENV.ML_OR_URL,
-            keycloak_url=ENV.ML_OR_KEYCLOAK_URL,
-            realm=ENV.ML_OR_REALM,
-            service_user=ENV.ML_OR_SERVICE_USER,
-            service_user_secret=ENV.ML_OR_SERVICE_USER_SECRET,
-        )
-        if not client.health_check():
-            pytest.skip(reason="Unable to reach the OpenRemote Manager API")
-
-        return client
-
-    except Exception as e:
-        pytest.skip(reason=f"Failed to create OpenRemote client: {e}")
-
-
-@pytest.fixture
 def mock_openremote_client() -> OpenRemoteClient | None:
     """Create a mock OpenRemote client with mocked authentication."""
     with respx.mock(base_url=MOCK_KEYCLOAK_URL) as respx_mock:
@@ -102,7 +80,7 @@ def mock_openremote_client() -> OpenRemoteClient | None:
         client = OpenRemoteClient(
             openremote_url=MOCK_OPENREMOTE_URL,
             keycloak_url=MOCK_KEYCLOAK_URL,
-            realm=MOCK_KEYCLOAK_REALM,
+            realm=MOCK_REALM,
             service_user=MOCK_SERVICE_USER,
             service_user_secret=MOCK_SERVICE_USER_SECRET,
         )
