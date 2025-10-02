@@ -19,17 +19,18 @@ import logging.config
 from collections.abc import AsyncGenerator
 
 import uvicorn
-from fastapi import APIRouter, FastAPI
+from fastapi import FastAPI
 from fastapi.concurrency import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 
 from service_ml_forecast import __app_info__
-from service_ml_forecast.api import model_config_route, openremote_route, web_route
+from service_ml_forecast.api import model_config_route, web_route
 from service_ml_forecast.api.route_exception_handlers import register_exception_handlers
 from service_ml_forecast.config import ENV
-from service_ml_forecast.dependencies import get_openremote_service
+from service_ml_forecast.dependencies import get_openremote_issuers, get_openremote_service
 from service_ml_forecast.logging_config import LOGGING_CONFIG
+from service_ml_forecast.middlewares.keycloak.middleware import KeycloakMiddleware
 from service_ml_forecast.services.model_scheduler import ModelScheduler
 
 # Load the logging configuration
@@ -47,6 +48,7 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None]:
     logger.info("FastAPI instance shutting down")
 
 
+# --- FastAPI App ---
 app = FastAPI(
     root_path=ENV.ML_API_ROOT_PATH,
     title=__app_info__.name,
@@ -58,13 +60,26 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-if not ENV.ML_PUBLISH_DOCS:
+
+# --- API Docs ---
+if not ENV.ML_API_PUBLISH_DOCS:
     app.docs_url = None
     app.redoc_url = None
     app.openapi_url = None
 
-# CORS Middleware
-# noinspection PyTypeChecker
+
+# --- Middlewares ---
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+if ENV.ML_API_MIDDLEWARE_KEYCLOAK:
+    app.add_middleware(
+        KeycloakMiddleware,
+        excluded_routes=["/docs", "/redoc", "/openapi.json", "/ui"],
+        issuer_provider=get_openremote_issuers,
+    )
+else:
+    logger.warning("Keycloak middleware disabled! This is NOT recommended in production!")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ENV.ML_WEBSERVER_ORIGINS,
@@ -73,21 +88,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Compress responses >= 1KB
-# noinspection PyTypeChecker
-app.add_middleware(GZipMiddleware, minimum_size=1000)
 
-
-# Create a main router with global prefix
-main_router = APIRouter()
-
-# --- Include Routers under the main router ---
-main_router.include_router(model_config_route.router)
-main_router.include_router(openremote_route.router)
-main_router.include_router(web_route.router)
-
-# Include the main router in the app
-app.include_router(main_router)
+# --- Include Routers ---
+app.include_router(model_config_route.router)
+app.include_router(web_route.router)
 
 # --- Exception Handlers ---
 register_exception_handlers(app)
@@ -95,14 +99,24 @@ register_exception_handlers(app)
 
 def initialize_background_services() -> None:
     """Initialize background services, these run in the background and are not part of the FastAPI lifecycle"""
+
     # Setup the ML Model Scheduler
     model_scheduler = ModelScheduler(get_openremote_service())
     model_scheduler.start()
 
 
+# Entrypoint for the service
 if __name__ == "__main__":
+    # Check if the application is running in development mode
+    IS_DEV = ENV.is_development()
+
+    if IS_DEV:
+        logger.warning("Application is running in development mode -- DO NOT USE IN PRODUCTION")
+
     logger.info("Application details: %s", __app_info__)
 
+    # Initialize any services that run separately from the FastAPI app
     initialize_background_services()
-    reload = ENV.is_development()
+
+    reload = IS_DEV  # Enable auto-reload in development mode
     uvicorn.run("service_ml_forecast.main:app", host=ENV.ML_WEBSERVER_HOST, port=ENV.ML_WEBSERVER_PORT, reload=reload)

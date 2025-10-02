@@ -16,29 +16,42 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { createContext, provide } from '@lit/context';
-import { RouterLocation } from '@vaadin/router';
+import { PreventAndRedirectCommands, RouterLocation } from '@vaadin/router';
 import { html, LitElement } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { setRealmTheme } from '../common/theme';
+import { manager } from '@openremote/core';
+import { ML_OR_URL } from '../common/constants';
 
 export const realmContext = createContext<string>(Symbol('realm'));
 
 @customElement('app-layout')
 export class AppLayout extends LitElement {
-    // Use a context to provide the realm to all child elements
-    // Child elements can use the @consume decorator to receive the realm
-    // This is done in the parent layout to extract the realm from the route params on route change in a single place
+    // Provide the realm to all child elements
     @provide({ context: realmContext })
     @state()
     realm = '';
 
-    // Called before the initial Vaadin Router location is entered ('/'), only called once since its a parent route
-    onBeforeEnter(location: RouterLocation) {
-        this.realm = location.params.realm as string;
+    // Vaadin router lifecycle hook -- runs exactly once since this is the parent route
+    async onBeforeEnter(location: RouterLocation, commands: PreventAndRedirectCommands) {
+        const authRealm = manager.getRealm() ?? 'master';
+        const paramRealm = location.params.realm as string;
+
+        // Redirect to auth realm, if no param realm is provided
+        if (!paramRealm) {
+            console.log(`No realm provided, redirecting to ${authRealm}`);
+            return commands.redirect(authRealm);
+        }
+
+        this.realm = paramRealm;
+
+        // Initialize the OpenRemote manager rest api using the authenticated realm
+        manager.rest.initialise(`${ML_OR_URL}/api/${authRealm}`);
+
+        // Set the service UI theme based on the given realm
         setRealmTheme(this.realm);
     }
 
-    // Render the breadcrumb nav and slot
     render() {
         return html`
             <breadcrumb-nav realm=${this.realm}></breadcrumb-nav>

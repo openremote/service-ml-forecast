@@ -15,6 +15,13 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import { setupORIcons } from './common/theme';
+import { setupRouter } from './router';
+import { IS_EMBEDDED, ML_OR_KEYCLOAK_URL, ML_OR_URL } from './common/constants';
+import { getRealmSearchParam } from './common/util';
+import { manager } from '@openremote/core';
+import { Auth, EventProviderType, ManagerConfig } from '@openremote/model';
+
 // Component Imports
 import '@openremote/or-mwc-components/or-mwc-input';
 import '@openremote/or-components/or-panel';
@@ -24,16 +31,33 @@ import './components/configs-table';
 import './components/loading-spinner';
 import './components/breadcrumb-nav';
 import './components/alert-message';
-import { setupORIcons } from './common/theme';
-import { setupRouter } from './router';
 
-function init() {
-    // Setup OR icons
+const DEFAULT_MANAGER_CONFIG: ManagerConfig = {
+    managerUrl: ML_OR_URL || '/',
+    keycloakUrl: ML_OR_KEYCLOAK_URL || '/auth',
+    auth: Auth.KEYCLOAK,
+    autoLogin: true,
+    realm: undefined,
+    consoleAutoEnable: true,
+    loadTranslations: ['or'],
+    eventProviderType: EventProviderType.POLLING
+};
+
+async function init() {
+    console.info('Context:', IS_EMBEDDED ? 'iframe' : 'standalone');
+
+    // get realm search param (?realm=) from url, if not provided, use master for auth
+    const realm = getRealmSearchParam() ?? 'master';
+    const managerConfig = { ...DEFAULT_MANAGER_CONFIG, realm };
+
+    await setupManager(managerConfig);
+
     setupORIcons();
-
-    // Setup the router
     setupRouter();
 }
 
-// Entry point
+async function setupManager(managerConfig: ManagerConfig) {
+    await manager.init(managerConfig);
+}
+
 init();

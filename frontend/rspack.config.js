@@ -7,8 +7,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const isProduction = process.env.NODE_ENV === 'production';
-const serviceUrl = process.env.ML_SERVICE_URL || 'http://localhost:8000'; // Default to default dev backend
 const rootPath = process.env.ML_WEB_ROOT_PATH;
+const serviceUrl = process.env.ML_SERVICE_URL || 'http://localhost:8000'; // Default to default service backend
+const keycloakUrl = process.env.ML_OR_KEYCLOAK_URL || 'http://localhost:8081/auth'; // Default to openremote keycloak address
+const openremoteUrl = process.env.ML_OR_URL !== undefined ? process.env.ML_OR_URL : 'http://localhost:8080'; // Default to openremote url
 
 export default {
     mode: isProduction ? 'production' : 'development',
@@ -20,7 +22,6 @@ export default {
         filename: `bundle.[contenthash].js`,
         clean: true,
         path: path.resolve(__dirname, 'dist'),
-        // prefix for the bundle, use root path or fallback to '/'
         publicPath: rootPath ? rootPath : '/'
     },
     resolve: {
@@ -65,7 +66,9 @@ export default {
             patterns: [{ from: 'assets', to: 'assets' }]
         }),
         new rspack.DefinePlugin({
-            'process.env.ML_SERVICE_URL': JSON.stringify(serviceUrl)
+            'process.env.ML_SERVICE_URL': JSON.stringify(serviceUrl),
+            'process.env.ML_OR_KEYCLOAK_URL': JSON.stringify(keycloakUrl),
+            'process.env.ML_OR_URL': JSON.stringify(openremoteUrl)
         })
     ],
     devServer: {
