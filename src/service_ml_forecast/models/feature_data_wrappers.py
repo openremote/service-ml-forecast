@@ -15,9 +15,8 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
+from openremote_client import AssetDatapoint
 from pydantic import BaseModel
-
-from service_ml_forecast.clients.openremote.models import AssetDatapoint
 
 
 class AssetFeatureDatapoints(BaseModel):
