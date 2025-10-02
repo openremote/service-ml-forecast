@@ -19,10 +19,6 @@ permissions:
   actions: write
   contents: write
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   # Call ci.yml for linting and running tests
   call-ci:
