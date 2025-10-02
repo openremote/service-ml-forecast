@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  backend:
+  quality-checks:
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
@@ -39,7 +39,7 @@ jobs:
       - name: Run build
         run: uv run build
 
-  frontend:
+  frontend-quality-checks:
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
