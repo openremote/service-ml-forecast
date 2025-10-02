@@ -3,6 +3,20 @@ name: Release
 on:
   # Manual trigger
   workflow_dispatch:
+    inputs:
+      VERSION_INCREMENT:
+        description: 'The version number part to increment (major.minor.patch)'
+        default: 'Minor'
+        type: choice
+        options:
+          - Major
+          - Minor
+          - Patch
+        required: false
+      VERSION_OVERRIDE:
+        description: 'Version override (when not incrementing the previous version)'
+        type: string
+        required: false
 
 permissions:
   actions: write
@@ -10,7 +24,7 @@ permissions:
 
 jobs:
 
-  build:
+  release:
     name: Release
     runs-on: ubuntu-latest
 
@@ -18,11 +32,87 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          fetch-depth: 0
 
-      - name: Get pyproject.toml version details
-        id: pyproject_version
+      - name: Install uv package manager
+        uses: astral-sh/setup-uv@0c5e2b8115b80b4c7c5ddf6ffdd634974642d182 # v5.4.1
+        with:
+          version: "0.6.11"
+
+      - name: Get current version
+        id: current_version
         run: |
-          echo "version=$(cat pyproject.toml | grep -E '^version = ' | cut -d'"' -f2)" >> $GITHUB_OUTPUT
+          CURRENT_VERSION=$(grep -E '^version = ' pyproject.toml | cut -d'"' -f2)
+          echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "Current version: $CURRENT_VERSION"
+
+      - name: Calculate new version
+        id: new_version
+        run: |
+          CURRENT_VERSION="${{ steps.current_version.outputs.version }}"
+          VERSION_OVERRIDE="${{ github.event.inputs.VERSION_OVERRIDE }}"
+          VERSION_INCREMENT="${{ github.event.inputs.VERSION_INCREMENT }}"
+          
+          if [ -n "$VERSION_OVERRIDE" ]; then
+            NEW_VERSION="$VERSION_OVERRIDE"
+            echo "Using override version: $NEW_VERSION"
+          else
+            # Parse current version
+            IFS='.' read -r -a version_parts <<< "$CURRENT_VERSION"
+            major="${version_parts[0]}"
+            minor="${version_parts[1]}"
+            patch="${version_parts[2]}"
+            
+            # Increment based on input
+            case "$VERSION_INCREMENT" in
+              Major)
+                major=$((major + 1))
+                minor=0
+                patch=0
+                ;;
+              Minor)
+                minor=$((minor + 1))
+                patch=0
+                ;;
+              Patch)
+                patch=$((patch + 1))
+                ;;
+            esac
+            
+            NEW_VERSION="${major}.${minor}.${patch}"
+            echo "Incremented $VERSION_INCREMENT version: $NEW_VERSION"
+          fi
+          
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Update version in pyproject.toml
+        run: |
+          NEW_VERSION="${{ steps.new_version.outputs.version }}"
+          sed -i.bak "s/^version = \".*\"/version = \"$NEW_VERSION\"/" pyproject.toml
+          rm pyproject.toml.bak
+          echo "Updated pyproject.toml to version $NEW_VERSION"
+          
+          # Show the change
+          grep -E '^version = ' pyproject.toml
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Commit version change
+        run: |
+          NEW_VERSION="${{ steps.new_version.outputs.version }}"
+          git add pyproject.toml
+          git commit -m "chore: bump version to $NEW_VERSION"
+
+      - name: Create and push tag
+        run: |
+          NEW_VERSION="${{ steps.new_version.outputs.version }}"
+          git tag "$NEW_VERSION"
+          git push origin main
+          git push origin tag "$NEW_VERSION"
 
       # When the 'github.token' is used events are not generated to prevent users from accidentally creating recursive workflow runs.
       # See: https://docs.github.com/en/actions/security-for-github-actions/security-guides/automatic-token-authentication#using-the-github_token-in-a-workflow
@@ -30,9 +120,7 @@ jobs:
       # Creating a release will trigger the docker-image.yml workflow to build and push the docker image to Docker Hub with the tag of the release.
       - name: Create release
         run: |
-          git tag $ML_FORECAST_VERSION
-          git push origin tag $ML_FORECAST_VERSION
-          gh release create $ML_FORECAST_VERSION --generate-notes
+          NEW_VERSION="${{ steps.new_version.outputs.version }}"
+          gh release create "$NEW_VERSION" --generate-notes
         env:
           GH_TOKEN: ${{ github.token }}
-          ML_FORECAST_VERSION: ${{ steps.pyproject_version.outputs.version }}

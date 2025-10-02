@@ -1,8 +1,7 @@
-name: Release
+name: Docker Build and Push
 
 on:
   release:
-
     # Run when a release is published
     types: [published]
 
