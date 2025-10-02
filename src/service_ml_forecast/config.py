@@ -69,6 +69,12 @@ class AppEnvironment(BaseSettings):
     ML_OR_REALM: str = "master"  # OpenRemote realm to use for the OpenRemote Manager API
     ML_OR_SERVICE_USER: str = "serviceuser"  # OpenRemote Manager service user
     ML_OR_SERVICE_USER_SECRET: str = "secret"  # OpenRemote Manager service user secret
+    # Service registration settings
+    ML_OR_SERVICE_URL: str = f"http://localhost:{ML_WEBSERVER_PORT}"  # URL for the OpenRemote service registration
+    ML_OR_SERVICE_ICON: str = "chart-timeline-variant"  # OpenRemote service icon
+    ML_OR_SERVICE_LABEL: str = "ML Forecasting Service"  # OpenRemote service label
+    ML_OR_SERVICE_SERVICE_ID: str = "ml-forecast"  # OpenRemote service service id
+    ML_OR_SERVICE_GLOBAL: bool = True  # OpenRemote service is global/multi-tenancy
 
     model_config = SettingsConfigDict(case_sensitive=True, env_file=".env", env_file_encoding="utf-8", extra="ignore")
 

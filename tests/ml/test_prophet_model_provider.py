@@ -1,4 +1,5 @@
-from service_ml_forecast.clients.openremote.models import AssetDatapoint
+from openremote_client import AssetDatapoint
+
 from service_ml_forecast.ml.model_provider_factory import ModelProviderFactory
 from service_ml_forecast.models.feature_data_wrappers import AssetFeatureDatapoints, ForecastDataSet, TrainingDataSet
 from service_ml_forecast.models.model_config import ProphetModelConfig

@@ -17,11 +17,11 @@
 
 import { createContext, provide } from '@lit/context';
 import { PreventAndRedirectCommands, RouterLocation } from '@vaadin/router';
-import { html, LitElement } from 'lit';
+import { css, html, LitElement, unsafeCSS } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { setRealmTheme } from '../common/theme';
 import { manager } from '@openremote/core';
-import { ML_OR_URL } from '../common/constants';
+import { IS_EMBEDDED, ML_OR_URL } from '../common/constants';
 
 export const realmContext = createContext<string>(Symbol('realm'));
 
@@ -31,6 +31,17 @@ export class AppLayout extends LitElement {
     @provide({ context: realmContext })
     @state()
     realm = '';
+
+    static get styles() {
+        const padding = IS_EMBEDDED ? '0 20px' : '20px';
+
+        return css`
+            :host {
+                display: block;
+                padding: ${unsafeCSS(padding)};
+            }
+        `;
+    }
 
     // Vaadin router lifecycle hook -- runs exactly once since this is the parent route
     async onBeforeEnter(location: RouterLocation, commands: PreventAndRedirectCommands) {
