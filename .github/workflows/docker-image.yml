@@ -9,6 +9,7 @@ on:
   push:
     branches:
       - main
+      - cicd/release-workflow
     tags-ignore:
       - '*.*'
     paths-ignore:
