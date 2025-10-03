@@ -10,9 +10,9 @@ on:
     branches:
       - main
     tags-ignore:
-      - "*.*"
+      - '*.*'
     paths-ignore:
-      - "**/*.md"
+      - '**/*.md'
 
 permissions:
   actions: write
@@ -30,7 +30,7 @@ jobs:
     needs: call-ci
     runs-on: ubuntu-latest
     env:
-      PLATFORM: linux/amd64,linux/arm64 # amd64 and arm64
+      PLATFORM: linux/amd64,linux/arm64
 
     steps:
       - name: Checkout
@@ -53,7 +53,7 @@ jobs:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
         with:
-          platforms: all
+          platforms: linux/amd64,linux/arm64
 
       - name: Install buildx
         id: buildx
