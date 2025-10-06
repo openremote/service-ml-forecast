@@ -40,6 +40,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
       # Set tags for docker image using the release tag or fallback to develop if no tag is provided
+      # If no tag is provided the latest git tag is used and passed to the docker build command
       - name: Set tags
         id: set-tags
         run: |
@@ -49,9 +50,13 @@ jobs:
           if [[ "$VERSION" == *"-dev" ]]; then
             echo "TAG=-t openremote/service-ml-forecast:develop" >> $GITHUB_ENV
             echo "dockerImage=openremote/service-ml-forecast:develop" >> $GITHUB_OUTPUT
+            LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")
+            DEV_VERSION="${LATEST_TAG}-dev"
+            echo "VERSION=$DEV_VERSION" >> $GITHUB_ENV
           else
-            echo "TAG=-t openremote/service-ml-forecast:latest -t openremote/service-ml-forecast:$VERSION" >> $GITHUB_ENV
-            echo "dockerImage=openremote/service-ml-forecast:$VERSION" >> $GITHUB_OUTPUT
+            echo "TAG=-t openremote/service-ml-forecast:latest -t openremote/service-ml-forecast:$TAG" >> $GITHUB_ENV
+            echo "dockerImage=openremote/service-ml-forecast:$TAG" >> $GITHUB_OUTPUT
+            echo "VERSION=$TAG" >> $GITHUB_ENV
           fi
           echo "VERSION=$VERSION" >> $GITHUB_ENV
         env:
