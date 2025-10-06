@@ -115,5 +115,6 @@ jobs:
     name: Build and Push Docker Image
     needs: release
     uses: ./.github/workflows/docker-image.yml
+    secrets: inherit
     with:
       version: ${{ needs.release.outputs.version }}
