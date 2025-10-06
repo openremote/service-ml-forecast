@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=42", "wheel"]
+requires = ["setuptools>=80", "wheel", "setuptools-scm[simple]>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "service-ml-forecast"
-version = "0.1.0"
+dynamic = ["version"]
 description = "ML Forecast Service"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -45,6 +45,7 @@ dev = [
     "build>=1.2.2",
     "respx>=0.22.0",
     "pandas-stubs>=2.2.3",
+    "setuptools_scm[toml]>=6.2",
 ]
 
 [project.urls]
