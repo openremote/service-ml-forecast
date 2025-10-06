@@ -112,7 +112,6 @@ jobs:
 
   # Build and push docker image after successful release
   build-docker:
-    name: Build and Push Docker Image
     needs: release
     uses: ./.github/workflows/docker-image.yml
     secrets: inherit
