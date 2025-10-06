@@ -1,0 +1,79 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      VERSION_INCREMENT:
+        description: 'The version number part to increment (major.minor.patch)'
+        default: 'Minor'
+        type: choice
+        options:
+          - Major
+          - Minor
+          - Patch
+        required: false
+      VERSION_OVERRIDE:
+        description: 'Version override (when not incrementing the previous version)'
+        type: string
+        required: false
+
+permissions:
+  actions: write
+  contents: write
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Install uv package manager
+        uses: astral-sh/setup-uv@0c5e2b8115b80b4c7c5ddf6ffdd634974642d182 # v5.4.1
+        with:
+          version: '0.6.11'
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Bump version
+        id: bump_version
+        run: |
+          uv tool install bump-my-version
+
+          if [ -n "$VERSION_OVERRIDE" ]; then
+            echo "Using override version: $VERSION_OVERRIDE"
+            uv tool run bump-my-version bump --new-version "$VERSION_OVERRIDE"
+            NEW_VERSION="$VERSION_OVERRIDE"
+          else
+            INCREMENT=$(echo "$VERSION_INCREMENT" | tr '[:upper:]' '[:lower:]')
+            uv tool run bump-my-version bump "$INCREMENT"
+            NEW_VERSION=$(grep -E '^version = ' pyproject.toml | cut -d'"' -f2)
+          fi
+
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "Bumped to version: $NEW_VERSION"
+        env:
+          VERSION_INCREMENT: ${{ github.event.inputs.VERSION_INCREMENT }}
+          VERSION_OVERRIDE: ${{ github.event.inputs.VERSION_OVERRIDE }}
+
+      - name: Push changes
+        run: |
+          git push origin main --follow-tags
+
+      # When the 'github.token' is used events are not generated to prevent users from accidentally creating recursive workflow runs.
+      # See: https://docs.github.com/en/actions/security-for-github-actions/security-guides/automatic-token-authentication#using-the-github_token-in-a-workflow
+      # ------------------------------------------------------------------------------------------------
+      # Creating a release will trigger the docker-image.yml workflow to build and push the docker image to Docker Hub with the tag of the release.
+      - name: Create release
+        run: |
+          NEW_VERSION="${{ steps.bump_version.outputs.version }}"
+          gh release create "$NEW_VERSION" --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}

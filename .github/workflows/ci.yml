@@ -1,65 +1,65 @@
-name: Lint and Test
+name: Lint, Test and Build
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
+  workflow_call:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-
   quality-checks:
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
-    - name: Install uv package manager
-      uses: astral-sh/setup-uv@0c5e2b8115b80b4c7c5ddf6ffdd634974642d182 # v5.4.1
-      with:
-        version: "0.6.11"
+      - name: Install uv package manager
+        uses: astral-sh/setup-uv@0c5e2b8115b80b4c7c5ddf6ffdd634974642d182 # v5.4.1
+        with:
+          version: '0.6.11'
 
-    - name: Create and activate virtual environment
-      run: |
-        uv venv
-        source .venv/bin/activate
+      - name: Create and activate virtual environment
+        run: |
+          uv venv
+          source .venv/bin/activate
 
-    - name: Run linting and type checking
-      run: uv run lint
+      - name: Run linting and type checking
+        run: uv run lint
 
-    - name: Run tests with coverage
-      run: uv run test-coverage
+      - name: Run tests with coverage
+        run: uv run test-coverage
 
-    - name: Run build
-      run: uv run build
+      - name: Run build
+        run: uv run build
 
   frontend-quality-checks:
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4
-      with:
-        node-version: '20'
+      - name: Setup Node.js
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4
+        with:
+          node-version: '20'
 
-    - name: Install dependencies
-      run: npm install
-      working-directory: ./frontend
+      - name: Install dependencies
+        run: npm install
+        working-directory: ./frontend
 
-    - name: Run linting
-      run: npm run lint
-      working-directory: ./frontend
+      - name: Run linting
+        run: npm run lint
+        working-directory: ./frontend
 
-    - name: Build frontend
-      run: npm run build:prod
-      working-directory: ./frontend
+      - name: Build frontend
+        run: npm run build:prod
+        working-directory: ./frontend
