@@ -42,30 +42,53 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Bump version
+      - name: Calculate next version
         id: bump_version
         run: |
-          uv tool install bump-my-version
+          # Get current version from latest Git tag
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")
+          CURRENT_VERSION="$LATEST_TAG"
+          echo "Current version: $CURRENT_VERSION"
 
           if [ -n "$VERSION_OVERRIDE" ]; then
             echo "Using override version: $VERSION_OVERRIDE"
-            uv tool run bump-my-version bump --new-version "$VERSION_OVERRIDE"
             NEW_VERSION="$VERSION_OVERRIDE"
           else
-            INCREMENT=$(echo "$VERSION_INCREMENT" | tr '[:upper:]' '[:lower:]')
-            uv tool run bump-my-version bump "$INCREMENT"
-            NEW_VERSION=$(grep -E '^version = ' pyproject.toml | cut -d'"' -f2)
+            # Parse current version
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+            
+            # Increment based on input
+            case "$VERSION_INCREMENT" in
+              "Major")
+                MAJOR=$((MAJOR + 1))
+                MINOR=0
+                PATCH=0
+                ;;
+              "Minor")
+                MINOR=$((MINOR + 1))
+                PATCH=0
+                ;;
+              "Patch")
+                PATCH=$((PATCH + 1))
+                ;;
+            esac
+            
+            NEW_VERSION="$MAJOR.$MINOR.$PATCH"
           fi
 
           echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
-          echo "Bumped to version: $NEW_VERSION"
+          echo "Next version: $NEW_VERSION"
+
+      - name: Create and push tag
+        run: |
+          NEW_VERSION="${{ steps.bump_version.outputs.version }}"
+          TAG="$NEW_VERSION"
+          
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin "$TAG"
         env:
           VERSION_INCREMENT: ${{ github.event.inputs.VERSION_INCREMENT }}
           VERSION_OVERRIDE: ${{ github.event.inputs.VERSION_OVERRIDE }}
-
-      - name: Push changes
-        run: |
-          git push origin main --follow-tags
 
       # When the 'github.token' is used events are not generated to prevent users from accidentally creating recursive workflow runs.
       # See: https://docs.github.com/en/actions/security-for-github-actions/security-guides/automatic-token-authentication#using-the-github_token-in-a-workflow
