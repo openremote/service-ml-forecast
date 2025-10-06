@@ -25,17 +25,14 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.bump_version.outputs.version }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
           fetch-depth: 0
-
-      - name: Install uv package manager
-        uses: astral-sh/setup-uv@0c5e2b8115b80b4c7c5ddf6ffdd634974642d182 # v5.4.1
-        with:
-          version: '0.6.11'
 
       - name: Configure git
         run: |
@@ -79,24 +76,34 @@ jobs:
           echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
           echo "Next version: $NEW_VERSION"
 
+          # Fail if version is still 0.0.0 (increment failed)
+          if [ "$NEW_VERSION" = "0.0.0" ]; then
+            echo "Error: Version increment failed - version is still 0.0.0"
+            exit 1
+          fi
+        env:
+          VERSION_INCREMENT: ${{ github.event.inputs.VERSION_INCREMENT }}
+          VERSION_OVERRIDE: ${{ github.event.inputs.VERSION_OVERRIDE }}
+
       - name: Create and push tag
         run: |
           NEW_VERSION="${{ steps.bump_version.outputs.version }}"
           TAG="$NEW_VERSION"
           
           git tag -a "$TAG" -m "Release $TAG"
-          git push origin "$TAG"
-        env:
-          VERSION_INCREMENT: ${{ github.event.inputs.VERSION_INCREMENT }}
-          VERSION_OVERRIDE: ${{ github.event.inputs.VERSION_OVERRIDE }}
 
-      # When the 'github.token' is used events are not generated to prevent users from accidentally creating recursive workflow runs.
-      # See: https://docs.github.com/en/actions/security-for-github-actions/security-guides/automatic-token-authentication#using-the-github_token-in-a-workflow
-      # ------------------------------------------------------------------------------------------------
-      # Creating a release will trigger the docker-image.yml workflow to build and push the docker image to Docker Hub with the tag of the release.
       - name: Create release
         run: |
-          NEW_VERSION="${{ steps.bump_version.outputs.version }}"
-          gh release create "$NEW_VERSION" --generate-notes
+          git push --follow-tags
+          gh release create $RELEASED_VERSION --generate-notes
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASED_VERSION: ${{ steps.bump_version.outputs.version }}
+
+  # Build and push docker image after successful release
+  build-docker:
+    name: Build and Push Docker Image
+    needs: release
+    uses: ./.github/workflows/docker-image.yml
+    with:
+      version: ${{ needs.release.outputs.version }}
