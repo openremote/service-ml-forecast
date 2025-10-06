@@ -1,10 +1,6 @@
 name: Docker Build and Push
 
 on:
-  release:
-    # Run when a release is published
-    types: [published]
-
   # Run when pushed to main, excluding tags and workflow changes
   push:
     branches:
@@ -13,6 +9,13 @@ on:
       - '*.*'
     paths-ignore:
       - '**/*.md'
+
+  workflow_call:
+    inputs:
+      version:
+        description: 'Version to build (e.g., 0.1.0)'
+        required: false
+        type: string
 
 permissions:
   actions: write
@@ -37,23 +40,22 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
       # Set tags for docker image using the release tag or fallback to develop if no tag is provided
-      # If no tag is provided the latest git tag is used and passed to the docker build command
       - name: Set tags
         id: set-tags
         run: |
-          if [ -z "$TAG" ]; then
+          # Use input version if provided, otherwise latest tag + dev suffix
+          VERSION="${INPUT_VERSION:-$(git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")-dev}"
+          
+          if [[ "$VERSION" == *"-dev" ]]; then
             echo "TAG=-t openremote/service-ml-forecast:develop" >> $GITHUB_ENV
             echo "dockerImage=openremote/service-ml-forecast:develop" >> $GITHUB_OUTPUT
-            LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")
-            DEV_VERSION="${LATEST_TAG}-dev"
-            echo "VERSION=$DEV_VERSION" >> $GITHUB_ENV
           else
-            echo "TAG=-t openremote/service-ml-forecast:latest -t openremote/service-ml-forecast:$TAG" >> $GITHUB_ENV
-            echo "dockerImage=openremote/service-ml-forecast:$TAG" >> $GITHUB_OUTPUT
-            echo "VERSION=$TAG" >> $GITHUB_ENV
+            echo "TAG=-t openremote/service-ml-forecast:latest -t openremote/service-ml-forecast:$VERSION" >> $GITHUB_ENV
+            echo "dockerImage=openremote/service-ml-forecast:$VERSION" >> $GITHUB_OUTPUT
           fi
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
         env:
-          TAG: ${{ github.event.release.tag_name }}
+          INPUT_VERSION: ${{ inputs.version }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
