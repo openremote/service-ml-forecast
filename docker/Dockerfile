@@ -31,8 +31,12 @@ RUN echo "Starting Python build phase..."
 
 WORKDIR /app
 
+# Version argument for setuptools-scm (should be set during build)
+ARG VERSION=0.0.0
+
 ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1
+    PYTHONDONTWRITEBYTECODE=1 \
+    SETUPTOOLS_SCM_PRETEND_VERSION=${VERSION}
 
 RUN echo "Installing Python build dependencies..."
 RUN apt-get update \
@@ -72,10 +76,14 @@ ARG ML_ENVIRONMENT
 ARG GIT_COMMIT=unknown
 LABEL git-commit=$GIT_COMMIT
 
+# Version argument for setuptools-scm (should be set during build)
+ARG VERSION=0.0.0
+
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONPATH=/app/src \
-    ML_ENVIRONMENT=${ML_ENVIRONMENT:-production}
+    ML_ENVIRONMENT=${ML_ENVIRONMENT:-production} \
+    SETUPTOOLS_SCM_PRETEND_VERSION=${VERSION}
 
 # Install any runtime dependencies
 RUN echo "Installing runtime dependencies..."
