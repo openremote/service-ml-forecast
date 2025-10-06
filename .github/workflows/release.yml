@@ -1,9 +1,6 @@
 name: Release
 
 on:
-  push:
-    branches:
-      - bugfix-release-version
   workflow_dispatch:
     inputs:
       VERSION_INCREMENT:
@@ -46,7 +43,7 @@ jobs:
         id: bump_version
         run: |
           # Get current version from latest Git tag
-          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")
+          LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1) 2>/dev/null || echo "0.0.0")
           CURRENT_VERSION="$LATEST_TAG"
           echo "Current version: $CURRENT_VERSION"
 
@@ -57,11 +54,8 @@ jobs:
             # Parse current version
             IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
             
-            # Default to Minor if not set
-            INCREMENT="${VERSION_INCREMENT:-Minor}"
-            
             # Increment based on input
-            case "$INCREMENT" in
+            case "$VERSION_INCREMENT" in
               "Major")
                 MAJOR=$((MAJOR + 1))
                 MINOR=0
@@ -91,27 +85,23 @@ jobs:
           VERSION_INCREMENT: ${{ github.event.inputs.VERSION_INCREMENT }}
           VERSION_OVERRIDE: ${{ github.event.inputs.VERSION_OVERRIDE }}
 
-      - name: Echo version (testing)
+      - name: Create and push tag
         run: |
-          echo "Would create release with version: ${{ steps.bump_version.outputs.version }}"
+          NEW_VERSION="${{ steps.bump_version.outputs.version }}"
+          TAG="$NEW_VERSION"
+          
+          git tag -a "$TAG" -m "Release $TAG"
 
-      # - name: Create and push tag
-      #   run: |
-      #     NEW_VERSION="${{ steps.bump_version.outputs.version }}"
-      #     TAG="$NEW_VERSION"
-      #     
-      #     git tag -a "$TAG" -m "Release $TAG"
+      - name: Create release
+        run: |
+          git push --follow-tags
+          gh release create $RELEASED_VERSION --generate-notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASED_VERSION: ${{ steps.bump_version.outputs.version }}
 
-      # - name: Create release
-      #   run: |
-      #     git push --follow-tags
-      #     gh release create $RELEASED_VERSION --generate-notes
-      #   env:
-      #     GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #     RELEASED_VERSION: ${{ steps.bump_version.outputs.version }}
-
-  # Build and push docker image after successful release
   build-docker:
+    name: Docker Build
     needs: release
     uses: ./.github/workflows/docker-image.yml
     secrets: inherit
