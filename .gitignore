@@ -205,3 +205,6 @@ logs/
 # Application specific
 deployment/data/**
 **/**/.tmp
+
+# setuptools_scm generated version file
+src/service_ml_forecast/_version.py
