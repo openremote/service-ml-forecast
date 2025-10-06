@@ -1,6 +1,9 @@
 name: Release
 
 on:
+  push:
+    branches:
+      - bugfix-release-version
   workflow_dispatch:
     inputs:
       VERSION_INCREMENT:
@@ -85,20 +88,24 @@ jobs:
           VERSION_INCREMENT: ${{ github.event.inputs.VERSION_INCREMENT }}
           VERSION_OVERRIDE: ${{ github.event.inputs.VERSION_OVERRIDE }}
 
-      - name: Create and push tag
+      - name: Echo version (testing)
         run: |
-          NEW_VERSION="${{ steps.bump_version.outputs.version }}"
-          TAG="$NEW_VERSION"
-          
-          git tag -a "$TAG" -m "Release $TAG"
+          echo "Would create release with version: ${{ steps.bump_version.outputs.version }}"
 
-      - name: Create release
-        run: |
-          git push --follow-tags
-          gh release create $RELEASED_VERSION --generate-notes
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASED_VERSION: ${{ steps.bump_version.outputs.version }}
+      # - name: Create and push tag
+      #   run: |
+      #     NEW_VERSION="${{ steps.bump_version.outputs.version }}"
+      #     TAG="$NEW_VERSION"
+      #     
+      #     git tag -a "$TAG" -m "Release $TAG"
+
+      # - name: Create release
+      #   run: |
+      #     git push --follow-tags
+      #     gh release create $RELEASED_VERSION --generate-notes
+      #   env:
+      #     GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #     RELEASED_VERSION: ${{ steps.bump_version.outputs.version }}
 
   # Build and push docker image after successful release
   build-docker:
