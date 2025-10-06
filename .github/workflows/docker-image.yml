@@ -44,7 +44,10 @@ jobs:
           if [ -z "$TAG" ]; then
             echo "TAG=-t openremote/service-ml-forecast:develop" >> $GITHUB_ENV
             echo "dockerImage=openremote/service-ml-forecast:develop" >> $GITHUB_OUTPUT
-            echo "VERSION=0.0.0" >> $GITHUB_ENV
+            # For untagged builds, try and get the latest git tag for the docker build command
+            LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")
+            DEV_VERSION="${LATEST_TAG}-dev"
+            echo "VERSION=$DEV_VERSION" >> $GITHUB_ENV
           else
             echo "TAG=-t openremote/service-ml-forecast:latest -t openremote/service-ml-forecast:$TAG" >> $GITHUB_ENV
             echo "dockerImage=openremote/service-ml-forecast:$TAG" >> $GITHUB_OUTPUT
