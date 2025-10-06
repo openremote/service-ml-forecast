@@ -31,7 +31,7 @@ RUN echo "Starting Python build phase..."
 
 WORKDIR /app
 
-# Version argument for setuptools-scm (should be set during build)
+# Version argument for setuptools-scm
 ARG VERSION=0.0.0
 
 ENV PYTHONUNBUFFERED=1 \
@@ -76,7 +76,7 @@ ARG ML_ENVIRONMENT
 ARG GIT_COMMIT=unknown
 LABEL git-commit=$GIT_COMMIT
 
-# Version argument for setuptools-scm (should be set during build)
+# Version argument for setuptools-scm
 ARG VERSION=0.0.0
 
 ENV PYTHONUNBUFFERED=1 \
