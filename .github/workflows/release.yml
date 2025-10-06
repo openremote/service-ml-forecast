@@ -57,8 +57,11 @@ jobs:
             # Parse current version
             IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
             
+            # Default to Minor if not set
+            INCREMENT="${VERSION_INCREMENT:-Minor}"
+            
             # Increment based on input
-            case "$VERSION_INCREMENT" in
+            case "$INCREMENT" in
               "Major")
                 MAJOR=$((MAJOR + 1))
                 MINOR=0
