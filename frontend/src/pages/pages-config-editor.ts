@@ -25,12 +25,16 @@ import { APIService } from '../services/api-service';
 import { Router, RouterLocation } from '@vaadin/router';
 import { InputType, OrInputChangedEvent } from '@openremote/or-mwc-components/or-mwc-input';
 import { showSnackbar } from '@openremote/or-mwc-components/or-mwc-snackbar';
+import { showDialog } from '@openremote/or-mwc-components/or-mwc-dialog';
 import { getRootPath } from '../common/util';
 import { DurationInputType, TimeDurationUnit } from '../components/custom-duration-input';
 import { consume } from '@lit/context';
 import { realmContext } from './app-layout';
-import { manager } from '@openremote/core';
-import * as Model from '@openremote/model';
+import { manager, Util } from '@openremote/core';
+import { CustomAssetAttributePicker } from '../components/custom-asset-attribute-picker';
+import { OrAssetAttributePickerPickedEvent } from '@openremote/or-attribute-picker';
+import { getAssetDescriptorIconTemplate } from '@openremote/or-icon';
+import { AssetModelUtil } from '@openremote/model';
 
 @customElement('page-config-editor')
 export class PageConfigEditor extends LitElement {
@@ -88,6 +92,50 @@ export class PageConfigEditor extends LitElement {
                 flex: none;
             }
 
+            .attribute-row {
+                align-items: center;
+            }
+
+            .select-attr {
+              flex: none;
+              min-width: 125px;
+            }
+
+            .selected-attr {
+                display: flex;
+                align-items: center;
+                padding: 0 10px 0 8px;
+                gap: 8px;
+                cursor: pointer;
+            }
+
+            .selected-attr or-icon {
+                --or-icon-width: 20px;
+                --or-icon-height: 20px;
+                flex-shrink: 0;
+            }
+
+            .selected-attr-text {
+                display: flex;
+                flex-direction: column;
+                min-width: 0;
+            }
+
+            .selected-attr-text > span {
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .selected-attr-text > span:first-child {
+                font-weight: 500;
+            }
+
+            .selected-attr-text > span:last-child {
+                font-size: 0.9em;
+                opacity: 0.7;
+            }
+
             .config-header {
                 width: 100%;
                 display: flex;
@@ -111,12 +159,6 @@ export class PageConfigEditor extends LitElement {
     protected modelConfig: ProphetModelConfig | null = null;
 
     @state()
-    protected assetSelectList: Map<string, string> = new Map();
-
-    @state()
-    protected attributeSelectList: Map<string, Map<string, string>> = new Map();
-
-    @state()
     protected loading: boolean = true;
 
     @state()
@@ -127,6 +169,12 @@ export class PageConfigEditor extends LitElement {
 
     @state()
     protected error: string | null = null;
+
+    @state()
+    protected targetAsset: any = null;
+
+    @state()
+    protected regressorAssets: Map<number, any> = new Map();
 
     protected readonly rootPath = getRootPath();
 
@@ -184,15 +232,6 @@ export class PageConfigEditor extends LitElement {
             return;
         }
 
-        // Auto-select first attribute when asset changes
-        if (field === 'asset_id') {
-            this.formData.target.attribute_name =
-                this.attributeSelectList
-                    .get(value as string)
-                    ?.values()
-                    .next().value ?? '';
-        }
-
         this.formData = {
             ...this.formData,
             target: {
@@ -211,20 +250,122 @@ export class PageConfigEditor extends LitElement {
             return;
         }
 
-        // Auto-select first attribute when asset changes
-        if (target.name === 'asset_id') {
-            this.formData.regressors[index].attribute_name =
-                this.attributeSelectList
-                    .get(value as string)
-                    ?.values()
-                    .next().value ?? '';
-        }
-
         this.formData.regressors[index] = {
             ...this.formData.regressors[index],
             [target.name]: value
         };
         this.requestUpdate();
+    }
+
+    // Load asset data for target
+    protected async loadTargetAsset() {
+        if (this.formData.target.asset_id && this.formData.target.attribute_name) {
+            try {
+                const response = await manager.rest.api.AssetResource.get(this.formData.target.asset_id);
+                this.targetAsset = response.data;
+            } catch (err) {
+                console.error(err);
+                this.targetAsset = null;
+            }
+        } else {
+            this.targetAsset = null;
+        }
+    }
+
+    // Open dialog to select target attribute
+    protected openTargetDialog() {
+        const currentSelection = this.formData.target.asset_id && this.formData.target.attribute_name
+            ? [{ id: this.formData.target.asset_id, name: this.formData.target.attribute_name }]
+            : [];
+
+        // disable scrolling
+        document.body.style.overflow = 'hidden';
+
+        const dialog = showDialog(new CustomAssetAttributePicker()
+            .setShowOnlyDatapointAttrs(true)
+            .setMultiSelect(false)
+            .setSelectedAttributes(currentSelection));
+
+        // restore scrolling
+        const restoreScroll = () => {
+            document.body.style.overflow = '';
+        };
+
+        dialog.addEventListener(OrAssetAttributePickerPickedEvent.NAME, async (ev: any) => {
+            const selected = ev.detail[0];
+            if (selected) {
+                this.formData = {
+                    ...this.formData,
+                    target: {
+                        ...this.formData.target,
+                        asset_id: selected.id,
+                        attribute_name: selected.name
+                    }
+                };
+                await this.loadTargetAsset();
+                this.requestUpdate();
+            }
+            restoreScroll();
+        });
+
+        dialog.addEventListener('or-mwc-dialog-closed', restoreScroll);
+    }
+
+    // Load asset data for regressor
+    protected async loadRegressorAsset(index: number) {
+        if (!this.formData.regressors) return;
+        
+        const regressor = this.formData.regressors[index];
+        if (regressor.asset_id && regressor.attribute_name) {
+            try {
+                const response = await manager.rest.api.AssetResource.get(regressor.asset_id);
+                this.regressorAssets.set(index, response.data);
+                this.regressorAssets = new Map(this.regressorAssets);
+            } catch (err) {
+                console.error(err);
+                this.regressorAssets.delete(index);
+                this.regressorAssets = new Map(this.regressorAssets);
+            }
+        }
+    }
+
+    // Open dialog to select regressor attribute
+    protected openRegressorDialog(index: number) {
+        if (!this.formData.regressors) {
+            return;
+        }
+
+        const regressor = this.formData.regressors[index];
+        const currentSelection = regressor.asset_id && regressor.attribute_name
+            ? [{ id: regressor.asset_id, name: regressor.attribute_name }]
+            : [];
+
+        document.body.style.overflow = 'hidden';
+
+        const dialog = showDialog(new CustomAssetAttributePicker()
+            .setShowOnlyPredictedDatapointAttrs(true)
+            .setMultiSelect(false)
+            .setSelectedAttributes(currentSelection));
+
+        const restoreScroll = () => {
+            document.body.style.overflow = '';
+        };
+
+        dialog.addEventListener(OrAssetAttributePickerPickedEvent.NAME, async (ev: any) => {
+            const selected = ev.detail[0];
+            if (selected && this.formData.regressors) {
+                this.formData.regressors[index] = {
+                    ...this.formData.regressors[index],
+                    asset_id: selected.id,
+                    attribute_name: selected.name
+                };
+                await this.loadRegressorAsset(index);
+                this.requestUpdate();
+            }
+            restoreScroll();
+        });
+
+        dialog.addEventListener('or-mwc-dialog-closed', restoreScroll);
     }
 
     willUpdate(_changedProperties: PropertyValues): void {
@@ -236,65 +377,7 @@ export class PageConfigEditor extends LitElement {
     // Set up all the data for the editor
     protected async setupEditor() {
         this.formData.realm = this.realm;
-
-        await this.loadAssets();
         await this.loadConfig();
-    }
-
-    // Loads assets and attributes that store data points e.g. have history
-    protected async loadAssets() {
-        this.assetSelectList.clear();
-        try {
-            const assetQuery: Model.AssetQuery = {
-                realm: {
-                    name: this.realm
-                },
-                attributes: {
-                    operator: Model.LogicGroupOperator.AND,
-                    items: [
-                        {
-                            meta: [
-                                {
-                                    name: {
-                                        predicateType: 'string',
-                                        match: Model.AssetQueryMatch.EXACT,
-                                        caseSensitive: true,
-                                        value: 'storeDataPoints'
-                                    },
-                                    value: {
-                                        predicateType: 'boolean',
-                                        value: true
-                                    }
-                                }
-                            ]
-                        }
-                    ]
-                }
-            };
-
-            const response = await manager.rest.api.AssetResource.queryAssets(assetQuery);
-            const assets = response.data;
-
-            // remove attributes that do not have the meta attribute "storeDataPoints" set to true
-            assets.forEach((asset) => {
-                Object.values(asset.attributes ?? {}).forEach((attribute) => {
-                    if (attribute.meta?.storeDataPoints !== true) {
-                        delete asset.attributes?.[attribute.name as keyof typeof asset.attributes];
-                    }
-                });
-            });
-
-            assets.forEach((asset) => {
-                this.assetSelectList.set(asset.id ?? '', asset.name ?? '');
-                this.attributeSelectList.set(
-                    asset.id ?? '',
-                    new Map(Object.entries(asset.attributes ?? {}).map(([key, value]) => [key, value.name ?? '']))
-                );
-            });
-        } catch (err) {
-            console.error(err);
-            this.error = `Failed to retrieve assets needed for the forecast configuration`;
-        }
     }
 
     // Try to load the config from the API
@@ -309,7 +392,16 @@ export class PageConfigEditor extends LitElement {
         try {
             this.modelConfig = await APIService.getModelConfig(this.realm, this.configId);
             // Create a deep copy of the model config for the form data
-            this.formData = JSON.parse(JSON.stringify(this.modelConfig));
+            this.formData = structuredClone(this.modelConfig);
+            
+            // Load asset data for displaying
+            await this.loadTargetAsset();
+            if (this.formData.regressors) {
+                for (let i = 0; i < this.formData.regressors.length; i++) {
+                    await this.loadRegressorAsset(i);
+                }
+            }
+            
             this.loading = false;
             return;
         } catch (err) {
@@ -415,32 +507,31 @@ export class PageConfigEditor extends LitElement {
         return html`
             <or-panel heading="REGRESSOR ${index + 1}">
                 <div class="column">
-                    <div class="row">
-                        <or-mwc-input
-                            type="${InputType.SELECT}"
-                            name="asset_id"
-                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.handleRegressorInput(e, index)}"
-                            label="Asset"
-                            .value="${regressor.asset_id}"
-                            .options="${[...this.assetSelectList.entries()]}"
-                            .searchProvider="${this.assetSelectList.size > 0 ? this.searchAssets.bind(this) : null}"
-                        ></or-mwc-input>
-
-                        <!-- Render the attribute select list if the asset is selected -->
+                    <div class="row attribute-row">
                         ${when(
-                            regressor.asset_id,
+                            regressor.asset_id && regressor.attribute_name && this.regressorAssets.has(index),
+                            () => {
+                                const asset = this.regressorAssets.get(index);
+                                const attribute = asset?.attributes?.[regressor.attribute_name];
+                                const descriptors = attribute ? AssetModelUtil.getAttributeAndValueDescriptors(asset.type, regressor.attribute_name, attribute) : [];
+                                const label = attribute ? Util.getAttributeLabel(attribute, descriptors[0], asset.type, true) : regressor.attribute_name;
+                                return html`
+                                    <div class="selected-attr" @click="${() => this.openRegressorDialog(index)}">
+                                        ${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(asset.type))}
+                                        <div class="selected-attr-text">
+                                            <span>${asset.name}</span>
+                                            <span>${label}</span>
+                                        </div>
+                                    </div>
+                                `;
+                            },
                             () => html`
                                 <or-mwc-input
-                                    type="${InputType.SELECT}"
-                                    name="attribute_name"
-                                    @or-mwc-input-changed="${(e: OrInputChangedEvent) => this.handleRegressorInput(e, index)}"
-                                    label="Attribute"
-                                    .value="${regressor.attribute_name}"
-                                    .options="${[...(this.attributeSelectList.get(regressor.asset_id) ?? new Map())]}"
+                                    class="select-attr"
+                                    type="${InputType.BUTTON}"
+                                    label="Select regressor"
+                                    @click="${() => this.openRegressorDialog(index)}"
                                 ></or-mwc-input>
-                            `,
-                            () => html`
-                                <or-mwc-input type="${InputType.SELECT}" name="attribute_name" label="Attribute" disabled></or-mwc-input>
                             `
                         )}
 
@@ -479,16 +570,6 @@ export class PageConfigEditor extends LitElement {
                 </div>
             </or-panel>
         `;
-    }
-
-    // Search provider for the asset select list
-    protected async searchAssets(search?: string): Promise<[any, string][]> {
-        const options = [...this.assetSelectList.entries()];
-        if (!search) {
-            return options;
-        }
-        const searchTerm = search.toLowerCase();
-        return options.filter(([, label]) => label.toLowerCase().includes(searchTerm));
     }
 
     // Render the editor
@@ -615,36 +696,30 @@ export class PageConfigEditor extends LitElement {
                 <!-- Forecast target, the asset and attribute to forecast -->
                 <or-panel heading="FORECAST TARGET">
                     <div class="column">
-                        <div class="row">
-                            <or-mwc-input
-                                type="${InputType.SELECT}"
-                                name="target.asset_id"
-                                @or-mwc-input-changed="${this.handleTargetInput}"
-                                label="Asset"
-                                .value="${this.formData.target.asset_id}"
-                                .options="${[...this.assetSelectList.entries()]}"
-                                .searchProvider="${this.assetSelectList.size > 0 ? this.searchAssets.bind(this) : null}"
-                            ></or-mwc-input>
-
-                            <!-- Render the attribute select list if the asset is selected -->
+                        <div class="row attribute-row">
                             ${when(
-                                this.formData.target.asset_id,
+                                this.formData.target.asset_id && this.formData.target.attribute_name && this.targetAsset,
+                                () => {
+                                    const attribute = this.targetAsset.attributes?.[this.formData.target.attribute_name];
+                                    const descriptors = attribute ? AssetModelUtil.getAttributeAndValueDescriptors(this.targetAsset.type, this.formData.target.attribute_name, attribute) : [];
+                                    const label = attribute ? Util.getAttributeLabel(attribute, descriptors[0], this.targetAsset.type, true) : this.formData.target.attribute_name;
+                                    return html`
+                                        <div class="selected-attr" @click="${this.openTargetDialog}">
+                                            ${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.targetAsset.type))}
+                                            <div class="selected-attr-text">
+                                                <span>${this.targetAsset.name}</span>
+                                                <span>${label}</span>
+                                            </div>
+                                        </div>
+                                    `;
+                                },
                                 () => html`
                                     <or-mwc-input
-                                        type="${InputType.SELECT}"
-                                        name="target.attribute_name"
-                                        @or-mwc-input-changed="${this.handleTargetInput}"
-                                        label="Attribute"
-                                        .value="${this.formData.target.attribute_name}"
-                                        .options="${[...(this.attributeSelectList.get(this.formData.target.asset_id) ?? new Map())]}"
-                                    ></or-mwc-input>
-                                `,
-                                () => html`
-                                    <or-mwc-input
-                                        type="${InputType.SELECT}"
-                                        name="target.attribute_name"
-                                        label="Attribute"
-                                        disabled
+                                        class="select-attr"
+                                        type="${InputType.BUTTON}"
+                                        icon="magnify"
+                                        label="Select target"
+                                        @click="${this.openTargetDialog}"
                                     ></or-mwc-input>
                                 `
                             )}
