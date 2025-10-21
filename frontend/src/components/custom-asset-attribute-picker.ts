@@ -41,7 +41,7 @@ export class CustomAssetAttributePicker extends OrAssetAttributePicker {
     protected _getNoAttributesMessage(): string {
         if (this.showOnlyPredictedDatapointAttrs) {
             // TODO: local translation
-            return "No attributes with 'has predicted data points' and 'stored data points' configuration item found";
+            return "No attributes with 'has predicted data points' and either 'store data points' or 'agent link' configuration item found";
         }
         if (this.showOnlyDatapointAttrs && this.showOnlyRuleStateAttrs) {
             return 'noDatapointsOrRuleStateAttributes';
@@ -55,6 +55,9 @@ export class CustomAssetAttributePicker extends OrAssetAttributePicker {
         return 'noAttributesToShow';
     }
 
+    /**
+     * Duplicated method from the component source code, so we can override it and add our own filtering logic.
+     */
     protected async _onAssetSelectionChanged(event: OrAssetTreeSelectionEvent) {
         this._assetAttributes = undefined;
         if (!this.multiSelect) {
@@ -80,10 +83,12 @@ export class CustomAssetAttributePicker extends OrAssetAttributePicker {
                     this._assetAttributes = this._assetAttributes.filter((attr) => this.attributeFilter!(attr));
                 }
 
-                // Filter by predicted datapoints (requires both hasPredictedDataPoints and storeDataPoints)
+                // Filter by predicted datapoints (requires hasPredictedDataPoints and (storeDataPoints or agentLink))
                 if (this.showOnlyPredictedDatapointAttrs) {
                     this._assetAttributes = this._assetAttributes.filter(
-                        (e) => e.meta?.[WellknownMetaItems.HASPREDICTEDDATAPOINTS] && e.meta?.[WellknownMetaItems.STOREDATAPOINTS]
+                        (e) =>
+                            e.meta?.[WellknownMetaItems.HASPREDICTEDDATAPOINTS] &&
+                            (e.meta?.[WellknownMetaItems.STOREDATAPOINTS] || e.meta?.[WellknownMetaItems.AGENTLINK])
                     );
                 } else if (this.showOnlyDatapointAttrs && this.showOnlyRuleStateAttrs) {
                     this._assetAttributes = this._assetAttributes.filter(
@@ -107,6 +112,9 @@ export class CustomAssetAttributePicker extends OrAssetAttributePicker {
         assetTree.disabled = false;
     }
 
+    /**
+     * Duplicated method from the component source code, so we can override it and add additional content.
+     */
     protected _setDialogContent(): void {
         this.content = () => html`
             <div class="row" style="display: flex;height: 600px;width: 800px;border-top: 1px solid ${unsafeCSS(DefaultColor5)};">
