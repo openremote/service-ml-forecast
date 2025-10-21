@@ -20,7 +20,7 @@ import { customElement, property } from 'lit/decorators.js';
 import { WellknownMetaItems } from '@openremote/model';
 import manager, { DefaultColor5, Util } from '@openremote/core';
 import { OrAssetTree, OrAssetTreeSelectionEvent } from '@openremote/or-asset-tree';
-import { html, unsafeCSS } from 'lit';
+import { css, html, unsafeCSS } from 'lit';
 import { when } from 'lit/directives/when.js';
 import { until } from 'lit/directives/until.js';
 
@@ -30,6 +30,18 @@ import { until } from 'lit/directives/until.js';
  */
 @customElement('custom-asset-attribute-picker')
 export class CustomAssetAttributePicker extends OrAssetAttributePicker {
+    static get styles() {
+        return [
+            ...(Array.isArray(super.styles) ? super.styles : [super.styles]),
+
+            // Scrim doesn't properly work when embedded in an iframe
+            css`
+                .mdc-dialog .mdc-dialog__scrim {
+                    background-color: transparent !important;
+                }
+            `
+        ];
+    }
     @property({ type: Boolean })
     public showOnlyHasPredictedDatapointsAttrs = false;
 
