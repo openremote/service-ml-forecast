@@ -343,7 +343,8 @@ export class PageConfigEditor extends LitElement {
 
         const dialog = showDialog(
             new CustomAssetAttributePicker()
-                .setShowOnlyPredictedDatapointAttrs(true)
+                .setShowOnlyHasPredictedDatapointsAttrs(true)
+                .setShowOnlyDatapointAttrs(true)
                 .setMultiSelect(false)
                 .setSelectedAttributes(currentSelection)
         );

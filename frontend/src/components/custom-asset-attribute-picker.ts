@@ -31,17 +31,21 @@ import { until } from 'lit/directives/until.js';
 @customElement('custom-asset-attribute-picker')
 export class CustomAssetAttributePicker extends OrAssetAttributePicker {
     @property({ type: Boolean })
-    public showOnlyPredictedDatapointAttrs = false;
+    public showOnlyHasPredictedDatapointsAttrs = false;
 
-    public setShowOnlyPredictedDatapointAttrs(value: boolean): this {
-        this.showOnlyPredictedDatapointAttrs = value;
+    public setShowOnlyHasPredictedDatapointsAttrs(value: boolean): this {
+        this.showOnlyHasPredictedDatapointsAttrs = value;
         return this;
     }
 
     protected _getNoAttributesMessage(): string {
-        if (this.showOnlyPredictedDatapointAttrs) {
+        if (this.showOnlyHasPredictedDatapointsAttrs && this.showOnlyDatapointAttrs) {
             // TODO: local translation
             return "No attributes with 'has predicted data points' and either 'store data points' or 'agent link' configuration item found";
+        }
+        if (this.showOnlyHasPredictedDatapointsAttrs) {
+            // TODO: local translation
+            return "No attributes with 'has predicted data points' configuration item found";
         }
         if (this.showOnlyDatapointAttrs && this.showOnlyRuleStateAttrs) {
             return 'noDatapointsOrRuleStateAttributes';
@@ -83,13 +87,15 @@ export class CustomAssetAttributePicker extends OrAssetAttributePicker {
                     this._assetAttributes = this._assetAttributes.filter((attr) => this.attributeFilter!(attr));
                 }
 
-                // Filter by predicted datapoints (requires hasPredictedDataPoints and (storeDataPoints or agentLink))
-                if (this.showOnlyPredictedDatapointAttrs) {
+                // Filter by predicted datapoints + datapoints (requires hasPredictedDataPoints and (storeDataPoints or agentLink))
+                if (this.showOnlyHasPredictedDatapointsAttrs && this.showOnlyDatapointAttrs) {
                     this._assetAttributes = this._assetAttributes.filter(
                         (e) =>
                             e.meta?.[WellknownMetaItems.HASPREDICTEDDATAPOINTS] &&
                             (e.meta?.[WellknownMetaItems.STOREDATAPOINTS] || e.meta?.[WellknownMetaItems.AGENTLINK])
                     );
+                } else if (this.showOnlyHasPredictedDatapointsAttrs) {
+                    this._assetAttributes = this._assetAttributes.filter((e) => e.meta?.[WellknownMetaItems.HASPREDICTEDDATAPOINTS]);
                 } else if (this.showOnlyDatapointAttrs && this.showOnlyRuleStateAttrs) {
                     this._assetAttributes = this._assetAttributes.filter(
                         (e) =>
