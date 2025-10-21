@@ -97,8 +97,8 @@ export class PageConfigEditor extends LitElement {
             }
 
             .select-attr {
-              flex: none;
-              min-width: 125px;
+                flex: none;
+                min-width: 125px;
             }
 
             .selected-attr {
@@ -274,17 +274,17 @@ export class PageConfigEditor extends LitElement {
 
     // Open dialog to select target attribute
     protected openTargetDialog() {
-        const currentSelection = this.formData.target.asset_id && this.formData.target.attribute_name
-            ? [{ id: this.formData.target.asset_id, name: this.formData.target.attribute_name }]
-            : [];
+        const currentSelection =
+            this.formData.target.asset_id && this.formData.target.attribute_name
+                ? [{ id: this.formData.target.asset_id, name: this.formData.target.attribute_name }]
+                : [];
 
         // disable scrolling
         document.body.style.overflow = 'hidden';
 
-        const dialog = showDialog(new CustomAssetAttributePicker()
-            .setShowOnlyDatapointAttrs(true)
-            .setMultiSelect(false)
-            .setSelectedAttributes(currentSelection));
+        const dialog = showDialog(
+            new CustomAssetAttributePicker().setShowOnlyDatapointAttrs(true).setMultiSelect(false).setSelectedAttributes(currentSelection)
+        );
 
         // restore scrolling
         const restoreScroll = () => {
@@ -314,7 +314,7 @@ export class PageConfigEditor extends LitElement {
     // Load asset data for regressor
     protected async loadRegressorAsset(index: number) {
         if (!this.formData.regressors) return;
-        
+
         const regressor = this.formData.regressors[index];
         if (regressor.asset_id && regressor.attribute_name) {
             try {
@@ -336,16 +336,17 @@ export class PageConfigEditor extends LitElement {
         }
 
         const regressor = this.formData.regressors[index];
-        const currentSelection = regressor.asset_id && regressor.attribute_name
-            ? [{ id: regressor.asset_id, name: regressor.attribute_name }]
-            : [];
+        const currentSelection =
+            regressor.asset_id && regressor.attribute_name ? [{ id: regressor.asset_id, name: regressor.attribute_name }] : [];
 
         document.body.style.overflow = 'hidden';
 
-        const dialog = showDialog(new CustomAssetAttributePicker()
-            .setShowOnlyPredictedDatapointAttrs(true)
-            .setMultiSelect(false)
-            .setSelectedAttributes(currentSelection));
+        const dialog = showDialog(
+            new CustomAssetAttributePicker()
+                .setShowOnlyPredictedDatapointAttrs(true)
+                .setMultiSelect(false)
+                .setSelectedAttributes(currentSelection)
+        );
 
         const restoreScroll = () => {
             document.body.style.overflow = '';
@@ -393,7 +394,7 @@ export class PageConfigEditor extends LitElement {
             this.modelConfig = await APIService.getModelConfig(this.realm, this.configId);
             // Create a deep copy of the model config for the form data
             this.formData = structuredClone(this.modelConfig);
-            
+
             // Load asset data for displaying
             await this.loadTargetAsset();
             if (this.formData.regressors) {
@@ -401,7 +402,7 @@ export class PageConfigEditor extends LitElement {
                     await this.loadRegressorAsset(i);
                 }
             }
-            
+
             this.loading = false;
             return;
         } catch (err) {
@@ -513,8 +514,12 @@ export class PageConfigEditor extends LitElement {
                             () => {
                                 const asset = this.regressorAssets.get(index);
                                 const attribute = asset?.attributes?.[regressor.attribute_name];
-                                const descriptors = attribute ? AssetModelUtil.getAttributeAndValueDescriptors(asset.type, regressor.attribute_name, attribute) : [];
-                                const label = attribute ? Util.getAttributeLabel(attribute, descriptors[0], asset.type, true) : regressor.attribute_name;
+                                const descriptors = attribute
+                                    ? AssetModelUtil.getAttributeAndValueDescriptors(asset.type, regressor.attribute_name, attribute)
+                                    : [];
+                                const label = attribute
+                                    ? Util.getAttributeLabel(attribute, descriptors[0], asset.type, true)
+                                    : regressor.attribute_name;
                                 return html`
                                     <div class="selected-attr" @click="${() => this.openRegressorDialog(index)}">
                                         ${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(asset.type))}
@@ -702,8 +707,16 @@ export class PageConfigEditor extends LitElement {
                                 this.formData.target.asset_id && this.formData.target.attribute_name && this.targetAsset,
                                 () => {
                                     const attribute = this.targetAsset.attributes?.[this.formData.target.attribute_name];
-                                    const descriptors = attribute ? AssetModelUtil.getAttributeAndValueDescriptors(this.targetAsset.type, this.formData.target.attribute_name, attribute) : [];
-                                    const label = attribute ? Util.getAttributeLabel(attribute, descriptors[0], this.targetAsset.type, true) : this.formData.target.attribute_name;
+                                    const descriptors = attribute
+                                        ? AssetModelUtil.getAttributeAndValueDescriptors(
+                                              this.targetAsset.type,
+                                              this.formData.target.attribute_name,
+                                              attribute
+                                          )
+                                        : [];
+                                    const label = attribute
+                                        ? Util.getAttributeLabel(attribute, descriptors[0], this.targetAsset.type, true)
+                                        : this.formData.target.attribute_name;
                                     return html`
                                         <div class="selected-attr" @click="${this.openTargetDialog}">
                                             ${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.targetAsset.type))}

@@ -15,14 +15,14 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { OrAssetAttributePicker } from "@openremote/or-attribute-picker";
-import { customElement, property } from "lit/decorators.js";
-import { WellknownMetaItems } from "@openremote/model";
-import manager, { DefaultColor5, Util } from "@openremote/core";
-import { OrAssetTree, OrAssetTreeSelectionEvent } from "@openremote/or-asset-tree";
-import { html, unsafeCSS } from "lit";
-import { when } from "lit/directives/when.js";
-import { until } from "lit/directives/until.js";
+import { OrAssetAttributePicker } from '@openremote/or-attribute-picker';
+import { customElement, property } from 'lit/decorators.js';
+import { WellknownMetaItems } from '@openremote/model';
+import manager, { DefaultColor5, Util } from '@openremote/core';
+import { OrAssetTree, OrAssetTreeSelectionEvent } from '@openremote/or-asset-tree';
+import { html, unsafeCSS } from 'lit';
+import { when } from 'lit/directives/when.js';
+import { until } from 'lit/directives/until.js';
 
 /**
  * Extended version of the default or-asset-attribute-picker component.
@@ -30,7 +30,6 @@ import { until } from "lit/directives/until.js";
  */
 @customElement('custom-asset-attribute-picker')
 export class CustomAssetAttributePicker extends OrAssetAttributePicker {
-
     @property({ type: Boolean })
     public showOnlyPredictedDatapointAttrs = false;
 
@@ -45,15 +44,15 @@ export class CustomAssetAttributePicker extends OrAssetAttributePicker {
             return "No attributes with 'has predicted data points' and 'stored data points' configuration item found";
         }
         if (this.showOnlyDatapointAttrs && this.showOnlyRuleStateAttrs) {
-            return "noDatapointsOrRuleStateAttributes";
+            return 'noDatapointsOrRuleStateAttributes';
         }
         if (this.showOnlyDatapointAttrs) {
-            return "noDatapointsAttributes";
+            return 'noDatapointsAttributes';
         }
         if (this.showOnlyRuleStateAttrs) {
-            return "noRuleStateAttributes";
+            return 'noRuleStateAttributes';
         }
-        return "noAttributesToShow";
+        return 'noAttributesToShow';
     }
 
     protected async _onAssetSelectionChanged(event: OrAssetTreeSelectionEvent) {
@@ -74,27 +73,34 @@ export class CustomAssetAttributePicker extends OrAssetAttributePicker {
 
             if (selectedAsset) {
                 this._assetAttributes = Object.values(selectedAsset.attributes!)
-                    .map(attr => ({ ...attr, id: selectedAsset!.id! }))
+                    .map((attr) => ({ ...attr, id: selectedAsset!.id! }))
                     .sort(Util.sortByString((attribute) => attribute.name!));
 
                 if (this.attributeFilter) {
-                    this._assetAttributes = this._assetAttributes.filter((attr) => this.attributeFilter!(attr))
+                    this._assetAttributes = this._assetAttributes.filter((attr) => this.attributeFilter!(attr));
                 }
 
                 // Filter by predicted datapoints (requires both hasPredictedDataPoints and storeDataPoints)
                 if (this.showOnlyPredictedDatapointAttrs) {
-                    this._assetAttributes = this._assetAttributes
-                        .filter(e => e.meta?.[WellknownMetaItems.HASPREDICTEDDATAPOINTS] && 
-                            e.meta?.[WellknownMetaItems.STOREDATAPOINTS]);
+                    this._assetAttributes = this._assetAttributes.filter(
+                        (e) => e.meta?.[WellknownMetaItems.HASPREDICTEDDATAPOINTS] && e.meta?.[WellknownMetaItems.STOREDATAPOINTS]
+                    );
                 } else if (this.showOnlyDatapointAttrs && this.showOnlyRuleStateAttrs) {
-                    this._assetAttributes = this._assetAttributes
-                        .filter(e => e.meta && (e.meta[WellknownMetaItems.STOREDATAPOINTS] || e.meta[WellknownMetaItems.RULESTATE] || e.meta[WellknownMetaItems.AGENTLINK]));
+                    this._assetAttributes = this._assetAttributes.filter(
+                        (e) =>
+                            e.meta &&
+                            (e.meta[WellknownMetaItems.STOREDATAPOINTS] ||
+                                e.meta[WellknownMetaItems.RULESTATE] ||
+                                e.meta[WellknownMetaItems.AGENTLINK])
+                    );
                 } else if (this.showOnlyDatapointAttrs) {
-                    this._assetAttributes = this._assetAttributes
-                        .filter(e => e.meta && (e.meta[WellknownMetaItems.STOREDATAPOINTS] || e.meta[WellknownMetaItems.AGENTLINK]));
+                    this._assetAttributes = this._assetAttributes.filter(
+                        (e) => e.meta && (e.meta[WellknownMetaItems.STOREDATAPOINTS] || e.meta[WellknownMetaItems.AGENTLINK])
+                    );
                 } else if (this.showOnlyRuleStateAttrs) {
-                    this._assetAttributes = this._assetAttributes
-                        .filter(e => e.meta && (e.meta[WellknownMetaItems.RULESTATE] || e.meta[WellknownMetaItems.AGENTLINK]));
+                    this._assetAttributes = this._assetAttributes.filter(
+                        (e) => e.meta && (e.meta[WellknownMetaItems.RULESTATE] || e.meta[WellknownMetaItems.AGENTLINK])
+                    );
                 }
             }
         }
@@ -105,32 +111,50 @@ export class CustomAssetAttributePicker extends OrAssetAttributePicker {
         this.content = () => html`
             <div class="row" style="display: flex;height: 600px;width: 800px;border-top: 1px solid ${unsafeCSS(DefaultColor5)};">
                 <div class="col" style="width: 260px;overflow: auto;border-right: 1px solid ${unsafeCSS(DefaultColor5)};">
-                    <or-asset-tree id="chart-asset-tree" readonly .selectedIds="${this.selectedAssets.length > 0 ? this.selectedAssets : null}"
-                                   @or-asset-tree-selection="${(ev: OrAssetTreeSelectionEvent) => this._onAssetSelectionChanged(ev)}">
+                    <or-asset-tree
+                        id="chart-asset-tree"
+                        readonly
+                        .selectedIds="${this.selectedAssets.length > 0 ? this.selectedAssets : null}"
+                        @or-asset-tree-selection="${(ev: OrAssetTreeSelectionEvent) => this._onAssetSelectionChanged(ev)}"
+                    >
                     </or-asset-tree>
                 </div>
                 <div class="col" style="flex: 1 1 auto;width: 260px;overflow: auto;">
-                    ${when(this._assetAttributes && this._assetAttributes.length > 0, () => {
-                        const selectedNames = this.selectedAttributes.filter(attrRef => attrRef.id === this._asset?.id).map(attrRef => attrRef.name!);
-                        return html`
-                            <div class="attributes-header">
-                                <or-translate value="attribute_plural"></or-translate>
+                    ${when(
+                        this._assetAttributes && this._assetAttributes.length > 0,
+                        () => {
+                            const selectedNames = this.selectedAttributes
+                                .filter((attrRef) => attrRef.id === this._asset?.id)
+                                .map((attrRef) => attrRef.name!);
+                            return html`
+                                <div class="attributes-header">
+                                    <or-translate value="attribute_plural"></or-translate>
+                                </div>
+                                ${until(
+                                    this._getAttributesTemplate(
+                                        this._assetAttributes,
+                                        undefined,
+                                        selectedNames,
+                                        this.multiSelect,
+                                        (attrNames) => this._onAttributesSelect(attrNames)
+                                    ),
+                                    html`<or-loading></or-loading>`
+                                )}
+                            `;
+                        },
+                        () => html`
+                            <div style="display: flex;align-items: center;text-align: center;height: 100%;padding: 0 20px;">
+                                <span style="width:100%">
+                                    <or-translate
+                                        value="${this._assetAttributes && this._assetAttributes.length === 0
+                                            ? this._getNoAttributesMessage()
+                                            : 'selectAssetOnTheLeft'}"
+                                    >
+                                    </or-translate>
+                                </span>
                             </div>
-                            ${until(
-                                this._getAttributesTemplate(this._assetAttributes, undefined, selectedNames, this.multiSelect, (attrNames) => this._onAttributesSelect(attrNames)),
-                                html`<or-loading></or-loading>`
-                            )}
                         `
-                    }, () => html`
-                        <div style="display: flex;align-items: center;text-align: center;height: 100%;padding: 0 20px;">
-                            <span style="width:100%">
-                                <or-translate value="${
-                                    (this._assetAttributes && this._assetAttributes.length === 0) ?
-                                        this._getNoAttributesMessage() : "selectAssetOnTheLeft"}">
-                                </or-translate>
-                            </span>
-                        </div>
-                    `)}
+                    )}
                 </div>
             </div>
         `;
