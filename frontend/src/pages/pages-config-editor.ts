@@ -15,7 +15,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { css, html, LitElement, PropertyValues } from 'lit';
+import { css, html, LitElement } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { map } from 'lit/directives/map.js';
 import { when } from 'lit/directives/when.js';
@@ -343,8 +343,8 @@ export class PageConfigEditor extends LitElement {
 
         const dialog = showDialog(
             new CustomAssetAttributePicker()
-                .setShowOnlyHasPredictedDatapointsAttrs(true)
-                .setShowOnlyDatapointAttrs(true)
+                .setShowOnlyHasPredictedDatapointsAttrs(true) // has future datapoints
+                .setShowOnlyDatapointAttrs(true) // has past datapoints
                 .setMultiSelect(false)
                 .setSelectedAttributes(currentSelection)
         );
@@ -370,8 +370,7 @@ export class PageConfigEditor extends LitElement {
         dialog.addEventListener('or-mwc-dialog-closed', restoreScroll);
     }
 
-    willUpdate(_changedProperties: PropertyValues): void {
-        void _changedProperties; // Explicitly acknowledge unused parameter
+    willUpdate(): void {
         this.isValid = this.isFormValid();
         this.modified = this.isFormModified();
     }
