@@ -104,7 +104,7 @@ export class PageConfigEditor extends LitElement {
             .selected-attr {
                 display: flex;
                 align-items: center;
-                padding: 0 10px 0 8px;
+                padding: 0 16px 0 8px;
                 gap: 8px;
                 cursor: pointer;
             }
@@ -529,6 +529,7 @@ export class PageConfigEditor extends LitElement {
                                 <or-mwc-input
                                     class="select-attr"
                                     type="${InputType.BUTTON}"
+                                    icon="magnify"
                                     label="Select regressor"
                                     @click="${() => this.openRegressorDialog(index)}"
                                 ></or-mwc-input>

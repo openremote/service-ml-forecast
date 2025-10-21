@@ -42,7 +42,7 @@ export class CustomAssetAttributePicker extends OrAssetAttributePicker {
     protected _getNoAttributesMessage(): string {
         if (this.showOnlyPredictedDatapointAttrs) {
             // TODO: local translation
-            return "No attributes with 'has predicted data points' configuration item found";
+            return "No attributes with 'has predicted data points' and 'stored data points' configuration item found";
         }
         if (this.showOnlyDatapointAttrs && this.showOnlyRuleStateAttrs) {
             return "noDatapointsOrRuleStateAttributes";
