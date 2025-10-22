@@ -19,13 +19,12 @@ import { css, html, LitElement } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { Router, RouterLocation } from '@vaadin/router';
 import { getRootPath } from '../common/util';
+import { IS_EMBEDDED } from '../common/constants';
 
-/**
- * Represents a part of the breadcrumb navigation
- */
 interface BreadcrumbPart {
     path: string;
-    name: string;
+    label: string;
+    icon?: string;
 }
 
 /**
@@ -67,6 +66,11 @@ export class BreadcrumbNav extends LitElement {
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            --or-icon-width: 16px;
+            --or-icon-height: 16px;
         }
 
         span[aria-hidden='true'] {
@@ -85,14 +89,6 @@ export class BreadcrumbNav extends LitElement {
     protected parts: BreadcrumbPart[] = [];
 
     protected readonly rootPath = getRootPath();
-
-    protected get HOME_LINK(): BreadcrumbPart {
-        return {
-            path: `${this.rootPath}/${this.realm}/configs`,
-            name: 'ML Forecast Service'
-        };
-    }
-
     protected readonly MAX_TEXT_LENGTH = 20;
 
     willUpdate(changedProperties: Map<string, any>) {
@@ -130,37 +126,68 @@ export class BreadcrumbNav extends LitElement {
     }
 
     /**
-     * Updates the breadcrumb parts based on the current location
+     * Builds breadcrumb trail from URL segments
      */
     protected updateBreadcrumbs(location: RouterLocation): void {
         const parts: BreadcrumbPart[] = [];
-        const { pathname, params } = location;
+        const segments = location.pathname.split('/').filter(Boolean);
+        
+        // Remove base path segments if present
+        const rootSegments = this.rootPath.split('/').filter(Boolean);
+        const pathSegments = segments.slice(rootSegments.length);
 
-        // Add Smartcity part (realm)
-        if (this.realm) {
-            parts.push({
-                path: `${this.rootPath}/${this.realm}/configs`,
-                name: this.realm.charAt(0).toUpperCase() + this.realm.slice(1)
-            });
+        // Add base breadcrumbs (non-embedded only)
+        if (!IS_EMBEDDED) {
+            const realmPath = `${this.rootPath}/${this.realm}`;
+            parts.push(
+                { path: `${realmPath}/configs`, label: 'ML Forecast Service', icon: 'puzzle' },
+                { path: `${realmPath}/configs`, label: this.capitalizeRealm() }
+            );
         }
 
-        // Add Configs part
-        if (pathname.includes('/configs')) {
-            parts.push({
-                path: `${this.rootPath}/${this.realm}/configs`,
-                name: 'Configs'
-            });
+        // Build breadcrumbs from path segments
+        let accumulatedPath = this.rootPath;
+        for (const segment of pathSegments) {
+            accumulatedPath += `/${segment}`;
 
-            // Add specific config part if we're on a config page
-            if (params.id) {
-                parts.push({
-                    path: `${this.rootPath}/${this.realm}/configs/${params.id}`,
-                    name: params.id === 'new' ? 'New Config' : `${params.id}`
-                });
+            if (segment === this.realm) continue; // Skip realm in path (already in base)
+            
+            const label = this.getLabelForSegment(segment, location.params);
+            if (label) {
+                parts.push({ path: accumulatedPath, label });
             }
         }
 
         this.parts = parts;
+    }
+
+    /**
+     * Gets human-readable label for a path segment
+     */
+    protected getLabelForSegment(segment: string, params: RouterLocation['params']): string | null {
+        const segmentMap: Record<string, string> = {
+            'configs': 'Configs',
+            'new': 'New Config'
+        };
+
+        // Check if segment is a known label
+        if (segmentMap[segment]) {
+            return segmentMap[segment];
+        }
+
+        // Check if segment matches a route parameter
+        if (params.id && segment === params.id) {
+            return segment;
+        }
+
+        return null;
+    }
+
+    /**
+     * Capitalizes the realm name
+     */
+    protected capitalizeRealm(): string {
+        return this.realm.charAt(0).toUpperCase() + this.realm.slice(1);
     }
 
     /**
@@ -173,16 +200,18 @@ export class BreadcrumbNav extends LitElement {
     /**
      * Renders a single breadcrumb item
      */
-    protected renderBreadcrumbItem(part: BreadcrumbPart, readonly: boolean) {
-        const truncatedName = this.truncateText(part.name);
+    protected renderBreadcrumbItem(part: BreadcrumbPart, readonly: boolean, showSeparator: boolean) {
+        const truncatedLabel = this.truncateText(part.label);
+        const iconTemplate = part.icon ? html`<or-icon icon="${part.icon}"></or-icon>` : html``;
 
         return html`
-            <span aria-hidden="true">&gt;</span>
+            ${showSeparator ? html`<span aria-hidden="true">&gt;</span>` : html``}
             ${readonly
-                ? html`<span aria-current="page">${truncatedName}</span>`
+                ? html`<span aria-current="page"> ${iconTemplate} ${truncatedLabel} </span>`
                 : html`
                       <a href="${part.path}" @click=${(e: MouseEvent) => this.handleNavigation(e, part.path)}>
-                          <span class="truncate">${truncatedName}</span>
+                          ${iconTemplate}
+                          <span class="truncate">${truncatedLabel}</span>
                       </a>
                   `}
         `;
@@ -197,15 +226,14 @@ export class BreadcrumbNav extends LitElement {
     }
 
     render() {
-        const truncatedHomeName = this.truncateText(this.HOME_LINK.name);
+        // No need to render a singular breadcrumb item
+        if (this.parts.length <= 1) {
+            return html``;
+        }
 
         return html`
             <nav aria-label="breadcrumb">
-                <a href="${this.HOME_LINK.path}" @click=${(e: MouseEvent) => this.handleNavigation(e, this.HOME_LINK.path)}>
-                    <or-icon icon="puzzle"></or-icon>
-                    <span class="truncate">${truncatedHomeName}</span>
-                </a>
-                ${this.parts.map((part, index) => this.renderBreadcrumbItem(part, index === this.parts.length - 1))}
+                ${this.parts.map((part, index) => this.renderBreadcrumbItem(part, index === this.parts.length - 1, index > 0))}
             </nav>
         `;
     }
