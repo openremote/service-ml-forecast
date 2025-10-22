@@ -131,7 +131,7 @@ export class BreadcrumbNav extends LitElement {
     protected updateBreadcrumbs(location: RouterLocation): void {
         const parts: BreadcrumbPart[] = [];
         const segments = location.pathname.split('/').filter(Boolean);
-        
+
         // Remove base path segments if present
         const rootSegments = this.rootPath.split('/').filter(Boolean);
         const pathSegments = segments.slice(rootSegments.length);
@@ -151,7 +151,7 @@ export class BreadcrumbNav extends LitElement {
             accumulatedPath += `/${segment}`;
 
             if (segment === this.realm) continue; // Skip realm in path (already in base)
-            
+
             const label = this.getLabelForSegment(segment, location.params);
             if (label) {
                 parts.push({ path: accumulatedPath, label });
@@ -166,8 +166,8 @@ export class BreadcrumbNav extends LitElement {
      */
     protected getLabelForSegment(segment: string, params: RouterLocation['params']): string | null {
         const segmentMap: Record<string, string> = {
-            'configs': 'Configs',
-            'new': 'New Config'
+            configs: 'Configs',
+            new: 'New Config'
         };
 
         // Check if segment is a known label
