@@ -264,7 +264,7 @@ export class PageConfigEditor extends LitElement {
                 const response = await manager.rest.api.AssetResource.get(this.formData.target.asset_id);
                 this.targetAsset = response.data;
             } catch (err) {
-                console.error("Failed to load target asset:", err);
+                console.error('Failed to load target asset:', err);
                 this.targetAsset = null;
             }
         } else {
@@ -322,7 +322,7 @@ export class PageConfigEditor extends LitElement {
                 this.regressorAssets.set(index, response.data);
                 this.regressorAssets = new Map(this.regressorAssets);
             } catch (err) {
-                console.error("Failed to load regressor asset:", err);
+                console.error('Failed to load regressor asset:', err);
                 this.regressorAssets.delete(index);
                 this.regressorAssets = new Map(this.regressorAssets);
             }
@@ -407,7 +407,7 @@ export class PageConfigEditor extends LitElement {
             return;
         } catch (err) {
             this.loading = false;
-            console.error("Failed to load config:", err);
+            console.error('Failed to load config:', err);
             this.error = `Failed to retrieve the forecast configuration`;
         }
     }
@@ -436,7 +436,7 @@ export class PageConfigEditor extends LitElement {
                 Router.go(`${this.rootPath}/${modelConfig.realm}/configs/${modelConfig.id}`);
             }
         } catch (error) {
-            console.error("Failed to save config:", error);
+            console.error('Failed to save config:', error);
             showSnackbar(undefined, 'Failed to save the config');
         }
     }
