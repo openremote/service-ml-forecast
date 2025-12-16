@@ -20,6 +20,7 @@ import { css, html, TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { ModelConfig } from '../services/models';
 import { getRootPath } from '../common/util';
+import { Util } from '@openremote/core';
 import { Router } from '@vaadin/router';
 import { InputType } from '@openremote/or-mwc-components/or-mwc-input';
 import * as Model from '@openremote/model';
@@ -184,7 +185,7 @@ export class ConfigsTable extends OrMwcTable {
                 config.name,
                 config.type.charAt(0).toUpperCase() + config.type.slice(1), // Capitalize first letter
                 this.getAssetNameTemplate(config.target.asset_id),
-                config.target.attribute_name,
+                Util.camelCaseToSentenceCase(config.target.attribute_name),
                 this.getActionsRowTemplate(config)
             ]
         }));
