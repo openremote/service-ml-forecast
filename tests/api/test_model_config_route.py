@@ -27,7 +27,6 @@ def create_test_config() -> dict[str, Any]:
             "training_data_period": TEST_training_data_period,
         },
         "forecast_interval": "PT1H",
-        "training_interval": "PT1H",
         "forecast_periods": 24,
         "forecast_frequency": "1h",
     }

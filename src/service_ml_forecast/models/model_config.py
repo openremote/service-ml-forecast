@@ -99,8 +99,17 @@ class BaseModelConfig(BaseModel):
         "There must be historical data available for training. "
         "There must also be future data available for forecasting.",
     )
-    forecast_interval: str = Field(description="Forecast generation interval. Expects ISO 8601 duration strings.")
-    training_interval: str = Field(description="Model training interval. Expects ISO 8601 duration strings.")
+    forecast_interval: str = Field(
+        description="Forecast generation interval. "
+        "Training is always executed before the forecast job. "
+        "Expects ISO 8601 duration strings."
+    )
+    training_interval: str | None = Field(
+        default=None,
+        description="Deprecated. Uses forecast_interval now instead (train > forecast order). Model training interval. "
+        "Expects ISO 8601 duration strings.",
+        deprecated=True,
+    )
     forecast_periods: int = Field(description="Number of periods to forecast.")
     forecast_frequency: str = Field(
         description="The frequency of each forecasted datapoint. "

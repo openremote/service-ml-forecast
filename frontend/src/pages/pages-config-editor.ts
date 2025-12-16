@@ -193,7 +193,6 @@ export class PageConfigEditor extends LitElement {
         forecast_interval: 'PT1H',
         forecast_periods: 24,
         forecast_frequency: '1h',
-        training_interval: 'PT1H',
         daily_seasonality: true,
         weekly_seasonality: true,
         yearly_seasonality: true,
@@ -746,22 +745,6 @@ export class PageConfigEditor extends LitElement {
                                 label="Training data period"
                                 .iso_units="${[TimeDurationUnit.DAY, TimeDurationUnit.WEEK, TimeDurationUnit.MONTH, TimeDurationUnit.YEAR]}"
                                 .value="${this.formData.target.training_data_period}"
-                            ></custom-duration-input>
-                        </div>
-                    </div>
-                </or-panel>
-
-                <!-- Model training, e.g the schedule-->
-                <or-panel heading="MODEL TRAINING">
-                    <div class="column">
-                        <div class="row">
-                            <!-- Training interval (ISO 8601) -->
-                            <custom-duration-input
-                                name="training_interval"
-                                .type="${DurationInputType.ISO_8601}"
-                                @value-changed="${this.handleBasicInput}"
-                                label="Train model every"
-                                .value="${this.formData.training_interval}"
                             ></custom-duration-input>
                         </div>
                     </div>
