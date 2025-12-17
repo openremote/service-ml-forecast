@@ -106,8 +106,7 @@ class BaseModelConfig(BaseModel):
     )
     training_interval: str | None = Field(
         default=None,
-        description="Deprecated. Uses forecast_interval instead. Model training interval. "
-        "Expects ISO 8601 duration strings.",
+        description="Deprecated. Use forecast_interval instead.",
         deprecated=True,
     )
     forecast_periods: int = Field(description="Number of periods to forecast.")
