@@ -228,10 +228,10 @@ def build_frontend_dev() -> None:
 def _copy_frontend_dist() -> None:
     """Copy the frontend dist to the deployment/web directory."""
     DEPLOYMENT_WEB_DIR.mkdir(parents=True, exist_ok=True)
-    
+
     if DEPLOYMENT_WEB_DIR.exists():
         shutil.rmtree(DEPLOYMENT_WEB_DIR)
 
     shutil.copytree(FRONTEND_DIR / "dist", DEPLOYMENT_WEB_DIR / "dist")
-    
+
     print(f"Frontend dist copied to {DEPLOYMENT_WEB_DIR}")
