@@ -109,10 +109,6 @@ interface BaseModelConfig {
      */
     forecast_interval: string;
     /**
-     * Model training interval. Expects ISO 8601 duration strings.
-     */
-    training_interval: string;
-    /**
      * Number of periods to forecast into the future.
      */
     forecast_periods: number;

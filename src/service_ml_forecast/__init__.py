@@ -15,6 +15,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
+from importlib.metadata import version
 from pathlib import Path
 
 import tomli
@@ -39,6 +40,15 @@ class AppInfo(BaseModel):
     version: str
 
 
+def get_version(package_name: str) -> str:
+    """Get version from package metadata."""
+
+    try:
+        return version(package_name)
+    except Exception:
+        return "unknown"
+
+
 def get_app_info() -> AppInfo:
     """Read app info (name, description, version) from pyproject.toml file."""
     pyproject_path = find_project_root() / "pyproject.toml"
@@ -46,7 +56,12 @@ def get_app_info() -> AppInfo:
     with open(pyproject_path, "rb") as f:
         pyproject_data = tomli.load(f)
 
-    return AppInfo(**pyproject_data["project"])
+    project_data = pyproject_data["project"].copy()
+
+    # Get version from package metadata
+    project_data["version"] = get_version("service-ml-forecast")
+
+    return AppInfo(**project_data)
 
 
 __app_info__ = get_app_info()

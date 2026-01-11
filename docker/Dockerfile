@@ -31,8 +31,12 @@ RUN echo "Starting Python build phase..."
 
 WORKDIR /app
 
+# Version argument for setuptools-scm
+ARG VERSION=0.0.0
+
 ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1
+    PYTHONDONTWRITEBYTECODE=1 \
+    SETUPTOOLS_SCM_PRETEND_VERSION=${VERSION}
 
 RUN echo "Installing Python build dependencies..."
 RUN apt-get update \
@@ -68,10 +72,18 @@ WORKDIR /app
 # Explicitly declare the ARG for the build process
 ARG ML_ENVIRONMENT
 
+# Add git commit label must be specified at build time using --build-arg GIT_COMMIT=commit-hash
+ARG GIT_COMMIT=unknown
+LABEL git-commit=$GIT_COMMIT
+
+# Version argument for setuptools-scm
+ARG VERSION=0.0.0
+
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONPATH=/app/src \
-    ML_ENVIRONMENT=${ML_ENVIRONMENT:-production}
+    ML_ENVIRONMENT=${ML_ENVIRONMENT:-production} \
+    SETUPTOOLS_SCM_PRETEND_VERSION=${VERSION}
 
 # Install any runtime dependencies
 RUN echo "Installing runtime dependencies..."

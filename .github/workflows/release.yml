@@ -1,0 +1,109 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      VERSION_INCREMENT:
+        description: 'The version number part to increment (major.minor.patch)'
+        default: 'Minor'
+        type: choice
+        options:
+          - Major
+          - Minor
+          - Patch
+        required: false
+      VERSION_OVERRIDE:
+        description: 'Version override (when not incrementing the previous version)'
+        type: string
+        required: false
+
+permissions:
+  actions: write
+  contents: write
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.bump_version.outputs.version }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Calculate next version
+        id: bump_version
+        run: |
+          # Get current version from latest Git tag
+          LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1) 2>/dev/null || echo "0.0.0")
+          CURRENT_VERSION="$LATEST_TAG"
+          echo "Current version: $CURRENT_VERSION"
+
+          if [ -n "$VERSION_OVERRIDE" ]; then
+            echo "Using override version: $VERSION_OVERRIDE"
+            NEW_VERSION="$VERSION_OVERRIDE"
+          else
+            # Parse current version
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+            
+            # Increment based on input
+            case "$VERSION_INCREMENT" in
+              "Major")
+                MAJOR=$((MAJOR + 1))
+                MINOR=0
+                PATCH=0
+                ;;
+              "Minor")
+                MINOR=$((MINOR + 1))
+                PATCH=0
+                ;;
+              "Patch")
+                PATCH=$((PATCH + 1))
+                ;;
+            esac
+            
+            NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+          fi
+
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "Next version: $NEW_VERSION"
+
+          # Fail if version is still 0.0.0 (increment failed)
+          if [ "$NEW_VERSION" = "0.0.0" ]; then
+            echo "Error: Version increment failed - version is still 0.0.0"
+            exit 1
+          fi
+        env:
+          VERSION_INCREMENT: ${{ github.event.inputs.VERSION_INCREMENT }}
+          VERSION_OVERRIDE: ${{ github.event.inputs.VERSION_OVERRIDE }}
+
+      - name: Create and push tag
+        run: |
+          NEW_VERSION="${{ steps.bump_version.outputs.version }}"
+          TAG="$NEW_VERSION"
+          
+          git tag -a "$TAG" -m "Release $TAG"
+
+      - name: Create release
+        run: |
+          git push --follow-tags
+          gh release create $RELEASED_VERSION --generate-notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASED_VERSION: ${{ steps.bump_version.outputs.version }}
+
+  build-docker:
+    name: Docker Build
+    needs: release
+    uses: ./.github/workflows/docker-image.yml
+    secrets: inherit
+    with:
+      version: ${{ needs.release.outputs.version }}

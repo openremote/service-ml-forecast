@@ -43,6 +43,17 @@ export class AppLayout extends LitElement {
     @state()
     realm = '';
 
+    static get styles() {
+        const padding = IS_EMBEDDED ? '0 20px' : '20px';
+
+        return css`
+            :host {
+                display: block;
+                padding: ${unsafeCSS(padding)};
+            }
+        `;
+    }
+
     // Vaadin router lifecycle hook -- runs exactly once since this is the parent route
     async onBeforeEnter(location: RouterLocation, commands: PreventAndRedirectCommands) {
         const authRealm = manager.getRealm() ?? 'master';
@@ -58,6 +69,9 @@ export class AppLayout extends LitElement {
 
         // Initialize the OpenRemote manager rest api using the authenticated realm
         manager.rest.initialise(`${ML_OR_URL}/api/${authRealm}`);
+
+        // Update the manager display realm so components properly use the correct realm
+        manager.displayRealm = this.realm;
 
         // Set the service UI theme based on the given realm
         setRealmTheme(this.realm);

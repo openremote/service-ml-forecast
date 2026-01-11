@@ -33,7 +33,7 @@ class RegressorAssetDatapointsFeature(BaseModel):
     asset_id: str = Field(description="ID of the asset from OpenRemote.", min_length=22, max_length=22)
     attribute_name: str = Field(
         description="Name of the attribute of the asset.",
-        min_length=3,
+        min_length=1,
     )
     training_data_period: str = Field(
         default="P6M",
@@ -61,7 +61,7 @@ class TargetAssetDatapointsFeature(BaseModel):
     asset_id: str = Field(description="ID of the asset from OpenRemote.", min_length=22, max_length=22)
     attribute_name: str = Field(
         description="Name of the attribute of the asset.",
-        min_length=3,
+        min_length=1,
     )
     training_data_period: str = Field(
         default="P6M",
@@ -99,8 +99,16 @@ class BaseModelConfig(BaseModel):
         "There must be historical data available for training. "
         "There must also be future data available for forecasting.",
     )
-    forecast_interval: str = Field(description="Forecast generation interval. Expects ISO 8601 duration strings.")
-    training_interval: str = Field(description="Model training interval. Expects ISO 8601 duration strings.")
+    forecast_interval: str = Field(
+        description="Forecast generation interval. "
+        "Training is always executed before the forecast job. "
+        "Expects ISO 8601 duration strings."
+    )
+    training_interval: str | None = Field(
+        default=None,
+        description="Deprecated. Use forecast_interval instead.",
+        deprecated=True,
+    )
     forecast_periods: int = Field(description="Number of periods to forecast.")
     forecast_frequency: str = Field(
         description="The frequency of each forecasted datapoint. "

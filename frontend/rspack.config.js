@@ -75,7 +75,7 @@ export default {
         port: 8001,
         historyApiFallback: true,
         hot: true,
-        watchFiles: ['/**/*'],
+        watchFiles: ['src/**/*', 'assets/**/*', 'index.html'],
         headers: {
             'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
             Pragma: 'no-cache',

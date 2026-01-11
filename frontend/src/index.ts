@@ -40,7 +40,7 @@ const DEFAULT_MANAGER_CONFIG: ManagerConfig = {
     realm: undefined,
     consoleAutoEnable: true,
     loadTranslations: ['or'],
-    eventProviderType: EventProviderType.POLLING
+    eventProviderType: EventProviderType.WEBSOCKET
 };
 
 async function init() {
