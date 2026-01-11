@@ -154,7 +154,7 @@ def test() -> None:
     """Run pytest on main project and all packages."""
 
     # Test main project
-    step(f"uv run pytest {TEST_DIR} -vv --cache-clear", "pytest (main)")
+    step(f"uv run pytest {TEST_DIR} -vv --cache-clear -s", "pytest (main)")
 
     # Test packages
     test_packages()
@@ -170,14 +170,14 @@ def test_packages() -> None:
 
         if test_dir.exists():
             print(f"\n--- Testing package: {pkg_name} ---")
-            step(f"uv run pytest {test_dir} -vv --cache-clear", f"pytest ({pkg_name})", pkg_dir)
+            step(f"uv run pytest {test_dir} -vv --cache-clear -s", f"pytest ({pkg_name})", pkg_dir)
 
 
 def test_coverage() -> None:
     """Run tests with coverage on main project and all packages."""
 
     # Test main project with coverage
-    step(f"uv run pytest {TEST_DIR} -vv --cache-clear --cov {SRC_DIR}", "pytest with coverage (main)")
+    step(f"uv run pytest {TEST_DIR} -vv --cache-clear --cov {SRC_DIR} -s", "pytest with coverage (main)")
 
     # Test packages with coverage
     package_dirs = get_package_dirs()
@@ -189,7 +189,7 @@ def test_coverage() -> None:
 
         if test_dir.exists() and src_dir.exists():
             print(f"\n--- Testing package with coverage: {pkg_name} ---")
-            step(f"uv run pytest {test_dir} -vv --cache-clear --cov {src_dir}", f"pytest with coverage ({pkg_name})", pkg_dir)
+            step(f"uv run pytest {test_dir} -vv --cache-clear --cov {src_dir} -s", f"pytest with coverage ({pkg_name})", pkg_dir)
 
 
 def build() -> None:
