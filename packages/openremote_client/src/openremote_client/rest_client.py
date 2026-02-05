@@ -338,7 +338,7 @@ class OpenRemoteClient:
 
             url = f"{self._client.openremote_url}/api/{realm}/asset/query"
             request = self._client._build_request("POST", url, data=asset_query)
-            with httpx.Client(timeout=self._client.timeout) as client:
+            with httpx.Client(timeout=self._client.timeout, verify=self._client.verify_SSL) as client:
                 try:
                     response = client.send(request)
                     response.raise_for_status()
