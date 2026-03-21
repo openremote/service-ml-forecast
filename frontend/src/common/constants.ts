@@ -18,7 +18,19 @@
 export const APP_OUTLET = document.querySelector('#outlet') as HTMLElement;
 export const IS_DEVELOPMENT = process.env.NODE_ENV === 'development';
 export const ML_SERVICE_URL = (process.env.ML_SERVICE_URL || '').replace(/\/$/, '');
-export const ML_OR_URL = process.env.ML_OR_URL || '';
+const resolveManagerUrl = (value: string): string => {
+    if (!value) {
+        return window.location.origin;
+    }
+
+    if (value.startsWith('/')) {
+        return `${window.location.origin}${value}`;
+    }
+
+    return value.replace(/\/$/, '');
+};
+
+export const ML_OR_URL = resolveManagerUrl(process.env.ML_OR_URL || '');
 export const ML_OR_KEYCLOAK_URL = process.env.ML_OR_KEYCLOAK_URL || '';
 
 // Returns true if the app is embedded in an iframe
