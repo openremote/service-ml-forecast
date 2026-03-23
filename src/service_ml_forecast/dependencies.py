@@ -36,6 +36,7 @@ __openremote_client = OpenRemoteClient(
     realm=ENV.ML_OR_REALM,
     service_user=ENV.ML_OR_SERVICE_USER,
     service_user_secret=ENV.ML_OR_SERVICE_USER_SECRET,
+    verify_SSL=ENV.ML_VERIFY_SSL,
 )
 
 __openremote_service = OpenRemoteService(__openremote_client)
