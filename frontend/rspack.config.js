@@ -19,9 +19,7 @@ const definePlugin = isProduction
     ? null
     : new rspack.DefinePlugin({
           'process.env.ML_SERVICE_URL': JSON.stringify(process.env.ML_SERVICE_URL || devEnvDefaults.ML_SERVICE_URL),
-          'process.env.ML_OR_KEYCLOAK_URL': JSON.stringify(
-              process.env.ML_OR_KEYCLOAK_URL || devEnvDefaults.ML_OR_KEYCLOAK_URL
-          ),
+          'process.env.ML_OR_KEYCLOAK_URL': JSON.stringify(process.env.ML_OR_KEYCLOAK_URL || devEnvDefaults.ML_OR_KEYCLOAK_URL),
           'process.env.ML_OR_URL': JSON.stringify(process.env.ML_OR_URL || devEnvDefaults.ML_OR_URL)
       });
 
