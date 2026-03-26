@@ -22,28 +22,21 @@ type RuntimeConfig = {
     ML_OR_KEYCLOAK_URL?: string;
 };
 
-const getRuntimeConfig = (): RuntimeConfig => {
-    const configElement = document.getElementById('ml-runtime-config');
-    if (!configElement?.textContent) {
-        return {};
+declare global {
+    interface Window {
+        APP_CONFIG?: RuntimeConfig;
     }
+}
 
-    try {
-        return JSON.parse(configElement.textContent) as RuntimeConfig;
-    } catch {
-        return {};
-    }
-};
-
-const runtimeConfig = getRuntimeConfig();
+const runtimeConfig = window.APP_CONFIG ?? {};
 const bundledEnv = typeof process !== 'undefined' ? process.env : undefined;
 
 export const IS_DEVELOPMENT = bundledEnv?.NODE_ENV === 'development';
 
-export const ML_SERVICE_URL = (runtimeConfig.ML_SERVICE_URL || bundledEnv?.ML_SERVICE_URL || '').replace(/\/$/, '');
+export const ML_SERVICE_URL = (runtimeConfig.ML_SERVICE_URL ?? bundledEnv?.ML_SERVICE_URL ?? '').replace(/\/$/, '');
 
-export const ML_OR_URL = runtimeConfig.ML_OR_URL || bundledEnv?.ML_OR_URL || '';
-export const ML_OR_KEYCLOAK_URL = runtimeConfig.ML_OR_KEYCLOAK_URL || bundledEnv?.ML_OR_KEYCLOAK_URL || '';
+export const ML_OR_URL = runtimeConfig.ML_OR_URL ?? bundledEnv?.ML_OR_URL ?? '';
+export const ML_OR_KEYCLOAK_URL = runtimeConfig.ML_OR_KEYCLOAK_URL ?? bundledEnv?.ML_OR_KEYCLOAK_URL ?? '';
 
 // Returns true if the app is embedded in an iframe
 export const IS_EMBEDDED = window.top !== window.self;
