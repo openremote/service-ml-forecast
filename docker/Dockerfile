@@ -11,18 +11,8 @@ RUN npm install
 
 COPY frontend/ ./
 
-# Define build arguments
-ARG ML_SERVICE_URL
-ARG ML_WEB_ROOT_PATH
-ARG ML_OR_KEYCLOAK_URL
-ARG ML_OR_URL
-
 # Run the front-end bundle in production mode
-RUN ML_SERVICE_URL=${ML_SERVICE_URL:-/services/ml-forecast} \
-    ML_WEB_ROOT_PATH=${ML_WEB_ROOT_PATH:-/services/ml-forecast/ui} \
-    ML_OR_KEYCLOAK_URL=${ML_OR_KEYCLOAK_URL:-/auth} \
-    ML_OR_URL=${ML_OR_URL:-} \
-    npm run build:prod
+RUN npm run build:prod
 
 # --- Python Build Phase -------------------------------------------------------
 FROM python:3.13-slim AS builder

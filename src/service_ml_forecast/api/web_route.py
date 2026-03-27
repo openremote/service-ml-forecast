@@ -21,14 +21,15 @@ Web API routes.
 These routes are used to serve the web application.
 """
 
+import json
 import logging
 from http import HTTPStatus
 
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from service_ml_forecast.config import DIRS
+from service_ml_forecast.config import DIRS, ENV
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +41,24 @@ else:
     logger.error(f"Web dist directory not found at {DIRS.ML_WEBSERVER_UI_DIST_DIR}, bundle cannot be served")
 
 
+def _render_index_html() -> HTMLResponse:
+    """Render index.html with runtime config injected from server environment."""
+
+    index_path = DIRS.ML_WEBSERVER_UI_DIST_DIR / "index.html"
+    if not index_path.exists():
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="index.html not found")
+
+    runtime_config = {
+        "ML_SERVICE_URL": ENV.ML_API_ROOT_PATH,
+        "ML_OR_URL": ENV.ML_OR_URL,
+        "ML_OR_KEYCLOAK_URL": ENV.ML_OR_KEYCLOAK_URL,
+    }
+    config = json.dumps(runtime_config).replace("<", "\\u003c")
+    html = index_path.read_text(encoding="utf-8")
+    html = html.replace("__ML_RUNTIME_CONFIG__", config)
+    return HTMLResponse(content=html)
+
+
 @router.get(
     "/",
     summary="Serve the index.html file from the web dist directory.",
@@ -48,13 +67,10 @@ else:
         HTTPStatus.NOT_FOUND: {"description": "Index.html file not found"},
     },
 )
-def serve_index() -> FileResponse:
+def serve_index() -> HTMLResponse:
     """Serve the index.html file from the web dist directory."""
 
-    index_path = DIRS.ML_WEBSERVER_UI_DIST_DIR / "index.html"
-    if not index_path.exists():
-        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="index.html not found")
-    return FileResponse(index_path)
+    return _render_index_html()
 
 
 @router.get(
@@ -65,7 +81,7 @@ def serve_index() -> FileResponse:
         HTTPStatus.NOT_FOUND: {"description": "Static file not found"},
     },
 )
-def serve_spa(path: str) -> FileResponse:
+def serve_spa(path: str) -> Response:
     """Serve static files or return index.html for SPA routing."""
 
     requested_path = DIRS.ML_WEBSERVER_UI_DIST_DIR / path
@@ -75,7 +91,4 @@ def serve_spa(path: str) -> FileResponse:
         return FileResponse(requested_path)
 
     # Return index.html for client-side routing
-    index_path = DIRS.ML_WEBSERVER_UI_DIST_DIR / "index.html"
-    if not index_path.exists():
-        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="index.html not found")
-    return FileResponse(index_path)
+    return _render_index_html()
