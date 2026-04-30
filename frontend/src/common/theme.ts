@@ -95,7 +95,7 @@ export async function setRealmTheme(realm: string) {
 
     try {
         const config = (await manager.rest.api.ConfigurationResource.getManagerConfig()).data;
-        const styles = config.realms?.[realm]?.styles;
+        const styles = config.realms?.[realm]?.styles ?? config.realms?.default?.styles;
 
         if (styles) {
             const cssString = styles;
