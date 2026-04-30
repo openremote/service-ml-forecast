@@ -33,7 +33,7 @@ import './components/breadcrumb-nav';
 import './components/alert-message';
 
 const DEFAULT_MANAGER_CONFIG: ManagerConfig = {
-    managerUrl: ML_OR_URL || '/',
+    managerUrl: ML_OR_URL ?? '/',
     keycloakUrl: ML_OR_KEYCLOAK_URL || '/auth',
     auth: Auth.KEYCLOAK,
     autoLogin: true,

@@ -7,10 +7,21 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const isProduction = process.env.NODE_ENV === 'production';
-const rootPath = process.env.ML_WEB_ROOT_PATH;
-const serviceUrl = process.env.ML_SERVICE_URL || 'http://localhost:8000'; // Default to default service backend
-const keycloakUrl = process.env.ML_OR_KEYCLOAK_URL || 'http://localhost:8081/auth'; // Default to openremote keycloak address
-const openremoteUrl = process.env.ML_OR_URL !== undefined ? process.env.ML_OR_URL : 'http://localhost:8080'; // Default to openremote url
+
+const rootPath = '/services/ml-forecast/ui';
+const devEnvDefaults = {
+    ML_SERVICE_URL: '/services/ml-forecast',
+    ML_OR_KEYCLOAK_URL: 'http://localhost:8081/auth',
+    ML_OR_URL: 'http://localhost:8080'
+};
+
+const definePlugin = isProduction
+    ? null
+    : new rspack.DefinePlugin({
+          'process.env.ML_SERVICE_URL': JSON.stringify(process.env.ML_SERVICE_URL || devEnvDefaults.ML_SERVICE_URL),
+          'process.env.ML_OR_KEYCLOAK_URL': JSON.stringify(process.env.ML_OR_KEYCLOAK_URL || devEnvDefaults.ML_OR_KEYCLOAK_URL),
+          'process.env.ML_OR_URL': JSON.stringify(process.env.ML_OR_URL || devEnvDefaults.ML_OR_URL)
+      });
 
 export default {
     mode: isProduction ? 'production' : 'development',
@@ -65,11 +76,7 @@ export default {
         new rspack.CopyRspackPlugin({
             patterns: [{ from: 'assets', to: 'assets' }]
         }),
-        new rspack.DefinePlugin({
-            'process.env.ML_SERVICE_URL': JSON.stringify(serviceUrl),
-            'process.env.ML_OR_KEYCLOAK_URL': JSON.stringify(keycloakUrl),
-            'process.env.ML_OR_URL': JSON.stringify(openremoteUrl)
-        })
+        ...(definePlugin ? [definePlugin] : [])
     ],
     devServer: {
         port: 8001,

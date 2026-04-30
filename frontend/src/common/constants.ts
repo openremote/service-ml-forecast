@@ -16,10 +16,27 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 export const APP_OUTLET = document.querySelector('#outlet') as HTMLElement;
-export const IS_DEVELOPMENT = process.env.NODE_ENV === 'development';
-export const ML_SERVICE_URL = (process.env.ML_SERVICE_URL || '').replace(/\/$/, '');
-export const ML_OR_URL = process.env.ML_OR_URL || '';
-export const ML_OR_KEYCLOAK_URL = process.env.ML_OR_KEYCLOAK_URL || '';
+type RuntimeConfig = {
+    ML_SERVICE_URL?: string;
+    ML_OR_URL?: string;
+    ML_OR_KEYCLOAK_URL?: string;
+};
+
+declare global {
+    interface Window {
+        APP_CONFIG?: RuntimeConfig;
+    }
+}
+
+const runtimeConfig = window.APP_CONFIG ?? {};
+const bundledEnv = typeof process !== 'undefined' ? process.env : undefined;
+
+export const IS_DEVELOPMENT = bundledEnv?.NODE_ENV === 'development';
+
+export const ML_SERVICE_URL = (runtimeConfig.ML_SERVICE_URL ?? bundledEnv?.ML_SERVICE_URL ?? '').replace(/\/$/, '');
+
+export const ML_OR_URL = runtimeConfig.ML_OR_URL ?? bundledEnv?.ML_OR_URL ?? '';
+export const ML_OR_KEYCLOAK_URL = runtimeConfig.ML_OR_KEYCLOAK_URL ?? bundledEnv?.ML_OR_KEYCLOAK_URL ?? '';
 
 // Returns true if the app is embedded in an iframe
 export const IS_EMBEDDED = window.top !== window.self;
