@@ -70,7 +70,7 @@ def _jwks_cache_key(f: Any, issuer: str, kid: str, *args: Any, **kwargs: Any) ->
     return f"{issuer}:{kid}"
 
 
-@cached(ttl=JWKS_CACHE_TTL_SECONDS, cache=Cache.MEMORY, key_builder=_jwks_cache_key)  # type: ignore[misc]
+@cached(ttl=JWKS_CACHE_TTL_SECONDS, cache=Cache.MEMORY, key_builder=_jwks_cache_key)  # type: ignore[untyped-decorator]
 async def _get_jwks(issuer: str, kid: str, valid_issuers: list[str]) -> dict[str, Any]:
     """Get JWKS from Keycloak based on the issuer URL.
 

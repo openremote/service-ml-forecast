@@ -115,16 +115,24 @@ def prophet_multi_variable_config() -> ProphetModelConfig:
 def windspeed_mock_datapoints() -> list[AssetDatapoint]:
     windspeed_data_path = Path(__file__).parent / "ml/resources/mock-datapoints-windspeed.json"
     with open(windspeed_data_path) as f:
-        datapoints: list[AssetDatapoint] = json.load(f)
-        return datapoints
+        raw_data = json.load(f)
+        return [AssetDatapoint(x=point["x"], y=point["y"]) for point in raw_data]
 
 
 @pytest.fixture
 def tariff_mock_datapoints() -> list[AssetDatapoint]:
     tariff_data_path = Path(__file__).parent / "ml/resources/mock-datapoints-tariff.json"
     with open(tariff_data_path) as f:
-        datapoints: list[AssetDatapoint] = json.load(f)
-        return datapoints
+        raw_data = json.load(f)
+        return [AssetDatapoint(x=point["x"], y=point["y"]) for point in raw_data]
+
+
+@pytest.fixture
+def power_grid_mock_datapoints() -> list[AssetDatapoint]:
+    power_grid_data_path = Path(__file__).parent / "ml/resources/mock-datapoints-power-grid.json"
+    with open(power_grid_data_path) as f:
+        raw_data = json.load(f)
+        return [AssetDatapoint(x=point["x"], y=point["y"]) for point in raw_data]
 
 
 @pytest.fixture

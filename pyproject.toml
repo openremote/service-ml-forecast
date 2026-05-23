@@ -27,6 +27,7 @@ dependencies = [
     "pyjwt>=2.10.1",
     "aiocache>=0.12.3",
     "openremote-client",
+    "scikit-learn>=1.7.2",
 ]
 
 
@@ -79,7 +80,7 @@ select = [
     "PL",  # pylint
     "RUF", # ruff-specific rules
 ]
-ignore = ["PLR0913", "B008", "C901", "PLR0912"]
+ignore = ["PLR0913", "B008", "C901", "PLR0912", "PLC0415"]
 fixable = ["ALL"]
 
 [tool.ruff.format]
@@ -115,6 +116,10 @@ combine-as-imports = true
 testpaths = ["tests"]
 python_files = "test_*.py"
 filterwarnings = ["ignore:.*"]
+log_cli = true
+log_cli_level = "INFO"
+log_cli_format = "%(asctime)s [%(levelname)8s] %(name)s: %(message)s"
+log_cli_date_format = "%Y-%m-%d %H:%M:%S"
 
 [project.scripts]
 service_ml_forecast = "service_ml_forecast.main:app"
@@ -132,5 +137,3 @@ build-frontend-dev = "scripts.tools:build_frontend_dev"
 lint-packages = "scripts.tools:lint_packages"
 test-packages = "scripts.tools:test_packages"
 build-packages = "scripts.tools:build_packages"
-
-

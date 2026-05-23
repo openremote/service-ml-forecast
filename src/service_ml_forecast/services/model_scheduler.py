@@ -40,7 +40,7 @@ CONFIG_POLLING_INTERVAL = 30  # Poll configs for changes every 30 seconds
 
 
 class ModelScheduler(Singleton):
-    """Manages the scheduling of ML model training and forecasting jobs."""
+    """Manages the scheduling of model training and forecasting jobs."""
 
     def __init__(self, openremote_service: OpenRemoteService) -> None:
         self.config_storage = ModelConfigService(openremote_service)
@@ -63,12 +63,12 @@ class ModelScheduler(Singleton):
         )
 
     def start(self) -> None:
-        """Start the scheduler for ML model training and forecasting.
+        """Start the scheduler for model training and forecasting.
 
         Does not start the scheduler if it is already running.
         """
         if self.scheduler.running:
-            logger.warning("Scheduler for ML Model Training already running")
+            logger.warning("Scheduler for Model Training already running")
             return
 
         self.scheduler.start()
