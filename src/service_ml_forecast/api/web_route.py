@@ -50,8 +50,8 @@ def _render_index_html() -> HTMLResponse:
 
     runtime_config = {
         "ML_SERVICE_URL": ENV.ML_API_ROOT_PATH,
-        "ML_OR_URL": ENV.ML_OR_URL,
-        "ML_OR_KEYCLOAK_URL": ENV.ML_OR_KEYCLOAK_URL,
+        "ML_OR_URL": ENV.ML_OR_PUBLIC_URL or ENV.ML_OR_URL,
+        "ML_OR_KEYCLOAK_URL": ENV.ML_OR_PUBLIC_KEYCLOAK_URL or ENV.ML_OR_KEYCLOAK_URL,
     }
     config = json.dumps(runtime_config).replace("<", "\\u003c")
     html = index_path.read_text(encoding="utf-8")

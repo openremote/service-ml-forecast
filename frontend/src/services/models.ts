@@ -22,7 +22,9 @@
  * Corresponds to service_ml_forecast.models.model_type.ModelTypeEnum
  */
 export enum ModelTypeEnum {
-    PROPHET = 'prophet'
+    PROPHET = 'prophet',
+    ITRANSFORMER = 'itransformer',
+    NL_ENERGY_FORECASTER = 'nl_energy_forecaster'
 }
 
 /**
@@ -175,7 +177,50 @@ export interface ProphetModelConfig extends BaseModelConfig {
 }
 
 /**
+ * iTransformer specific model configuration.
+ * Inverted Transformer: treats each variate's time series as a token.
+ */
+export interface ITransformerModelConfig extends BaseModelConfig {
+    type: ModelTypeEnum.ITRANSFORMER;
+    /** Input lookback window in datapoints. Must be >= 2 × forecast_periods. @default 96 */
+    seq_len?: number;
+    /** Transformer embedding dimension. @default 128 */
+    d_model?: number;
+    /** Number of attention heads. @default 4 */
+    n_heads?: number;
+    /** Number of encoder layers. @default 2 */
+    n_layers?: number;
+    /** Feed-forward hidden dimension. @default 256 */
+    d_ff?: number;
+    /** Dropout rate. @default 0.1 */
+    dropout?: number;
+    /** Training epochs. @default 30 */
+    epochs?: number;
+    /** Training batch size. @default 64 */
+    batch_size?: number;
+    /** AdamW learning rate. @default 0.001 */
+    lr?: number;
+    /** Fraction of data held out for validation. @default 0.2 */
+    val_split?: number;
+}
+
+/**
+ * NL energy price forecaster (pre-trained encoder-decoder transformer from HuggingFace).
+ * Inference-only — no local training. Always produces 24-step hourly forecasts.
+ */
+export interface NLEnergyForecasterModelConfig extends BaseModelConfig {
+    type: ModelTypeEnum.NL_ENERGY_FORECASTER;
+    /**
+     * Maps non-time, non-Price FEATURE_COL names to regressor feature_names
+     * (format: '{asset_id}.{attribute_name}').
+     * Required keys: temperature_2m, cloud_cover, wind_speed_10m, shortwave_radiation,
+     * total_load, generation_forecast, Open, High, Low, 'Change %'.
+     */
+    feature_mapping: Record<string, string>;
+}
+
+/**
  * Represents a model configuration, which can be one of the specific model types.
  * This uses a discriminated union based on the 'type' field.
  */
-export type ModelConfig = ProphetModelConfig;
+export type ModelConfig = ProphetModelConfig | ITransformerModelConfig | NLEnergyForecasterModelConfig;

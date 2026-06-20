@@ -1,0 +1,25 @@
+{
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "realm": "master",
+    "name": "iTransformer Tariff Forecast",
+    "enabled": true,
+    "type": "itransformer",
+    "target": {
+      "asset_id": "41ORIhkDVAlT97dYGUD9n5",
+      "attribute_name": "tariff",
+      "training_data_period": "P6M"
+    },
+    "forecast_interval": "PT120S",
+    "forecast_periods": 24,
+    "forecast_frequency": "1h",
+    "seq_len": 48,
+    "d_model": 16,
+    "n_heads": 2,
+    "n_layers": 1,
+    "d_ff": 32,
+    "dropout": 0.1,
+    "epochs": 2,
+    "batch_size": 16,
+    "lr": 0.001,
+    "val_split": 0.2
+}

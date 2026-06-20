@@ -64,8 +64,12 @@ class AppEnvironment(BaseSettings):
     ]  # origins to allow
 
     # OpenRemote Settings
-    ML_OR_URL: str = "http://localhost:8080"  # OpenRemote Manager URL
-    ML_OR_KEYCLOAK_URL: str = "http://localhost:8081/auth"  # OpenRemote Keycloak URL
+    ML_OR_URL: str = "http://localhost:8080"  # OpenRemote Manager URL (backend-to-backend)
+    ML_OR_KEYCLOAK_URL: str = "http://localhost:8081/auth"  # OpenRemote Keycloak URL (backend-to-backend)
+    # Public URLs served to the browser frontend (defaults to ML_OR_URL / ML_OR_KEYCLOAK_URL).
+    # Set these when the backend uses internal Docker hostnames that the browser cannot resolve.
+    ML_OR_PUBLIC_URL: str | None = None
+    ML_OR_PUBLIC_KEYCLOAK_URL: str | None = None
     ML_OR_REALM: str = "master"  # OpenRemote realm to use for the OpenRemote Manager API
     ML_OR_SERVICE_USER: str = "serviceuser"  # OpenRemote Manager service user
     ML_OR_SERVICE_USER_SECRET: str = "secret"  # OpenRemote Manager service user secret

@@ -20,7 +20,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { map } from 'lit/directives/map.js';
 import { when } from 'lit/directives/when.js';
 import { ModelTypeEnum, ProphetSeasonalityModeEnum } from '../services/models';
-import type { ProphetModelConfig } from '../services/models';
+import type { ITransformerModelConfig, ModelConfig, NLEnergyForecasterModelConfig, ProphetModelConfig } from '../services/models';
 import { APIService } from '../services/api-service';
 import { Router, RouterLocation } from '@vaadin/router';
 import { InputType, OrInputChangedEvent } from '@openremote/or-mwc-components/or-mwc-input';
@@ -35,6 +35,65 @@ import { CustomAssetAttributePicker } from '../components/custom-asset-attribute
 import { OrAssetAttributePickerPickedEvent } from '@openremote/or-attribute-picker';
 import { getAssetDescriptorIconTemplate } from '@openremote/or-icon';
 import { Asset, AssetModelUtil } from '@openremote/model';
+
+const BASE_FORM_DEFAULTS = {
+    realm: '',
+    name: 'New Model Config',
+    enabled: true as const,
+    target: { asset_id: '', attribute_name: '', training_data_period: 'P6M' },
+    regressors: null as null,
+    forecast_interval: 'PT1H',
+    forecast_periods: 24,
+    forecast_frequency: '1h'
+};
+
+const DEFAULT_PROPHET_FORM_DATA = (realm: string): ProphetModelConfig => ({
+    ...BASE_FORM_DEFAULTS,
+    realm,
+    type: ModelTypeEnum.PROPHET,
+    daily_seasonality: true,
+    weekly_seasonality: true,
+    yearly_seasonality: true,
+    changepoint_range: 0.8,
+    changepoint_prior_scale: 0.05,
+    seasonality_mode: ProphetSeasonalityModeEnum.ADDITIVE
+});
+
+const DEFAULT_ITRANSFORMER_FORM_DATA = (realm: string): ITransformerModelConfig => ({
+    ...BASE_FORM_DEFAULTS,
+    realm,
+    type: ModelTypeEnum.ITRANSFORMER,
+    seq_len: 96,
+    d_model: 128,
+    n_heads: 4,
+    n_layers: 2,
+    d_ff: 256,
+    dropout: 0.1,
+    epochs: 30,
+    batch_size: 64,
+    lr: 0.001,
+    val_split: 0.2
+});
+
+const DEFAULT_NL_ENERGY_FORECASTER_FORM_DATA = (realm: string): NLEnergyForecasterModelConfig => ({
+    ...BASE_FORM_DEFAULTS,
+    realm,
+    type: ModelTypeEnum.NL_ENERGY_FORECASTER,
+    forecast_periods: 24,
+    forecast_frequency: '1h',
+    feature_mapping: {
+        temperature_2m: '',
+        cloud_cover: '',
+        wind_speed_10m: '',
+        shortwave_radiation: '',
+        total_load: '',
+        generation_forecast: '',
+        Open: '',
+        High: '',
+        Low: '',
+        'Change %': ''
+    }
+});
 
 @customElement('page-config-editor')
 export class PageConfigEditor extends LitElement {
@@ -156,7 +215,7 @@ export class PageConfigEditor extends LitElement {
     configId?: string;
 
     @state()
-    protected modelConfig: ProphetModelConfig | null = null;
+    protected modelConfig: ModelConfig | null = null;
 
     @state()
     protected loading: boolean = true;
@@ -179,27 +238,7 @@ export class PageConfigEditor extends LitElement {
     protected readonly rootPath = getRootPath();
 
     @state()
-    protected formData: ProphetModelConfig = {
-        type: ModelTypeEnum.PROPHET,
-        realm: '', // Set during setup
-        name: 'New Model Config',
-        enabled: true,
-        target: {
-            asset_id: '',
-            attribute_name: '',
-            training_data_period: 'P6M'
-        },
-        regressors: null,
-        forecast_interval: 'PT1H',
-        forecast_periods: 24,
-        forecast_frequency: '1h',
-        daily_seasonality: true,
-        weekly_seasonality: true,
-        yearly_seasonality: true,
-        changepoint_range: 0.8,
-        changepoint_prior_scale: 0.05,
-        seasonality_mode: ProphetSeasonalityModeEnum.ADDITIVE
-    };
+    protected formData: ModelConfig = DEFAULT_PROPHET_FORM_DATA('');
 
     // Handle basic form field updates
     protected handleBasicInput(ev: OrInputChangedEvent | CustomEvent<{ value: string }>) {
@@ -207,6 +246,18 @@ export class PageConfigEditor extends LitElement {
         const target = ev.target as HTMLInputElement;
 
         if (!target || value === undefined) {
+            return;
+        }
+
+        if (target.name === 'type') {
+            const newType = value as ModelTypeEnum;
+            if (newType === ModelTypeEnum.ITRANSFORMER) {
+                this.formData = { ...DEFAULT_ITRANSFORMER_FORM_DATA(this.realm), name: this.formData.name, target: this.formData.target };
+            } else if (newType === ModelTypeEnum.NL_ENERGY_FORECASTER) {
+                this.formData = { ...DEFAULT_NL_ENERGY_FORECASTER_FORM_DATA(this.realm), name: this.formData.name, target: this.formData.target };
+            } else {
+                this.formData = { ...DEFAULT_PROPHET_FORM_DATA(this.realm), name: this.formData.name, target: this.formData.target };
+            }
             return;
         }
 
@@ -376,7 +427,7 @@ export class PageConfigEditor extends LitElement {
 
     // Set up all the data for the editor
     protected async setupEditor() {
-        this.formData.realm = this.realm;
+        this.formData = DEFAULT_PROPHET_FORM_DATA(this.realm);
         await this.loadConfig();
     }
 
@@ -653,7 +704,7 @@ export class PageConfigEditor extends LitElement {
                                 @or-mwc-input-changed="${this.handleBasicInput}"
                                 label="Model Type"
                                 type="${InputType.SELECT}"
-                                .options="${[['prophet', 'Prophet']]}"
+                                .options="${[['prophet', 'Prophet'], ['itransformer', 'iTransformer'], ['nl_energy_forecaster', 'NL Energy Forecaster']]}"
                                 .value="${this.formData.type}"
                             >
                             </or-mwc-input>
@@ -750,74 +801,213 @@ export class PageConfigEditor extends LitElement {
                     </div>
                 </or-panel>
 
-                <!-- Model parameters, these will be dynamic based on the model type -->
+                <!-- Model parameters — dynamic based on model type -->
                 <or-panel heading="PARAMETERS">
                     <div class="column">
-                        <div class="row">
-                            <!-- changepoint_range -->
-                            <or-mwc-input
-                                type="${InputType.NUMBER}"
-                                name="changepoint_range"
-                                @or-mwc-input-changed="${this.handleBasicInput}"
-                                label="Changepoint range"
-                                .value="${this.formData.changepoint_range}"
-                                max="1.0"
-                                min="0.0"
-                                step="0.01"
-                                required
-                            ></or-mwc-input>
-                            <!-- changepoint_prior_scale -->
-                            <or-mwc-input
-                                type="${InputType.NUMBER}"
-                                name="changepoint_prior_scale"
-                                @or-mwc-input-changed="${this.handleBasicInput}"
-                                label="Changepoint prior scale"
-                                .value="${this.formData.changepoint_prior_scale}"
-                                max="1.0"
-                                min="0.0"
-                                step="0.01"
-                                required
-                            ></or-mwc-input>
-                        </div>
-                        <div class="row">
-                            <!-- seasonality_mode -->
-                            <or-mwc-input
-                                type="${InputType.SELECT}"
-                                .options="${[
-                                    [ProphetSeasonalityModeEnum.ADDITIVE, 'Additive'],
-                                    [ProphetSeasonalityModeEnum.MULTIPLICATIVE, 'Multiplicative']
-                                ]}"
-                                name="seasonality_mode"
-                                @or-mwc-input-changed="${this.handleBasicInput}"
-                                label="Seasonality mode"
-                                .value="${this.formData.seasonality_mode}"
-                                required
-                            ></or-mwc-input>
-                            <!-- daily_seasonality -->
-                            <or-mwc-input
-                                type="${InputType.CHECKBOX}"
-                                name="daily_seasonality"
-                                @or-mwc-input-changed="${this.handleBasicInput}"
-                                label="Daily seasonality"
-                                .value="${this.formData.daily_seasonality}"
-                            ></or-mwc-input>
-                            <!-- weekly_seasonality -->
-                            <or-mwc-input
-                                type="${InputType.CHECKBOX}"
-                                name="weekly_seasonality"
-                                @or-mwc-input-changed="${this.handleBasicInput}"
-                                label="Weekly seasonality"
-                                .value="${this.formData.weekly_seasonality}"
-                            ></or-mwc-input>
-                            <!-- yearly_seasonality -->
-                            <or-mwc-input
-                                type="${InputType.CHECKBOX}"
-                                name="yearly_seasonality"
-                                @or-mwc-input-changed="${this.handleBasicInput}"
-                                label="Yearly seasonality"
-                                .value="${this.formData.yearly_seasonality}"
-                            ></or-mwc-input>
-                        </div>
+                        ${this.formData.type === ModelTypeEnum.NL_ENERGY_FORECASTER
+                            ? (() => {
+                                const n = this.formData as NLEnergyForecasterModelConfig;
+                                return html`
+                                    <div class="row">
+                                        <p style="margin:0;opacity:0.7;font-size:0.9em;">
+                                            Pre-trained model (Nazim112/nl-energy-forecaster).
+                                            Map each feature column to a regressor in the format
+                                            <em>asset_id.attribute_name</em>.
+                                        </p>
+                                    </div>
+                                    <div class="row">
+                                        <or-mwc-input
+                                            style="flex:1;max-width:100%;"
+                                            type="${InputType.TEXTAREA}"
+                                            name="feature_mapping"
+                                            @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                                                try {
+                                                    this.formData = { ...(this.formData as NLEnergyForecasterModelConfig), feature_mapping: JSON.parse(e.detail?.value ?? '{}') };
+                                                } catch (_) { /* ignore invalid JSON while typing */ }
+                                            }}"
+                                            label="Feature mapping (JSON)"
+                                            .value="${JSON.stringify(n.feature_mapping, null, 2)}"
+                                            rows="14"
+                                            required
+                                        ></or-mwc-input>
+                                    </div>
+                                `;
+                              })()
+                            : ''}
+                        ${when(
+                            this.formData.type === ModelTypeEnum.PROPHET,
+                            () => {
+                                const p = this.formData as ProphetModelConfig;
+                                return html`
+                                    <div class="row">
+                                        <or-mwc-input
+                                            type="${InputType.NUMBER}"
+                                            name="changepoint_range"
+                                            @or-mwc-input-changed="${this.handleBasicInput}"
+                                            label="Changepoint range"
+                                            .value="${p.changepoint_range}"
+                                            max="1.0"
+                                            min="0.0"
+                                            step="0.01"
+                                            required
+                                        ></or-mwc-input>
+                                        <or-mwc-input
+                                            type="${InputType.NUMBER}"
+                                            name="changepoint_prior_scale"
+                                            @or-mwc-input-changed="${this.handleBasicInput}"
+                                            label="Changepoint prior scale"
+                                            .value="${p.changepoint_prior_scale}"
+                                            max="1.0"
+                                            min="0.0"
+                                            step="0.01"
+                                            required
+                                        ></or-mwc-input>
+                                    </div>
+                                    <div class="row">
+                                        <or-mwc-input
+                                            type="${InputType.SELECT}"
+                                            .options="${[
+                                                [ProphetSeasonalityModeEnum.ADDITIVE, 'Additive'],
+                                                [ProphetSeasonalityModeEnum.MULTIPLICATIVE, 'Multiplicative']
+                                            ]}"
+                                            name="seasonality_mode"
+                                            @or-mwc-input-changed="${this.handleBasicInput}"
+                                            label="Seasonality mode"
+                                            .value="${p.seasonality_mode}"
+                                            required
+                                        ></or-mwc-input>
+                                        <or-mwc-input
+                                            type="${InputType.CHECKBOX}"
+                                            name="daily_seasonality"
+                                            @or-mwc-input-changed="${this.handleBasicInput}"
+                                            label="Daily seasonality"
+                                            .value="${p.daily_seasonality}"
+                                        ></or-mwc-input>
+                                        <or-mwc-input
+                                            type="${InputType.CHECKBOX}"
+                                            name="weekly_seasonality"
+                                            @or-mwc-input-changed="${this.handleBasicInput}"
+                                            label="Weekly seasonality"
+                                            .value="${p.weekly_seasonality}"
+                                        ></or-mwc-input>
+                                        <or-mwc-input
+                                            type="${InputType.CHECKBOX}"
+                                            name="yearly_seasonality"
+                                            @or-mwc-input-changed="${this.handleBasicInput}"
+                                            label="Yearly seasonality"
+                                            .value="${p.yearly_seasonality}"
+                                        ></or-mwc-input>
+                                    </div>
+                                `;
+                            },
+                            () => {
+                                if (this.formData.type !== ModelTypeEnum.ITRANSFORMER) return html``;
+                                const t = this.formData as ITransformerModelConfig;
+                                return html`
+                                    <div class="row">
+                                        <or-mwc-input
+                                            type="${InputType.NUMBER}"
+                                            name="seq_len"
+                                            @or-mwc-input-changed="${this.handleBasicInput}"
+                                            label="Lookback window (seq len)"
+                                            .value="${t.seq_len}"
+                                            min="2"
+                                            required
+                                        ></or-mwc-input>
+                                        <or-mwc-input
+                                            type="${InputType.NUMBER}"
+                                            name="epochs"
+                                            @or-mwc-input-changed="${this.handleBasicInput}"
+                                            label="Training epochs"
+                                            .value="${t.epochs}"
+                                            min="1"
+                                            required
+                                        ></or-mwc-input>
+                                    </div>
+                                    <div class="row">
+                                        <or-mwc-input
+                                            type="${InputType.NUMBER}"
+                                            name="d_model"
+                                            @or-mwc-input-changed="${this.handleBasicInput}"
+                                            label="Embedding dimension"
+                                            .value="${t.d_model}"
+                                            min="1"
+                                            required
+                                        ></or-mwc-input>
+                                        <or-mwc-input
+                                            type="${InputType.NUMBER}"
+                                            name="n_heads"
+                                            @or-mwc-input-changed="${this.handleBasicInput}"
+                                            label="Attention heads"
+                                            .value="${t.n_heads}"
+                                            min="1"
+                                            required
+                                        ></or-mwc-input>
+                                        <or-mwc-input
+                                            type="${InputType.NUMBER}"
+                                            name="n_layers"
+                                            @or-mwc-input-changed="${this.handleBasicInput}"
+                                            label="Encoder layers"
+                                            .value="${t.n_layers}"
+                                            min="1"
+                                            required
+                                        ></or-mwc-input>
+                                        <or-mwc-input
+                                            type="${InputType.NUMBER}"
+                                            name="d_ff"
+                                            @or-mwc-input-changed="${this.handleBasicInput}"
+                                            label="Feed-forward dimension"
+                                            .value="${t.d_ff}"
+                                            min="1"
+                                            required
+                                        ></or-mwc-input>
+                                    </div>
+                                    <div class="row">
+                                        <or-mwc-input
+                                            type="${InputType.NUMBER}"
+                                            name="batch_size"
+                                            @or-mwc-input-changed="${this.handleBasicInput}"
+                                            label="Batch size"
+                                            .value="${t.batch_size}"
+                                            min="1"
+                                            required
+                                        ></or-mwc-input>
+                                        <or-mwc-input
+                                            type="${InputType.NUMBER}"
+                                            name="lr"
+                                            @or-mwc-input-changed="${this.handleBasicInput}"
+                                            label="Learning rate"
+                                            .value="${t.lr}"
+                                            min="0"
+                                            step="0.0001"
+                                            required
+                                        ></or-mwc-input>
+                                        <or-mwc-input
+                                            type="${InputType.NUMBER}"
+                                            name="dropout"
+                                            @or-mwc-input-changed="${this.handleBasicInput}"
+                                            label="Dropout"
+                                            .value="${t.dropout}"
+                                            min="0.0"
+                                            max="1.0"
+                                            step="0.01"
+                                            required
+                                        ></or-mwc-input>
+                                        <or-mwc-input
+                                            type="${InputType.NUMBER}"
+                                            name="val_split"
+                                            @or-mwc-input-changed="${this.handleBasicInput}"
+                                            label="Validation split"
+                                            .value="${t.val_split}"
+                                            min="0.0"
+                                            max="0.99"
+                                            step="0.05"
+                                            required
+                                        ></or-mwc-input>
+                                    </div>
+                                `;
+                            }
+                        )}
                     </div>
                 </or-panel>
                 <hr />

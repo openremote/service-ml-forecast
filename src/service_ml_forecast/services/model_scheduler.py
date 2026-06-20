@@ -27,6 +27,7 @@ from service_ml_forecast.common.singleton import Singleton
 from service_ml_forecast.common.time_util import TimeUtil
 from service_ml_forecast.ml.model_provider_factory import ModelProviderFactory
 from service_ml_forecast.models.model_config import ModelConfig
+from service_ml_forecast.models.model_type import ModelTypeEnum
 from service_ml_forecast.services.model_config_service import ModelConfigService
 from service_ml_forecast.services.openremote_service import OpenRemoteService
 
@@ -230,12 +231,15 @@ def _model_forecast_job(config: ModelConfig, data_service: OpenRemoteService) ->
     forecast_dataset = data_service.get_forecast_dataset(config)
 
     if config.regressors is not None and forecast_dataset is None:
-        logger.error(
-            f"Cannot forecast model {config.id} - config has regressors but no forecast dataset. "
-            f"Asset ID: {config.target.asset_id}, Attribute: {config.target.attribute_name}, "
-            f"Regressors: {', '.join(r.attribute_name for r in config.regressors)}"
-        )
-        return
+        # NL energy forecaster is inference-only and uses its stored bundle — it does not
+        # require live predicted regressor data, so we let it proceed with forecast_dataset=None.
+        if config.type != ModelTypeEnum.NL_ENERGY_FORECASTER:
+            logger.error(
+                f"Cannot forecast model {config.id} - config has regressors but no forecast dataset. "
+                f"Asset ID: {config.target.asset_id}, Attribute: {config.target.attribute_name}, "
+                f"Regressors: {', '.join(r.attribute_name for r in config.regressors)}"
+            )
+            return
 
     # Generate the forecast
     forecast = provider.generate_forecast(forecast_dataset)

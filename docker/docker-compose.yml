@@ -1,32 +1,120 @@
-name: service-ml-forecast
+# OpenRemote v3
+#
+# Profile that runs the stack by default on https://localhost using a self-signed SSL certificate,
+# but optionally on https://$OR_HOSTNAME with an auto generated SSL certificate from Letsencrypt.
+#
+# It is configured to use the AWS logging driver.
+#
+volumes:
+  proxy-data:
+  manager-data:
+  postgresql-data:
+  service-ml-forecast-data:
+  energy-price-forecast-data:
 
 services:
-  service-ml-forecast:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
-    container_name: service-ml-forecast
-    ports:
-      - "8000:8000"
-    environment:
-      - ML_LOG_LEVEL=${ML_LOG_LEVEL} # Log level to use
-      - ML_ENVIRONMENT=${ML_ENVIRONMENT} # Environment to run the service in
-      - ML_API_ROOT_PATH=${ML_API_ROOT_PATH} # Public path for the back-end (e.g. when behind a reverse proxy)
-      - ML_OR_URL=${ML_OR_URL} # OpenRemote URL
-      - ML_OR_KEYCLOAK_URL=${ML_OR_KEYCLOAK_URL} # OpenRemote Keycloak URL
-      - ML_OR_SERVICE_USER=${ML_OR_SERVICE_USER} # OpenRemote service user
-      - ML_OR_SERVICE_USER_SECRET=${ML_OR_SERVICE_USER_SECRET} # OpenRemote service user secret
-    volumes:
-      # Model storage
-      - ../deployment/data/models:/app/deployment/data/models
-      # Config storage
-      - ../deployment/data/configs:/app/deployment/data/configs
-    restart: unless-stopped
-    networks:
-      - ml-network
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
 
-networks:
-  ml-network:
-    driver: bridge
+  proxy:
+    image: openremote/proxy:${PROXY_VERSION:-latest}
+    restart: always
+    depends_on:
+      manager:
+        condition: service_healthy
+    ports:
+      - "80:80" # Needed for SSL generation using letsencrypt
+      - "${OR_SSL_PORT:-443}:443"
+      - "8883:8883"
+      - "127.0.0.1:8404:8404" # Localhost metrics access
+      - "${PRIVATE_IP:-127.0.0.1}:8404:8404" # Allows to also expose metrics on a given IP address,
+                                             # intended to be IP of the interface of the private subnet of the EC2 VM
+    volumes:
+      - proxy-data:/deployment
+      - ./deployment:/data
+    environment:
+      LE_EMAIL: ${OR_EMAIL_ADMIN:-}
+      DOMAINNAME: ${OR_HOSTNAME:-localhost}
+      DOMAINNAMES: ${OR_ADDITIONAL_HOSTNAMES:-}
+      # USE A CUSTOM PROXY CONFIG - COPY FROM https://raw.githubusercontent.com/openremote/proxy/main/haproxy.cfg
+      HAPROXY_CONFIG: '/data/proxy/haproxy.cfg'
+
+  postgresql:
+    restart: always
+    image: openremote/postgresql:${POSTGRESQL_VERSION:-latest-slim}
+    shm_size: 128mb
+    volumes:
+      - postgresql-data:/var/lib/postgresql/data
+      - manager-data:/storage
+
+  keycloak:
+    restart: always
+    image: openremote/keycloak:${KEYCLOAK_VERSION:-latest}
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    volumes:
+      - ./deployment:/deployment
+    environment:
+      KEYCLOAK_ADMIN_PASSWORD: ${OR_ADMIN_PASSWORD:-secret}
+      KC_HOSTNAME: ${OR_HOSTNAME:-localhost}
+      KC_HOSTNAME_PORT: ${OR_SSL_PORT:--1}
+      # KEYCLOAK_ISSUER_BASE_URI: 'https://${OR_HOSTNAME:-localhost}/auth'
+
+  ml-forecast:
+    image: nazim112/service-ml-forecast:latest
+    restart: always
+    environment:
+      ML_LOG_LEVEL: INFO
+      ML_ENVIRONMENT: production
+      ML_WEBSERVER_ORIGINS: '["https://localhost"]'
+      ML_OR_URL: http://manager:8080
+      ML_OR_KEYCLOAK_URL: http://keycloak:8080/auth
+      ML_OR_PUBLIC_URL: https://localhost
+      ML_OR_PUBLIC_KEYCLOAK_URL: https://localhost/auth
+      ML_VERIFY_SSL: "false"
+      ML_API_MIDDLEWARE_KEYCLOAK: "false"
+      ML_OR_SERVICE_USER: YOUR_SERVICE_USER
+      ML_OR_SERVICE_USER_SECRET: YOUR_SERVICE_USER_SECRET
+      ML_OR_SERVICE_URL: https://localhost
+      ML_OR_KEYCLOAK_VALID_ISSUERS: "[\"https://localhost/auth/realms/master\"]"
+      OR_HOSTNAME: localhost
+      OR_SSL_PORT: -1
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    volumes:
+      - service-ml-forecast-data:/app/deployment/data
+
+  manager:
+#    privileged: true
+    restart: always
+    image: openremote/manager:${MANAGER_VERSION:-latest}
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8405:8405" # Localhost metrics access
+      - "${PRIVATE_IP:-127.0.0.1}:8405:8405" # Allows to also expose metrics on a given IP address,
+                                             # intended to be IP of the interface of the private subnet of the EC2 VM
+    environment:
+      OR_SETUP_TYPE:
+      OR_ADMIN_PASSWORD:
+      OR_SETUP_RUN_ON_RESTART:
+      OR_EMAIL_HOST:
+      OR_EMAIL_USER:
+      OR_EMAIL_PASSWORD:
+      OR_EMAIL_X_HEADERS:
+      OR_EMAIL_FROM:
+      OR_EMAIL_ADMIN:
+      OR_METRICS_ENABLED: ${OR_METRICS_ENABLED:-true}
+      OR_HOSTNAME: ${OR_HOSTNAME:-localhost}
+      OR_ADDITIONAL_HOSTNAMES:
+      OR_SSL_PORT: ${OR_SSL_PORT:--1}
+      OR_DEV_MODE: ${OR_DEV_MODE:-false}
+
+      # The following variables will configure the demo
+      OR_FORECAST_SOLAR_API_KEY:
+      OR_OPEN_WEATHER_API_APP_ID:
+      OR_SETUP_IMPORT_DEMO_AGENT_KNX:
+      OR_SETUP_IMPORT_DEMO_AGENT_VELBUS:
+    volumes:
+      - manager-data:/storage

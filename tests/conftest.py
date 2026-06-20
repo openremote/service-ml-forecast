@@ -19,7 +19,7 @@ from openremote_client import AssetDatapoint, OpenRemoteClient
 from service_ml_forecast.config import DIRS
 from service_ml_forecast.dependencies import get_config_service
 from service_ml_forecast.logging_config import LOGGING_CONFIG
-from service_ml_forecast.models.model_config import ProphetModelConfig
+from service_ml_forecast.models.model_config import ITransformerModelConfig, ProphetModelConfig
 from service_ml_forecast.services.model_config_service import ModelConfigService
 from service_ml_forecast.services.model_storage_service import ModelStorageService
 from service_ml_forecast.services.openremote_service import OpenRemoteService
@@ -95,6 +95,13 @@ def config_service(mock_openremote_service: OpenRemoteService) -> ModelConfigSer
 @pytest.fixture
 def model_storage() -> ModelStorageService:
     return ModelStorageService()
+
+
+@pytest.fixture
+def itransformer_config() -> ITransformerModelConfig:
+    config_path = Path(__file__).parent / "ml/resources/itransformer-tariff-config.json"
+    with open(config_path) as f:
+        return ITransformerModelConfig(**json.load(f))
 
 
 @pytest.fixture
