@@ -25,12 +25,6 @@ import { Router } from '@vaadin/router';
 import { getRootPath } from './common/util';
 import { APP_OUTLET } from './common/constants';
 
-export interface BreadcrumbMeta {
-    label?: string;
-    icon?: string;
-    hideInEmbedded?: boolean;
-}
-
 const routes = [
     {
         path: '',
@@ -43,20 +37,17 @@ const routes = [
             {
                 path: `/:realm/configs`,
                 component: 'page-config-list',
-                title: 'Configs',
-                breadcrumb: { label: 'Configs', hideInEmbedded: false } as BreadcrumbMeta
+                title: 'Configs'
             },
             {
                 path: `/:realm/configs/new`,
                 component: 'page-config-editor',
-                title: 'New Config',
-                breadcrumb: { label: 'New Config', hideInEmbedded: false } as BreadcrumbMeta
+                title: 'New Config'
             },
             {
                 path: `/:realm/configs/:id`,
                 component: 'page-config-editor',
-                title: 'Edit Config',
-                breadcrumb: { label: ':id', hideInEmbedded: false } as BreadcrumbMeta
+                title: 'Edit Config'
             },
             {
                 path: '(.*)',

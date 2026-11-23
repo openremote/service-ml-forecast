@@ -208,3 +208,11 @@ deployment/data/**
 
 # setuptools_scm generated version file
 src/service_ml_forecast/_version.py
+
+# Local build and development files
+.env.*
+!.env.example
+.npm-cache/
+.uv-cache/
+deployment/web/dist/
+frontend/assets/prototypes/

@@ -18,6 +18,7 @@
 import { ModelConfig } from './models';
 import { ML_SERVICE_URL } from '../common/constants';
 import { manager } from '@openremote/core';
+import { responseError } from './api-errors';
 
 /**
  * Build the service url with the api path
@@ -101,7 +102,7 @@ export const APIService = {
             headers: buildHeaders()
         });
         if (!response.ok) {
-            throw new Error(`Failed to update model config: ${response.statusText}`);
+            throw await responseError(response, 'Could not update the forecast configuration');
         }
         return response.json();
     },
@@ -119,7 +120,7 @@ export const APIService = {
             headers: buildHeaders()
         });
         if (!response.ok) {
-            throw new Error(`Failed to create model config: ${response.statusText}`);
+            throw await responseError(response, 'Could not create the forecast configuration');
         }
         return response.json();
     }

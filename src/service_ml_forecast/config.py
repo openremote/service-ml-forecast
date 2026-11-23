@@ -18,6 +18,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from service_ml_forecast import find_project_root
@@ -35,6 +36,23 @@ class DirectoryConstants:
     ML_WEBSERVER_UI_DIST_DIR: Path = ML_BASE_DIR / "deployment/web/dist"  # directory for the web dist
 
 
+class HistoryExclusion(BaseModel):
+    """Excluded source history, with inclusive UTC millisecond bounds."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+    asset_id: str = Field(min_length=1)
+    attribute_name: str = Field(min_length=1)
+    first_ms: int = Field(ge=0)
+    last_ms: int = Field(ge=0)
+    reason: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def validate_bounds(self) -> "HistoryExclusion":
+        if self.last_ms < self.first_ms:
+            raise ValueError("History exclusion bounds are reversed")
+        return self
+
+
 class AppEnvironment(BaseSettings):
     """Application environment settings.
 
@@ -47,6 +65,8 @@ class AppEnvironment(BaseSettings):
     ML_LOG_LEVEL: str = "INFO"  # log level to use
     ML_ENVIRONMENT: str = "development"  # environment to run the service in
     ML_VERIFY_SSL: bool = True  # whether to verify SSL certificates when making requests
+
+    ML_MIN_TRAINING_DAYS: int = 28
 
     # FastAPI Settings
     ML_API_PUBLISH_DOCS: bool = True  # whether to make the openapi docs available
@@ -65,6 +85,9 @@ class AppEnvironment(BaseSettings):
 
     # OpenRemote Settings
     ML_OR_URL: str = "http://localhost:8080"  # OpenRemote Manager URL
+    ML_OR_DATAPOINT_TIMEZONE: str = "UTC"
+    ML_OR_HISTORY_EXCLUSIONS: list[HistoryExclusion] = []
+    ML_OR_ISSUER_URL: str | None = None
     ML_OR_KEYCLOAK_URL: str = "http://localhost:8081/auth"  # OpenRemote Keycloak URL
     ML_OR_REALM: str = "master"  # OpenRemote realm to use for the OpenRemote Manager API
     ML_OR_SERVICE_USER: str = "serviceuser"  # OpenRemote Manager service user

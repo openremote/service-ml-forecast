@@ -1,12 +1,15 @@
 import datetime
+import json
 from http import HTTPStatus
 from uuid import uuid4
 
+import pandas as pd
 import pytest
 import respx
+from darts.models import Prophet as DartsProphet
 from openremote_client import AssetDatapoint
 
-from service_ml_forecast.common.exceptions import ResourceNotFoundError
+from service_ml_forecast.common.exceptions import ResourceNotFoundError, ResourceValidationError
 from service_ml_forecast.common.time_util import TimeUtil
 from service_ml_forecast.ml.model_provider_factory import ModelProviderFactory
 from service_ml_forecast.models.model_config import ProphetModelConfig
@@ -22,6 +25,30 @@ from service_ml_forecast.services.model_scheduler import (
 from service_ml_forecast.services.model_storage_service import ModelStorageService
 from service_ml_forecast.services.openremote_service import OpenRemoteService
 from tests.conftest import MOCK_OPENREMOTE_URL
+
+
+@pytest.fixture(autouse=True)
+def fixture_time_window(
+    monkeypatch: pytest.MonkeyPatch,
+    windspeed_mock_datapoints: list[AssetDatapoint],
+    tariff_mock_datapoints: list[AssetDatapoint],
+) -> None:
+    """The fake API must return records inside the requested historical window."""
+    points = windspeed_mock_datapoints + tariff_mock_datapoints
+    monkeypatch.setattr(TimeUtil, "get_period_start_timestamp_ms", lambda _: min(p.x for p in points))
+    monkeypatch.setattr(TimeUtil, "get_timestamp_ms", lambda: max(p.x for p in points) + 1000)
+    monkeypatch.setattr(TimeUtil, "get_timestamp_sec", lambda: max(p.x for p in points) // 1000 + 1)
+    monkeypatch.setattr(
+        TimeUtil,
+        "pd_future_timestamp",
+        lambda periods, frequency: int(
+            (
+                pd.Timestamp(max(p.x for p in points), unit="ms")
+                + periods * pd.tseries.frequencies.to_offset(frequency)
+            ).value
+            // 1_000_000
+        ),
+    )
 
 
 def test_scheduler_lifecycle(mock_openremote_service: OpenRemoteService) -> None:
@@ -136,12 +163,12 @@ def test_training_execution(
         ).mock(
             return_value=respx.MockResponse(
                 HTTPStatus.OK,
-                json=windspeed_mock_datapoints,
+                json=[{"x": point.x, "y": point.y} for point in windspeed_mock_datapoints],
             ),
         )
         _model_training_job(prophet_basic_config, mock_openremote_service)
 
-    assert model_storage.get(prophet_basic_config.id) is not None
+    assert model_storage.load(DartsProphet, prophet_basic_config.id) is not None
 
 
 def test_training_execution_with_missing_datapoints(
@@ -171,13 +198,15 @@ def test_training_execution_with_missing_datapoints(
         )
         _model_training_job(prophet_basic_config, mock_openremote_service)
 
+    # Verify model was not saved by expecting ResourceNotFoundError when loading
     with pytest.raises(ResourceNotFoundError):
-        model_storage.get(prophet_basic_config.id)
+        model_storage.load(DartsProphet, prophet_basic_config.id)
 
 
 def test_forecast_execution(
     mock_openremote_service: OpenRemoteService,
     trained_basic_model: ProphetModelConfig,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Test basic forecast execution with a single-variable model.
 
@@ -192,15 +221,24 @@ def test_forecast_execution(
         ).mock(
             return_value=respx.MockResponse(HTTPStatus.NO_CONTENT),
         )
+        respx_mock.post(
+            f"/api/master/asset/predicted/{trained_basic_model.target.asset_id}/{trained_basic_model.target.attribute_name}"
+        ).mock(
+            side_effect=lambda _: respx.MockResponse(HTTPStatus.OK, json=json.loads(route.calls[-1].request.content))
+        )
 
+        monkeypatch.setattr(TimeUtil, "get_timestamp_ms", lambda: 0)
         _model_forecast_job(trained_basic_model, mock_openremote_service)
         assert route.called
+
+
 
 
 def test_forecast_execution_with_regressor(
     mock_openremote_service: OpenRemoteService,
     trained_regressor_model: ProphetModelConfig,
     trained_basic_model: ProphetModelConfig,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Test forecast execution with a multi-variable model using regressors.
 
@@ -232,6 +270,11 @@ def test_forecast_execution_with_regressor(
         ).mock(
             return_value=respx.MockResponse(HTTPStatus.NO_CONTENT),
         )
+        respx_mock.post(
+            f"/api/master/asset/predicted/{trained_regressor_model.target.asset_id}/{trained_regressor_model.target.attribute_name}"
+        ).mock(
+            side_effect=lambda _: respx.MockResponse(HTTPStatus.OK, json=json.loads(route.calls[-1].request.content))
+        )
 
         # mock predicted datapoints retrieval for regressor
         respx_mock.post(
@@ -240,8 +283,26 @@ def test_forecast_execution_with_regressor(
             return_value=respx.MockResponse(HTTPStatus.OK, json=regressor_forecast_datapoints),
         )
 
+        monkeypatch.setattr(TimeUtil, "get_timestamp_ms", lambda: 0)
         _model_forecast_job(trained_regressor_model, mock_openremote_service)
         assert route.called
+
+
+def test_stale_forecast_is_not_written(
+    mock_openremote_service: OpenRemoteService,
+    trained_basic_model: ProphetModelConfig,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    forecast = ModelProviderFactory.create_provider(trained_basic_model).generate_forecast()
+    monkeypatch.setattr(TimeUtil, "get_timestamp_ms", lambda: forecast.datapoints[0].x)
+    with respx.mock(base_url=MOCK_OPENREMOTE_URL, assert_all_called=False) as respx_mock:
+        route = respx_mock.put(
+            f"/api/master/asset/predicted/{trained_basic_model.target.asset_id}/{trained_basic_model.target.attribute_name}",
+        ).mock(return_value=respx.MockResponse(HTTPStatus.NO_CONTENT))
+
+        with pytest.raises(ResourceValidationError, match="starts in the past"):
+            _model_forecast_job(trained_basic_model, mock_openremote_service)
+        assert not route.called
 
 
 def test_forecast_execution_with_no_model(
@@ -288,7 +349,7 @@ def trained_basic_model(
         ).mock(
             return_value=respx.MockResponse(
                 HTTPStatus.OK,
-                json=windspeed_mock_datapoints,
+                json=[{"x": point.x, "y": point.y} for point in windspeed_mock_datapoints],
             ),
         )
         _model_training_job(prophet_basic_config, mock_openremote_service)
@@ -319,7 +380,7 @@ def trained_regressor_model(
         ).mock(
             return_value=respx.MockResponse(
                 HTTPStatus.OK,
-                json=tariff_mock_datapoints,
+                json=[{"x": point.x, "y": point.y} for point in tariff_mock_datapoints],
             ),
         )
         # mock historical datapoints retrieval for regressor
@@ -328,7 +389,7 @@ def trained_regressor_model(
         ).mock(
             return_value=respx.MockResponse(
                 HTTPStatus.OK,
-                json=windspeed_mock_datapoints,
+                json=[{"x": point.x, "y": point.y} for point in windspeed_mock_datapoints],
             ),
         )
         _model_training_job(prophet_multi_variable_config, mock_openremote_service)

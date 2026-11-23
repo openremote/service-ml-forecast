@@ -33,7 +33,7 @@ export default {
         filename: `bundle.[contenthash].js`,
         clean: true,
         path: path.resolve(__dirname, 'dist'),
-        publicPath: rootPath ? rootPath : '/'
+        publicPath: rootPath ? `${rootPath.replace(/\/$/, '')}/` : '/'
     },
     resolve: {
         extensions: ['.ts', '.js']
@@ -61,7 +61,18 @@ export default {
             },
             {
                 test: /\.css$/,
+                include: /(?:@openremote[\\/]theme|@vaadin[\\/]vaadin-lumo-styles|inter-ui)[\\/]/,
+                use: [{ loader: 'css-loader', options: { exportType: 'string' } }]
+            },
+            {
+                test: /\.css$/,
+                exclude: /(?:@openremote[\\/]theme|@vaadin[\\/]vaadin-lumo-styles|inter-ui)[\\/]/,
                 type: 'asset/source'
+            },
+            {
+                test: /\.(woff2?|ttf|eot)$/,
+                type: 'asset/resource',
+                generator: { filename: 'assets/fonts/[name].[contenthash][ext]' }
             }
         ]
     },
@@ -74,7 +85,7 @@ export default {
             }
         }),
         new rspack.CopyRspackPlugin({
-            patterns: [{ from: 'assets', to: 'assets' }]
+            patterns: [{ from: 'assets', to: 'assets', globOptions: { ignore: ['**/prototypes/**'] } }]
         }),
         ...(definePlugin ? [definePlugin] : [])
     ],

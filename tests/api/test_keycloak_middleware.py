@@ -1,11 +1,33 @@
+import asyncio
 from http import HTTPStatus
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import jwt
+import pytest
+import respx
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
+from service_ml_forecast.config import ENV
+from service_ml_forecast.middlewares.keycloak.middleware import _get_jwks
 from tests.api.test_model_config_route import create_test_config
+
+
+def test_jwks_uses_internal_keycloak_url_for_public_issuer(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A public JWT issuer can differ from the container's Keycloak URL."""
+    public_issuer = "http://localhost/auth/realms/master"
+    internal_keycloak_url = "http://keycloak:8080/auth"
+    monkeypatch.setattr(ENV, "ML_OR_KEYCLOAK_URL", internal_keycloak_url)
+
+    with respx.mock(assert_all_called=True) as respx_mock:
+        route = respx_mock.get(f"{internal_keycloak_url}/realms/master/protocol/openid-connect/certs").mock(
+            return_value=respx.MockResponse(HTTPStatus.OK, json={"keys": []})
+        )
+
+        result = asyncio.run(_get_jwks(public_issuer, "test-kid", [public_issuer]))
+
+    assert route.called
+    assert result == {"keys": []}
 
 
 def test_create_model_without_token(mock_test_client_with_keycloak: TestClient) -> None:

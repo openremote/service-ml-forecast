@@ -16,10 +16,10 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from openremote_client import AssetDatapoint, OpenRemoteClient
 
-from service_ml_forecast.config import DIRS
+from service_ml_forecast.config import DIRS, ENV
 from service_ml_forecast.dependencies import get_config_service
 from service_ml_forecast.logging_config import LOGGING_CONFIG
-from service_ml_forecast.models.model_config import ProphetModelConfig
+from service_ml_forecast.models.model_config import LightGBMModelConfig, ProphetModelConfig, XGBoostModelConfig
 from service_ml_forecast.services.model_config_service import ModelConfigService
 from service_ml_forecast.services.model_storage_service import ModelStorageService
 from service_ml_forecast.services.openremote_service import OpenRemoteService
@@ -59,6 +59,11 @@ DIRS.ML_CONFIGS_DATA_DIR = TEST_TMP_DIR / "configs"
 def cleanup_test_tmp_dir() -> Generator[None]:
     yield
     shutil.rmtree(TEST_TMP_DIR, ignore_errors=True)
+
+
+@pytest.fixture(scope="function", autouse=True)
+def allow_short_unit_test_histories(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(ENV, "ML_MIN_TRAINING_DAYS", 0)
 
 
 @pytest.fixture
@@ -112,19 +117,55 @@ def prophet_multi_variable_config() -> ProphetModelConfig:
 
 
 @pytest.fixture
+def xgboost_basic_config() -> XGBoostModelConfig:
+    config_path = Path(__file__).parent / "ml/resources/xgboost-windspeed-config.json"
+    with open(config_path) as f:
+        return XGBoostModelConfig(**json.load(f))
+
+
+@pytest.fixture
+def xgboost_multi_variable_config() -> XGBoostModelConfig:
+    config_path = Path(__file__).parent / "ml/resources/xgboost-tariff-config.json"
+    with open(config_path) as f:
+        return XGBoostModelConfig(**json.load(f))
+
+
+@pytest.fixture
+def xgboost_future_covariate_config() -> XGBoostModelConfig:
+    config_path = Path(__file__).parent / "ml/resources/xgboost-tariff-future-covariate-config.json"
+    with open(config_path) as f:
+        return XGBoostModelConfig(**json.load(f))
+
+
+@pytest.fixture
+def lightgbm_basic_config() -> LightGBMModelConfig:
+    config_path = Path(__file__).parent / "ml/resources/lightgbm-windspeed-config.json"
+    with open(config_path) as f:
+        return LightGBMModelConfig(**json.load(f))
+
+
+@pytest.fixture
 def windspeed_mock_datapoints() -> list[AssetDatapoint]:
     windspeed_data_path = Path(__file__).parent / "ml/resources/mock-datapoints-windspeed.json"
     with open(windspeed_data_path) as f:
-        datapoints: list[AssetDatapoint] = json.load(f)
-        return datapoints
+        raw_data = json.load(f)
+        return [AssetDatapoint(x=point["x"], y=point["y"]) for point in raw_data]
 
 
 @pytest.fixture
 def tariff_mock_datapoints() -> list[AssetDatapoint]:
     tariff_data_path = Path(__file__).parent / "ml/resources/mock-datapoints-tariff.json"
     with open(tariff_data_path) as f:
-        datapoints: list[AssetDatapoint] = json.load(f)
-        return datapoints
+        raw_data = json.load(f)
+        return [AssetDatapoint(x=point["x"], y=point["y"]) for point in raw_data]
+
+
+@pytest.fixture
+def power_grid_mock_datapoints() -> list[AssetDatapoint]:
+    power_grid_data_path = Path(__file__).parent / "ml/resources/mock-datapoints-power-grid.json"
+    with open(power_grid_data_path) as f:
+        raw_data = json.load(f)
+        return [AssetDatapoint(x=point["x"], y=point["y"]) for point in raw_data]
 
 
 @pytest.fixture

@@ -35,7 +35,7 @@ uv sync
 Set the required environment variables -- See [config.py](https://github.com/openremote/service-ml-forecast/blob/main/src/service_ml_forecast/config.py) for all configuration options.
 ```bash
 ML_OR_SERVICE_USER=serviceuser
-ML_OR_SERVICE_SECRET=secret
+ML_OR_SERVICE_USER_SECRET=secret
 ```
 
 Start the back-end application
@@ -73,7 +73,7 @@ in `/frontend`
 
 ## License
 
-The OpenRemote Machine Learning Forecast Service is distributed under [AGPL-3.0-or-later](LICENSE.txt).
+The OpenRemote ML Forecast Service is distributed under [AGPL-3.0-or-later](LICENSE.txt).
 
 ```
 Copyright 2025, OpenRemote Inc.

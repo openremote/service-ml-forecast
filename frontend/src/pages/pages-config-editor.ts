@@ -15,39 +15,50 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { css, html, LitElement } from 'lit';
+import { css, html, PropertyValues } from 'lit';
+import { OrElement } from '@openremote/or-element';
+import '@openremote/or-vaadin-components/or-vaadin-combo-box';
+import '@openremote/or-vaadin-components/or-vaadin-text-field';
+import '@openremote/or-vaadin-components/or-vaadin-number-field';
+import '@openremote/or-vaadin-components/or-vaadin-select';
+import '@openremote/or-vaadin-components/or-vaadin-checkbox';
+import '@openremote/or-vaadin-components/or-vaadin-button';
+import type { OrVaadinComboBox } from '@openremote/or-vaadin-components/or-vaadin-combo-box';
 import { customElement, property, state } from 'lit/decorators.js';
-import { map } from 'lit/directives/map.js';
 import { when } from 'lit/directives/when.js';
+import { guard } from 'lit/directives/guard.js';
 import { ModelTypeEnum, ProphetSeasonalityModeEnum } from '../services/models';
-import type { ProphetModelConfig } from '../services/models';
+import type { ModelConfig, ProphetModelConfig } from '../services/models';
 import { APIService } from '../services/api-service';
 import { Router, RouterLocation } from '@vaadin/router';
-import { InputType, OrInputChangedEvent } from '@openremote/or-mwc-components/or-mwc-input';
 import { showSnackbar } from '@openremote/or-mwc-components/or-mwc-snackbar';
-import { showDialog } from '@openremote/or-mwc-components/or-mwc-dialog';
 import { getRootPath } from '../common/util';
-import { DurationInputType, TimeDurationUnit } from '../components/custom-duration-input';
+import { CustomDurationInput, DurationInputType, TimeDurationUnit } from '../components/custom-duration-input';
 import { consume } from '@lit/context';
 import { realmContext } from './app-layout';
-import { manager, Util } from '@openremote/core';
-import { CustomAssetAttributePicker } from '../components/custom-asset-attribute-picker';
-import { OrAssetAttributePickerPickedEvent } from '@openremote/or-attribute-picker';
-import { getAssetDescriptorIconTemplate } from '@openremote/or-icon';
-import { Asset, AssetModelUtil } from '@openremote/model';
+import { manager } from '@openremote/core';
+import * as Model from '@openremote/model';
+import { ModelTypeRegistry } from './model-configs/model-registry';
+import type { CovariateLagsInput } from '../components/covariate-lags-input';
+
+// Initialize model configurations
+ModelTypeRegistry.registerAllConfigs();
 
 @customElement('page-config-editor')
-export class PageConfigEditor extends LitElement {
+export class PageConfigEditor extends OrElement {
     @consume({ context: realmContext })
     realm = '';
 
     static get styles() {
         return css`
             :host {
+                display: block;
+                min-width: 0;
                 --or-panel-background-color: #fff;
-                --or-panel-heading-text-transform: uppercase;
+                --or-panel-heading-text-transform: none;
                 --or-panel-heading-color: var(--or-app-color3);
                 --or-panel-heading-font-size: 14px;
+                --vaadin-input-field-label-font-weight: 400;
             }
 
             hr {
@@ -67,8 +78,14 @@ export class PageConfigEditor extends LitElement {
             .row {
                 display: flex;
                 flex-direction: row;
+                align-items: flex-end;
                 flex: 1 1 0;
-                gap: 24px;
+                gap: 16px;
+                flex-wrap: wrap;
+            }
+
+            [hidden] {
+                display: none !important;
             }
 
             .regressor-row {
@@ -79,75 +96,134 @@ export class PageConfigEditor extends LitElement {
                 display: flex;
                 flex-direction: column;
                 flex: 1 1 0;
-                gap: 20px;
-                padding: 0px 0px 10px 0px;
+                gap: 16px;
             }
 
-            or-mwc-input {
-                flex: 1;
+            or-vaadin-combo-box,
+            or-vaadin-text-field,
+            or-vaadin-number-field,
+            or-vaadin-select {
+                flex: 1 1 220px;
+                min-width: 0;
                 max-width: 350px;
             }
 
-            or-mwc-input[type='checkbox'] {
-                flex: none;
-            }
-
-            .attribute-row {
-                align-items: center;
-            }
-
-            .select-attr {
-                flex: none;
-                min-width: 125px;
-            }
-
-            .selected-attr {
-                display: flex;
-                align-items: center;
-                padding: 0 16px 0 8px;
-                gap: 8px;
-                cursor: pointer;
-            }
-
-            .selected-attr or-icon {
-                --or-icon-width: 20px;
-                --or-icon-height: 20px;
-                flex-shrink: 0;
-            }
-
-            .selected-attr-text {
-                display: flex;
-                flex-direction: column;
+            custom-duration-input {
+                flex: 1 1 300px;
+                max-width: 350px;
                 min-width: 0;
             }
 
-            .selected-attr-text > span {
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
+            or-vaadin-checkbox,
+            or-vaadin-button {
+                flex: none;
             }
 
-            .selected-attr-text > span:first-child {
-                font-weight: 500;
-            }
-
-            .selected-attr-text > span:last-child {
-                font-size: 0.9em;
-                opacity: 0.7;
-            }
-
-            .config-header {
-                width: 100%;
+            .config-header-controls {
                 display: flex;
-                flex-direction: row;
-                align-items: center;
-                justify-content: space-between;
+                justify-content: flex-end;
+            }
+
+            .regressor-add {
+                align-self: flex-start;
             }
 
             .config-header-name {
                 display: flex;
+                flex-direction: column;
+                gap: 8px;
+                align-items: flex-start;
+            }
+
+            .config-header-name or-vaadin-text-field {
+                flex: none;
                 width: 100%;
-                gap: 20px;
+            }
+
+            .input-help {
+                margin: 0;
+                line-height: 1.5;
+                color: var(--lumo-secondary-text-color);
+                max-width: 80ch;
+            }
+
+            .config-group {
+                min-width: 0;
+                border-radius: var(--lumo-border-radius-l);
+                background: color-mix(in srgb, var(--lumo-base-color) 95%, var(--lumo-contrast));
+            }
+
+            .config-group > summary {
+                cursor: pointer;
+                padding: 16px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 16px;
+                list-style: none;
+                font-size: var(--lumo-font-size-l);
+                font-weight: 600;
+                line-height: 1.25;
+                color: var(--lumo-header-text-color);
+            }
+
+            .config-group > summary::-webkit-details-marker {
+                display: none;
+            }
+
+            .config-group > summary::after {
+                content: '';
+                width: 6px;
+                height: 6px;
+                flex: none;
+                border-right: 2px solid var(--lumo-tertiary-text-color);
+                border-bottom: 2px solid var(--lumo-tertiary-text-color);
+                transform: rotate(-45deg);
+            }
+
+            .config-group[open] > summary::after {
+                transform: rotate(45deg);
+            }
+
+            .config-group > summary:focus-visible {
+                outline: 2px solid var(--lumo-primary-color);
+                outline-offset: -2px;
+                border-radius: var(--lumo-border-radius-l);
+            }
+
+            .group-content {
+                margin: 0 16px 16px;
+                padding: 16px;
+                border-radius: var(--lumo-border-radius-l);
+                background: var(--lumo-base-color);
+            }
+
+            .group-content.column {
+                padding: 0;
+                background: transparent;
+            }
+
+            .group-content.column > .row,
+            .group-content.column > section {
+                padding: 16px;
+                border-radius: var(--lumo-border-radius-l);
+                background: var(--lumo-base-color);
+            }
+
+            .group-content.column > section:not([aria-label='Forecast target']) > .row {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 8px;
+            }
+
+            .group-content.column > section:not([aria-label='Forecast target']) > .row > * {
+                flex: none;
+            }
+
+            .group-content h3 {
+                margin: 0 0 8px;
+                font-size: var(--lumo-font-size-m);
+                font-weight: 600;
             }
         `;
     }
@@ -156,7 +232,13 @@ export class PageConfigEditor extends LitElement {
     configId?: string;
 
     @state()
-    protected modelConfig: ProphetModelConfig | null = null;
+    protected modelConfig: ModelConfig | null = null;
+
+    @state()
+    protected assetSelectList: Map<string, string> = new Map();
+
+    @state()
+    protected attributeSelectList: Map<string, Map<string, string>> = new Map();
 
     @state()
     protected loading: boolean = true;
@@ -171,15 +253,12 @@ export class PageConfigEditor extends LitElement {
     protected error: string | null = null;
 
     @state()
-    protected targetAsset: Asset | null = null;
-
-    @state()
-    protected regressorAssets: Map<number, Asset> = new Map();
+    protected saveError: string | null = null;
 
     protected readonly rootPath = getRootPath();
 
     @state()
-    protected formData: ProphetModelConfig = {
+    protected formData: ModelConfig = {
         type: ModelTypeEnum.PROPHET,
         realm: '', // Set during setup
         name: 'New Model Config',
@@ -193,20 +272,44 @@ export class PageConfigEditor extends LitElement {
         forecast_interval: 'PT1H',
         forecast_periods: 24,
         forecast_frequency: '1h',
+        calendar_timezone: null,
         daily_seasonality: true,
         weekly_seasonality: true,
         yearly_seasonality: true,
         changepoint_range: 0.8,
         changepoint_prior_scale: 0.05,
         seasonality_mode: ProphetSeasonalityModeEnum.ADDITIVE
-    };
+    } as ProphetModelConfig;
 
     // Handle basic form field updates
-    protected handleBasicInput(ev: OrInputChangedEvent | CustomEvent<{ value: string }>) {
-        const value = 'detail' in ev ? ev.detail?.value : undefined;
-        const target = ev.target as HTMLInputElement;
+    protected handleBasicInput(ev: Event) {
+        const target = ev.currentTarget as HTMLInputElement;
+        if (!target) return;
+        let value: string | number | boolean | number[] | null | undefined;
 
-        if (!target || value === undefined) {
+        if (ev.type === 'input' || ev.type === 'change') {
+            value = target.localName === 'or-vaadin-checkbox' ? target.checked : target.value;
+            if (target.localName === 'or-vaadin-number-field') {
+                value = target.value === '' ? NaN : Number(target.value);
+            }
+        } else {
+            const detail = (ev as CustomEvent<{ value: string | number | number[] | null; valid?: boolean }>).detail;
+            if (detail?.valid === false) {
+                this.requestUpdate();
+                return;
+            }
+            value = detail?.value;
+        }
+
+        if (value === undefined) {
+            return;
+        }
+
+        this.saveError = null;
+
+        // Handle model type change specially
+        if (target.name === 'type') {
+            this.handleModelTypeChange(value as ModelTypeEnum);
             return;
         }
 
@@ -216,10 +319,36 @@ export class PageConfigEditor extends LitElement {
         };
     }
 
+    // Handle model type changes and reset to appropriate defaults
+    protected handleModelTypeChange(newType: ModelTypeEnum) {
+        const modelTypeConfig = ModelTypeRegistry.get(newType);
+        if (!modelTypeConfig) {
+            console.error(`Unknown model type: ${newType}`);
+            return;
+        }
+
+        const baseConfig = {
+            id: this.formData.id, // Preserve the existing ID
+            realm: this.formData.realm,
+            name: this.formData.name,
+            enabled: this.formData.enabled,
+            target: this.formData.target,
+            forecast_interval: this.formData.forecast_interval,
+            forecast_periods: this.formData.forecast_periods,
+            forecast_frequency: this.formData.forecast_frequency,
+            calendar_timezone: this.formData.calendar_timezone
+        };
+
+        this.formData = {
+            ...baseConfig,
+            ...modelTypeConfig.defaultConfig
+        } as ModelConfig;
+    }
+
     // Handle target-specific updates
-    protected handleTargetInput(ev: OrInputChangedEvent) {
-        const value = ev.detail?.value;
-        const target = ev.target as HTMLInputElement;
+    protected handleTargetInput(ev: Event) {
+        const target = ev.currentTarget as HTMLInputElement | OrVaadinComboBox;
+        const value = ev.type === 'change' ? target?.value : (ev as CustomEvent<{ value: string }>).detail?.value;
 
         if (!target || value === undefined) {
             return;
@@ -231,6 +360,15 @@ export class PageConfigEditor extends LitElement {
             return;
         }
 
+        // Auto-select first attribute when asset changes
+        if (field === 'asset_id') {
+            this.formData.target.attribute_name =
+                this.attributeSelectList
+                    .get(value as string)
+                    ?.keys()
+                    .next().value ?? '';
+        }
+
         this.formData = {
             ...this.formData,
             target: {
@@ -240,144 +378,83 @@ export class PageConfigEditor extends LitElement {
         };
     }
 
-    // Handle regressor-specific updates
-    protected handleRegressorInput(ev: OrInputChangedEvent, index: number) {
-        const value = ev.detail?.value;
-        const target = ev.target as HTMLInputElement;
-
-        if (!target || value === undefined || !this.formData.regressors) {
-            return;
-        }
-
-        this.formData.regressors[index] = {
-            ...this.formData.regressors[index],
-            [target.name]: value
-        };
-        this.requestUpdate();
-    }
-
-    // Load asset data for target
-    protected async loadTargetAsset() {
-        if (this.formData.target.asset_id && this.formData.target.attribute_name) {
-            try {
-                const response = await manager.rest.api.AssetResource.get(this.formData.target.asset_id);
-                this.targetAsset = response.data;
-            } catch (err) {
-                console.error('Failed to load target asset:', err);
-                this.targetAsset = null;
-            }
-        } else {
-            this.targetAsset = null;
-        }
-    }
-
-    // Open dialog to select target attribute
-    protected openTargetDialog() {
-        const currentSelection =
-            this.formData.target.asset_id && this.formData.target.attribute_name
-                ? [{ id: this.formData.target.asset_id, name: this.formData.target.attribute_name }]
-                : [];
-
-        // disable scrolling
-        document.body.style.overflow = 'hidden';
-
-        const dialog = showDialog(
-            new CustomAssetAttributePicker().setShowOnlyDatapointAttrs(true).setMultiSelect(false).setSelectedAttributes(currentSelection)
-        );
-
-        // restore scrolling
-        const restoreScroll = () => {
-            document.body.style.overflow = '';
-        };
-
-        dialog.addEventListener(OrAssetAttributePickerPickedEvent.NAME, async (ev: OrAssetAttributePickerPickedEvent) => {
-            const selected = ev.detail[0];
-            if (selected) {
-                this.formData = {
-                    ...this.formData,
-                    target: {
-                        ...this.formData.target,
-                        asset_id: selected.id,
-                        attribute_name: selected.name
-                    }
-                };
-                await this.loadTargetAsset();
-                this.requestUpdate();
-            }
-            restoreScroll();
-        });
-
-        dialog.addEventListener('or-mwc-dialog-closed', restoreScroll);
-    }
-
-    // Load asset data for regressor
-    protected async loadRegressorAsset(index: number) {
-        if (!this.formData.regressors) return;
-
-        const regressor = this.formData.regressors[index];
-        if (regressor.asset_id && regressor.attribute_name) {
-            try {
-                const response = await manager.rest.api.AssetResource.get(regressor.asset_id);
-                this.regressorAssets.set(index, response.data);
-                this.regressorAssets = new Map(this.regressorAssets);
-            } catch (err) {
-                console.error('Failed to load regressor asset:', err);
-                this.regressorAssets.delete(index);
-                this.regressorAssets = new Map(this.regressorAssets);
-            }
-        }
-    }
-
-    // Open dialog to select regressor attribute
-    protected openRegressorDialog(index: number) {
-        if (!this.formData.regressors) {
-            return;
-        }
-
-        const regressor = this.formData.regressors[index];
-        const currentSelection =
-            regressor.asset_id && regressor.attribute_name ? [{ id: regressor.asset_id, name: regressor.attribute_name }] : [];
-
-        document.body.style.overflow = 'hidden';
-
-        const dialog = showDialog(
-            new CustomAssetAttributePicker()
-                .setShowOnlyHasPredictedDatapointsAttrs(true) // has future datapoints
-                .setShowOnlyDatapointAttrs(true) // has past datapoints
-                .setMultiSelect(false)
-                .setSelectedAttributes(currentSelection)
-        );
-
-        const restoreScroll = () => {
-            document.body.style.overflow = '';
-        };
-
-        dialog.addEventListener(OrAssetAttributePickerPickedEvent.NAME, async (ev: OrAssetAttributePickerPickedEvent) => {
-            const selected = ev.detail[0];
-            if (selected && this.formData.regressors) {
-                this.formData.regressors[index] = {
-                    ...this.formData.regressors[index],
-                    asset_id: selected.id,
-                    attribute_name: selected.name
-                };
-                await this.loadRegressorAsset(index);
-                this.requestUpdate();
-            }
-            restoreScroll();
-        });
-
-        dialog.addEventListener('or-mwc-dialog-closed', restoreScroll);
-    }
-
-    willUpdate(): void {
+    willUpdate(_changedProperties: PropertyValues): void {
+        void _changedProperties; // Explicitly acknowledge unused parameter
         this.isValid = this.isFormValid();
         this.modified = this.isFormModified();
+    }
+
+    protected async updated() {
+        const inputs = this.shadowRoot?.querySelectorAll<CustomDurationInput | CovariateLagsInput>(
+            'custom-duration-input, covariate-lags-input'
+        );
+        await Promise.all(Array.from(inputs ?? [], (input) => input.updateComplete));
+        this.isValid = this.isFormValid();
     }
 
     // Set up all the data for the editor
     protected async setupEditor() {
         this.formData.realm = this.realm;
+
+        await this.loadAssets();
         await this.loadConfig();
+    }
+
+    // Loads assets and attributes that store data points e.g. have history
+    protected async loadAssets() {
+        this.assetSelectList = new Map();
+        this.attributeSelectList = new Map();
+        try {
+            const assetQuery: Model.AssetQuery = {
+                realm: {
+                    name: this.realm
+                },
+                attributes: {
+                    operator: Model.LogicGroupOperator.AND,
+                    items: [
+                        {
+                            meta: [
+                                {
+                                    name: {
+                                        predicateType: 'string',
+                                        match: Model.AssetQueryMatch.EXACT,
+                                        caseSensitive: true,
+                                        value: 'storeDataPoints'
+                                    },
+                                    value: {
+                                        predicateType: 'boolean',
+                                        value: true
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            };
+
+            const response = await manager.rest.api.AssetResource.queryAssets(assetQuery);
+            const assets = response.data;
+
+            // remove attributes that do not have the meta attribute "storeDataPoints" set to true
+            assets.forEach((asset) => {
+                Object.values(asset.attributes ?? {}).forEach((attribute) => {
+                    if (attribute.meta?.storeDataPoints !== true) {
+                        delete asset.attributes?.[attribute.name as keyof typeof asset.attributes];
+                    }
+                });
+            });
+
+            assets.forEach((asset) => {
+                this.assetSelectList.set(asset.id ?? '', asset.name ?? '');
+                this.attributeSelectList.set(
+                    asset.id ?? '',
+                    new Map(Object.entries(asset.attributes ?? {}).map(([key, value]) => [key, value.name ?? '']))
+                );
+            });
+        } catch (err) {
+            console.error(err);
+            this.error = `Failed to retrieve assets needed for the forecast configuration`;
+        }
     }
 
     // Try to load the config from the API
@@ -392,21 +469,12 @@ export class PageConfigEditor extends LitElement {
         try {
             this.modelConfig = await APIService.getModelConfig(this.realm, this.configId);
             // Create a deep copy of the model config for the form data
-            this.formData = structuredClone(this.modelConfig);
-
-            // Load asset data for displaying
-            await this.loadTargetAsset();
-            if (this.formData.regressors) {
-                for (let i = 0; i < this.formData.regressors.length; i++) {
-                    await this.loadRegressorAsset(i);
-                }
-            }
-
+            this.formData = JSON.parse(JSON.stringify(this.modelConfig));
             this.loading = false;
             return;
         } catch (err) {
             this.loading = false;
-            console.error('Failed to load config:', err);
+            console.error(err);
             this.error = `Failed to retrieve the forecast configuration`;
         }
     }
@@ -419,6 +487,7 @@ export class PageConfigEditor extends LitElement {
 
     // Handle the save button click
     async onSave() {
+        this.saveError = null;
         const isExistingConfig = this.modelConfig !== null;
 
         // Switch between update and create -- based on whether the config exists
@@ -435,29 +504,33 @@ export class PageConfigEditor extends LitElement {
                 Router.go(`${this.rootPath}/${modelConfig.realm}/configs/${modelConfig.id}`);
             }
         } catch (error) {
-            console.error('Failed to save config:', error);
-            showSnackbar(undefined, 'Failed to save the config');
+            console.error(error);
+            this.saveError = error instanceof Error ? error.message : 'Could not save the forecast configuration. Try again.';
+            showSnackbar(undefined, this.saveError);
         }
     }
 
     // Check form for validity
     isFormValid() {
+        const durations = this.shadowRoot?.querySelectorAll<CustomDurationInput>('custom-duration-input');
+        if (durations && !Array.from(durations).every((input) => input.checkValidity())) return false;
+        const lagInputs = this.shadowRoot?.querySelectorAll<CovariateLagsInput>('covariate-lags-input');
+        if (lagInputs && !Array.from(lagInputs).every((input) => input.checkValidity())) return false;
         // check target properties
         if (!this.formData.target.asset_id || !this.formData.target.attribute_name) {
             return false;
         }
 
-        // check all regressors
-        if (this.formData.regressors) {
-            for (const regressor of this.formData.regressors) {
-                if (!regressor.asset_id || !regressor.attribute_name) {
-                    return false;
-                }
-            }
+        // Use registry for model-specific validation
+        const modelTypeConfig = ModelTypeRegistry.get(this.formData.type);
+        if (modelTypeConfig && !modelTypeConfig.validateConfig(this.formData)) {
+            return false;
         }
 
         // Check other inputs
-        const inputs = this.shadowRoot?.querySelectorAll('or-mwc-input') as NodeListOf<HTMLInputElement>;
+        const inputs = this.shadowRoot?.querySelectorAll<HTMLInputElement | OrVaadinComboBox>(
+            'or-vaadin-combo-box, or-vaadin-text-field, or-vaadin-number-field, or-vaadin-select'
+        );
         if (inputs) {
             return Array.from(inputs).every((input) => input.checkValidity());
         }
@@ -469,112 +542,39 @@ export class PageConfigEditor extends LitElement {
         return JSON.stringify(this.formData) !== JSON.stringify(this.modelConfig);
     }
 
-    // Handle adding a regressor
-    handleAddRegressor() {
-        this.formData.regressors = this.formData.regressors ?? [];
+    // Get the parameters template based on model type
+    getParametersTemplate() {
+        const modelTypeConfig = ModelTypeRegistry.get(this.formData.type);
+        if (!modelTypeConfig) {
+            return html`<div>Unknown model type: ${this.formData.type}</div>`;
+        }
+        return modelTypeConfig.getParametersTemplate(this.formData, this.handleBasicInput.bind(this));
+    }
 
-        this.formData.regressors.push({
-            asset_id: '',
-            attribute_name: '',
-            training_data_period: 'P6M'
+    // Get covariates template based on model type
+    getCovariatesTemplate() {
+        const modelTypeConfig = ModelTypeRegistry.get(this.formData.type);
+        if (!modelTypeConfig) {
+            return html`<div>Unknown model type: ${this.formData.type}</div>`;
+        }
+
+        return modelTypeConfig.getCovariatesTemplate(this.formData, {
+            assetSelectList: this.assetSelectList,
+            attributeSelectList: this.attributeSelectList,
+            searchAssets: this.searchAssets.bind(this),
+            requestUpdate: this.requestUpdate.bind(this),
+            handleInput: () => {} // Not used in current implementation
         });
-        this.requestUpdate();
     }
 
-    // Handle deleting a regressor
-    handleDeleteRegressor(index: number) {
-        if (!this.formData.regressors) {
-            return;
+    // Search provider for the asset select list
+    protected async searchAssets(search?: string): Promise<[any, string][]> {
+        const options = [...this.assetSelectList.entries()];
+        if (!search) {
+            return options;
         }
-
-        this.formData.regressors.splice(index, 1);
-
-        // Clean up regressors if all are deleted
-        if (this.formData.regressors?.length === 0) {
-            this.formData.regressors = null;
-        }
-
-        this.requestUpdate();
-    }
-
-    // Get the regressor template
-    getRegressorTemplate(index: number) {
-        if (!this.formData.regressors) {
-            return;
-        }
-
-        const regressor = this.formData.regressors[index];
-        return html`
-            <or-panel heading="REGRESSOR ${index + 1}">
-                <div class="column">
-                    <div class="row attribute-row">
-                        ${when(
-                            regressor.asset_id && regressor.attribute_name && this.regressorAssets.has(index),
-                            () => {
-                                const asset = this.regressorAssets.get(index)!;
-                                const attribute = asset.attributes?.[regressor.attribute_name];
-                                const descriptors = attribute
-                                    ? AssetModelUtil.getAttributeAndValueDescriptors(asset.type, regressor.attribute_name, attribute)
-                                    : [];
-                                const label = attribute
-                                    ? Util.getAttributeLabel(attribute, descriptors[0], asset.type, true)
-                                    : regressor.attribute_name;
-                                return html`
-                                    <div class="selected-attr" @click="${() => this.openRegressorDialog(index)}">
-                                        ${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(asset.type))}
-                                        <div class="selected-attr-text">
-                                            <span>${asset.name}</span>
-                                            <span>${label}</span>
-                                        </div>
-                                    </div>
-                                `;
-                            },
-                            () => html`
-                                <or-mwc-input
-                                    class="select-attr"
-                                    type="${InputType.BUTTON}"
-                                    icon="magnify"
-                                    label="Select regressor"
-                                    @or-mwc-input-changed="${() => this.openRegressorDialog(index)}"
-                                ></or-mwc-input>
-                            `
-                        )}
-
-                        <custom-duration-input
-                            name="training_data_period"
-                            .type="${DurationInputType.ISO_8601}"
-                            @value-changed="${(e: OrInputChangedEvent) => this.handleRegressorInput(e, index)}"
-                            label="Training data period"
-                            .iso_units="${[TimeDurationUnit.DAY, TimeDurationUnit.WEEK, TimeDurationUnit.MONTH, TimeDurationUnit.YEAR]}"
-                            .value="${regressor.training_data_period}"
-                        ></custom-duration-input>
-
-                        <or-mwc-input
-                            style="max-width: 48px;"
-                            type="${InputType.BUTTON}"
-                            icon="delete"
-                            @click="${() => this.handleDeleteRegressor(index)}"
-                        ></or-mwc-input>
-                    </div>
-                </div>
-            </or-panel>
-        `;
-    }
-
-    // Get the add regressor template
-    getAddRegressorTemplate() {
-        return html`
-            <or-panel>
-                <div class="row regressor-row">
-                    <or-mwc-input
-                        type="${InputType.BUTTON}"
-                        icon="plus"
-                        label="add regressor"
-                        @click="${this.handleAddRegressor}"
-                    ></or-mwc-input>
-                </div>
-            </or-panel>
-        `;
+        const searchTerm = search.toLowerCase();
+        return options.filter(([, label]) => label.toLowerCase().includes(searchTerm));
     }
 
     // Render the editor
@@ -598,236 +598,141 @@ export class PageConfigEditor extends LitElement {
 
         return html`
             <form id="config-form" class="config-editor">
-                <div class="config-header">
-                    <div class="config-header-name">
-                        <or-mwc-input
+                <div class="config-header-controls">
+                    <or-vaadin-button id="save-btn" theme="primary" ?disabled=${!this.isValid || !this.modified} @click=${this.onSave}>
+                        Save
+                    </or-vaadin-button>
+                </div>
+
+                ${when(this.saveError, () => html`<alert-message .alert=${this.saveError}></alert-message>`)}
+
+                <details class="config-group" open>
+                    <summary>Properties</summary>
+                    <div class="group-content config-header-name">
+                        <or-vaadin-text-field
                             name="name"
-                            focused
-                            outlined
-                            type="${InputType.TEXT}"
-                            label="Model Name"
-                            @or-mwc-input-changed="${this.handleBasicInput}"
-                            .value="${this.formData.name}"
+                            label="Model name"
+                            @input=${this.handleBasicInput}
+                            .value=${this.formData.name}
                             required
                             minlength="1"
                             maxlength="255"
-                        ></or-mwc-input>
-
-                        <or-mwc-input
-                            type="${InputType.CHECKBOX}"
+                        ></or-vaadin-text-field>
+                        <or-vaadin-checkbox
                             name="enabled"
-                            @or-mwc-input-changed="${this.handleBasicInput}"
+                            @change=${this.handleBasicInput}
                             label="Enabled"
-                            .value="${this.formData.enabled}"
-                        ></or-mwc-input>
+                            .checked=${this.formData.enabled}
+                        ></or-vaadin-checkbox>
                     </div>
+                </details>
 
-                    <!-- Note: I know this is odd, but the disable state would not update properly via the disabled/.disabled/?disabled attribute -->
-                    <div class="config-header-controls">
-                        ${when(
-                            this.isValid && this.modified,
-                            () => html`
-                                <or-mwc-input
-                                    type="${InputType.BUTTON}"
-                                    id="save-btn"
-                                    label="save"
-                                    raised
-                                    @click="${this.onSave}"
-                                ></or-mwc-input>
-                            `,
-                            () => html`
-                                <or-mwc-input type="${InputType.BUTTON}" id="save-btn" label="save" raised disabled></or-mwc-input>
-                            `
-                        )}
-                    </div>
-                </div>
-
-                <!-- Model selection -->
-                <or-panel heading="MODEL">
-                    <div class="column">
+                <details class="config-group" open>
+                    <summary>Model configuration</summary>
+                    <div class="group-content column">
                         <div class="row">
-                            <or-mwc-input
-                                class="header-item"
+                            <or-vaadin-select
                                 name="type"
                                 required
-                                @or-mwc-input-changed="${this.handleBasicInput}"
-                                label="Model Type"
-                                type="${InputType.SELECT}"
-                                .options="${[['prophet', 'Prophet']]}"
-                                .value="${this.formData.type}"
-                            >
-                            </or-mwc-input>
+                                @change=${this.handleBasicInput}
+                                label="Model type"
+                                .items=${guard([], () => ModelTypeRegistry.getSelectOptions().map(([value, label]) => ({ value, label })))}
+                                .value=${this.formData.type}
+                            ></or-vaadin-select>
                         </div>
+
+                        <section aria-label="Forecast generation">
+                            <h3>Forecast generation</h3>
+                            <div class="row">
+                                <custom-duration-input
+                                    name="forecast_interval"
+                                    .type=${DurationInputType.ISO_8601}
+                                    @value-changed=${this.handleBasicInput}
+                                    label="Generate new forecast every"
+                                    .iso_units=${[
+                                        TimeDurationUnit.MINUTE,
+                                        TimeDurationUnit.HOUR,
+                                        TimeDurationUnit.DAY,
+                                        TimeDurationUnit.WEEK
+                                    ]}
+                                    .value=${this.formData.forecast_interval}
+                                ></custom-duration-input>
+                                <or-vaadin-number-field
+                                    name="forecast_periods"
+                                    @input=${this.handleBasicInput}
+                                    label="Forecasted datapoints"
+                                    .value=${Number.isFinite(this.formData.forecast_periods) ? String(this.formData.forecast_periods) : ''}
+                                    min="1"
+                                    step="1"
+                                    required
+                                ></or-vaadin-number-field>
+                            </div>
+                        </section>
+
+                        <section aria-label="Forecast target">
+                            <h3>Forecast target</h3>
+                            <div class="row">
+                                <or-vaadin-combo-box
+                                    name="target.asset_id"
+                                    @change=${this.handleTargetInput}
+                                    label="Asset"
+                                    item-label-path="label"
+                                    item-value-path="value"
+                                    .items=${guard([this.assetSelectList], () =>
+                                        [...this.assetSelectList].map(([value, label]) => ({ value, label }))
+                                    )}
+                                    .value=${this.formData.target.asset_id}
+                                    clear-button-visible
+                                    required
+                                ></or-vaadin-combo-box>
+                                <or-vaadin-combo-box
+                                    name="target.attribute_name"
+                                    @change=${this.handleTargetInput}
+                                    label="Attribute"
+                                    item-label-path="label"
+                                    item-value-path="value"
+                                    .items=${guard([this.attributeSelectList, this.formData.target.asset_id], () =>
+                                        [...(this.attributeSelectList.get(this.formData.target.asset_id) ?? new Map())].map(
+                                            ([value, label]) => ({ value, label })
+                                        )
+                                    )}
+                                    .value=${this.formData.target.attribute_name}
+                                    ?disabled=${!this.formData.target.asset_id}
+                                    clear-button-visible
+                                    required
+                                ></or-vaadin-combo-box>
+                            </div>
+                        </section>
+
+                        <section aria-label="Data and sampling">
+                            <h3>Data and sampling</h3>
+                            <div class="row">
+                                <custom-duration-input
+                                    name="forecast_frequency"
+                                    .type=${DurationInputType.PANDAS_FREQ}
+                                    @value-changed=${this.handleBasicInput}
+                                    label="Time between datapoints"
+                                    .value=${this.formData.forecast_frequency}
+                                ></custom-duration-input>
+                                <custom-duration-input
+                                    name="target.training_data_period"
+                                    .type=${DurationInputType.ISO_8601}
+                                    @value-changed=${this.handleTargetInput}
+                                    label="Training data period"
+                                    .iso_units=${[
+                                        TimeDurationUnit.DAY,
+                                        TimeDurationUnit.WEEK,
+                                        TimeDurationUnit.MONTH,
+                                        TimeDurationUnit.YEAR
+                                    ]}
+                                    .value=${this.formData.target.training_data_period}
+                                ></custom-duration-input>
+                            </div>
+                        </section>
                     </div>
-                </or-panel>
+                </details>
 
-                <!-- Forecast generation, e.g. the schedule -->
-                <or-panel heading="FORECAST GENERATION">
-                    <div class="column">
-                        <div class="row">
-                            <!-- forecast_interval (ISO 8601) -->
-                            <custom-duration-input
-                                name="forecast_interval"
-                                .type="${DurationInputType.ISO_8601}"
-                                @value-changed="${this.handleBasicInput}"
-                                label="Generate new forecast every"
-                                .value="${this.formData.forecast_interval}"
-                            ></custom-duration-input>
-                        </div>
-
-                        <div class="row">
-                            <!-- forecast_periods -->
-                            <or-mwc-input
-                                type="${InputType.NUMBER}"
-                                name="forecast_periods"
-                                @or-mwc-input-changed="${this.handleBasicInput}"
-                                label="Forecasted datapoints"
-                                .value="${this.formData.forecast_periods}"
-                                required
-                            ></or-mwc-input>
-
-                            <!-- forecast_frequency (pandas frequency) -->
-                            <custom-duration-input
-                                name="forecast_frequency"
-                                .type="${DurationInputType.PANDAS_FREQ}"
-                                @value-changed="${this.handleBasicInput}"
-                                label="Time between datapoints"
-                                .value="${this.formData.forecast_frequency}"
-                            ></custom-duration-input>
-                        </div>
-                    </div>
-                </or-panel>
-
-                <!-- Forecast target, the asset and attribute to forecast -->
-                <or-panel heading="FORECAST TARGET">
-                    <div class="column">
-                        <div class="row attribute-row">
-                            ${when(
-                                this.formData.target.asset_id && this.formData.target.attribute_name && this.targetAsset,
-                                () => {
-                                    const attribute = this.targetAsset!.attributes?.[this.formData.target.attribute_name];
-                                    const descriptors = attribute
-                                        ? AssetModelUtil.getAttributeAndValueDescriptors(
-                                              this.targetAsset!.type,
-                                              this.formData.target.attribute_name,
-                                              attribute
-                                          )
-                                        : [];
-                                    const label = attribute
-                                        ? Util.getAttributeLabel(attribute, descriptors[0], this.targetAsset!.type, true)
-                                        : this.formData.target.attribute_name;
-                                    return html`
-                                        <div class="selected-attr" @click="${this.openTargetDialog}">
-                                            ${getAssetDescriptorIconTemplate(AssetModelUtil.getAssetDescriptor(this.targetAsset!.type))}
-                                            <div class="selected-attr-text">
-                                                <span>${this.targetAsset!.name}</span>
-                                                <span>${label}</span>
-                                            </div>
-                                        </div>
-                                    `;
-                                },
-                                () => html`
-                                    <or-mwc-input
-                                        class="select-attr"
-                                        type="${InputType.BUTTON}"
-                                        icon="magnify"
-                                        label="Select target"
-                                        @click="${this.openTargetDialog}"
-                                    ></or-mwc-input>
-                                `
-                            )}
-
-                            <!-- target.training_data_period -->
-                            <custom-duration-input
-                                name="target.training_data_period"
-                                .type="${DurationInputType.ISO_8601}"
-                                @value-changed="${this.handleTargetInput}"
-                                label="Training data period"
-                                .iso_units="${[TimeDurationUnit.DAY, TimeDurationUnit.WEEK, TimeDurationUnit.MONTH, TimeDurationUnit.YEAR]}"
-                                .value="${this.formData.target.training_data_period}"
-                            ></custom-duration-input>
-                        </div>
-                    </div>
-                </or-panel>
-
-                <!-- Model parameters, these will be dynamic based on the model type -->
-                <or-panel heading="PARAMETERS">
-                    <div class="column">
-                        <div class="row">
-                            <!-- changepoint_range -->
-                            <or-mwc-input
-                                type="${InputType.NUMBER}"
-                                name="changepoint_range"
-                                @or-mwc-input-changed="${this.handleBasicInput}"
-                                label="Changepoint range"
-                                .value="${this.formData.changepoint_range}"
-                                max="1.0"
-                                min="0.0"
-                                step="0.01"
-                                required
-                            ></or-mwc-input>
-                            <!-- changepoint_prior_scale -->
-                            <or-mwc-input
-                                type="${InputType.NUMBER}"
-                                name="changepoint_prior_scale"
-                                @or-mwc-input-changed="${this.handleBasicInput}"
-                                label="Changepoint prior scale"
-                                .value="${this.formData.changepoint_prior_scale}"
-                                max="1.0"
-                                min="0.0"
-                                step="0.01"
-                                required
-                            ></or-mwc-input>
-                        </div>
-                        <div class="row">
-                            <!-- seasonality_mode -->
-                            <or-mwc-input
-                                type="${InputType.SELECT}"
-                                .options="${[
-                                    [ProphetSeasonalityModeEnum.ADDITIVE, 'Additive'],
-                                    [ProphetSeasonalityModeEnum.MULTIPLICATIVE, 'Multiplicative']
-                                ]}"
-                                name="seasonality_mode"
-                                @or-mwc-input-changed="${this.handleBasicInput}"
-                                label="Seasonality mode"
-                                .value="${this.formData.seasonality_mode}"
-                                required
-                            ></or-mwc-input>
-                            <!-- daily_seasonality -->
-                            <or-mwc-input
-                                type="${InputType.CHECKBOX}"
-                                name="daily_seasonality"
-                                @or-mwc-input-changed="${this.handleBasicInput}"
-                                label="Daily seasonality"
-                                .value="${this.formData.daily_seasonality}"
-                            ></or-mwc-input>
-                            <!-- weekly_seasonality -->
-                            <or-mwc-input
-                                type="${InputType.CHECKBOX}"
-                                name="weekly_seasonality"
-                                @or-mwc-input-changed="${this.handleBasicInput}"
-                                label="Weekly seasonality"
-                                .value="${this.formData.weekly_seasonality}"
-                            ></or-mwc-input>
-                            <!-- yearly_seasonality -->
-                            <or-mwc-input
-                                type="${InputType.CHECKBOX}"
-                                name="yearly_seasonality"
-                                @or-mwc-input-changed="${this.handleBasicInput}"
-                                label="Yearly seasonality"
-                                .value="${this.formData.yearly_seasonality}"
-                            ></or-mwc-input>
-                        </div>
-                    </div>
-                </or-panel>
-                <hr />
-                <!-- Regressors -->
-                ${when(
-                    this.formData.regressors,
-                    () => map(this.formData.regressors ?? [], (_regressor, index) => this.getRegressorTemplate(index)),
-                    () => html``
-                )}
-                ${this.getAddRegressorTemplate()}
+                ${this.getParametersTemplate()} ${this.getCovariatesTemplate()}
             </form>
         `;
     }

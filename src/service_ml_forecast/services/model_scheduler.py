@@ -17,17 +17,26 @@
 
 import datetime
 import logging
+import math
 import time
+from typing import Any
 
+import pandas as pd
+from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED, JobExecutionEvent
 from apscheduler.executors.pool import ProcessPoolExecutor, ThreadPoolExecutor
 from apscheduler.jobstores.memory import MemoryJobStore
 from apscheduler.schedulers.background import BackgroundScheduler
 
+from service_ml_forecast.common.exceptions import ResourceValidationError
+from service_ml_forecast.common.model_lock import model_operation_lock
 from service_ml_forecast.common.singleton import Singleton
 from service_ml_forecast.common.time_util import TimeUtil
-from service_ml_forecast.ml.model_provider_factory import ModelProviderFactory
+from service_ml_forecast.ml.model_provider_factory import ModelProviderFactory, get_all_covariates
+from service_ml_forecast.models.feature_data_wrappers import ForecastResult
 from service_ml_forecast.models.model_config import ModelConfig
+from service_ml_forecast.models.model_type import ModelTypeEnum
 from service_ml_forecast.services.model_config_service import ModelConfigService
+from service_ml_forecast.services.model_storage_service import ModelStorageService
 from service_ml_forecast.services.openremote_service import OpenRemoteService
 
 logger = logging.getLogger(__name__)
@@ -35,12 +44,14 @@ logger = logging.getLogger(__name__)
 CONFIG_WATCHER_JOB_ID = "model:config-watcher"
 TRAINING_JOB_ID_PREFIX = "model:training"
 FORECAST_JOB_ID_PREFIX = "model:forecast"
+FORECAST_RECOVERY_DELAY_SECONDS = 30
+MAX_FORECAST_RECOVERY_ATTEMPTS = 3
 
 CONFIG_POLLING_INTERVAL = 30  # Poll configs for changes every 30 seconds
 
 
 class ModelScheduler(Singleton):
-    """Manages the scheduling of ML model training and forecasting jobs."""
+    """Manages the scheduling of model training and forecasting jobs."""
 
     def __init__(self, openremote_service: OpenRemoteService) -> None:
         self.config_storage = ModelConfigService(openremote_service)
@@ -61,14 +72,44 @@ class ModelScheduler(Singleton):
             job_defaults={"misfire_grace_time": None},  # Allows jobs to run even if their execution is delayed
             logger=logger,
         )
+        self._forecast_recovery_attempts: dict[str, int] = {}
+        self.scheduler.add_listener(self._on_forecast_job_event, EVENT_JOB_ERROR | EVENT_JOB_EXECUTED)
+
+    def _on_forecast_job_event(self, event: JobExecutionEvent) -> None:
+        """Retry transient dependency failures without waiting a full forecast interval.
+
+        Reuse the existing job, arguments and publication checks. Invalid input,
+        model and configuration errors retain the normal schedule. Three quick
+        retries bound a continuous outage; success resets the recovery budget.
+        """
+        if not event.job_id.startswith(FORECAST_JOB_ID_PREFIX + ":"):
+            return
+        if event.exception is None:
+            self._forecast_recovery_attempts.pop(event.job_id, None)
+            return
+        error = event.exception
+        transient = isinstance(error, ConnectionError | TimeoutError)
+        if not transient:
+            return
+        job = self.scheduler.get_job(event.job_id)
+        if job is None or not job.args or not job.args[0].enabled:
+            return
+        attempts = self._forecast_recovery_attempts.get(event.job_id, 0)
+        if attempts >= MAX_FORECAST_RECOVERY_ATTEMPTS:
+            logger.warning("Quick recovery exhausted for %s; retaining its regular schedule", event.job_id)
+            return
+        self._forecast_recovery_attempts[event.job_id] = attempts + 1
+        retry_at = datetime.datetime.now(datetime.UTC) + datetime.timedelta(seconds=FORECAST_RECOVERY_DELAY_SECONDS)
+        self.scheduler.modify_job(event.job_id, next_run_time=retry_at)
+        logger.info("Retrying %s after a transient dependency failure (attempt %s)", event.job_id, attempts + 1)
 
     def start(self) -> None:
-        """Start the scheduler for ML model training and forecasting.
+        """Start the scheduler for model training and forecasting.
 
         Does not start the scheduler if it is already running.
         """
         if self.scheduler.running:
-            logger.warning("Scheduler for ML Model Training already running")
+            logger.warning("Scheduler for Model Training already running")
             return
 
         self.scheduler.start()
@@ -107,6 +148,7 @@ class ModelScheduler(Singleton):
             executor="process_pool",
             replace_existing=True,
         )
+        logger.info("Scheduled training %s every %s seconds", config.id, seconds)
 
     def _add_forecast_job(self, config: ModelConfig) -> None:
         """Add a forecast job for the given model config."""
@@ -127,6 +169,7 @@ class ModelScheduler(Singleton):
             executor="process_pool",
             replace_existing=True,
         )
+        logger.info("Scheduled forecasts %s every %s seconds", config.id, seconds)
 
     def _poll_configs(self) -> None:
         """Poll for configurations and schedule the jobs based on the new configs"""
@@ -152,6 +195,10 @@ class ModelScheduler(Singleton):
         for job in self.scheduler.get_jobs():
             if job.id not in expected_jobs:
                 self.scheduler.remove_job(job.id)
+        if hasattr(self, "_forecast_recovery_attempts"):
+            self._forecast_recovery_attempts = {
+                key: value for key, value in self._forecast_recovery_attempts.items() if key in forecast_jobs
+            }
 
     def _is_job_scheduling_needed(self, job_id: str, config: ModelConfig) -> bool:
         """Compares the given config with the config of an existing job.
@@ -170,6 +217,11 @@ class ModelScheduler(Singleton):
 
 
 def _model_training_job(config: ModelConfig, data_service: OpenRemoteService) -> None:
+    with model_operation_lock(config.id, "training"):
+        _run_model_training_job(config, data_service)
+
+
+def _run_model_training_job(config: ModelConfig, data_service: OpenRemoteService) -> None:
     """Model training job. Constructs the model provider, retrieves the training feature set,
     trains the model, and saves the model.
 
@@ -178,6 +230,11 @@ def _model_training_job(config: ModelConfig, data_service: OpenRemoteService) ->
         data_service: The data service
     """
     start_time = time.perf_counter()
+    current = ModelConfigService(data_service).get(config.realm, config.id)
+    storage = ModelStorageService()
+    if not current.enabled or storage.fingerprint(current) != storage.fingerprint(config):
+        raise ResourceValidationError(f"Training job has a stale config: {config.id}")
+    storage.mark_training_pending(config)
     provider = ModelProviderFactory.create_provider(config)
 
     training_dataset = data_service.get_training_dataset(config)
@@ -195,11 +252,14 @@ def _model_training_job(config: ModelConfig, data_service: OpenRemoteService) ->
     if model is None:
         logger.error(
             f"Model training failed for {config.id} - no model returned. "
-            f"Type: {config.type}, Interval: {config.forecast_interval}"
+            f"Type: {config.type}, Training Interval: {config.forecast_interval}"
         )
         return
 
     # Save the model
+    current = ModelConfigService(data_service).get(config.realm, config.id)
+    if not current.enabled or storage.fingerprint(current) != storage.fingerprint(config):
+        raise ResourceValidationError(f"Config changed during training: {config.id}")
     provider.save_model(model)
 
     # Log the first and last datapoint datetimes of the target attribute
@@ -209,13 +269,21 @@ def _model_training_job(config: ModelConfig, data_service: OpenRemoteService) ->
     end_time = time.perf_counter()
     logger.info(
         f"Training job for {config.id} completed - duration: {end_time - start_time}s, "
-        f"Type: {config.type}, Interval: {config.forecast_interval}, "
+        f"Type: {config.type}, Training Interval: {config.forecast_interval}, "
         f"Target first datapoint datetime: {target_first_datapoint_datetime}, "
         f"Target last datapoint datetime: {target_last_datapoint_datetime}"
     )
 
 
 def _model_forecast_job(config: ModelConfig, data_service: OpenRemoteService) -> None:
+    with model_operation_lock(config.id, "forecast"):
+        with ModelStorageService().pin_forecast(config) as manifest:
+            _run_model_forecast_job(config, data_service, manifest)
+
+
+def _run_model_forecast_job(
+    config: ModelConfig, data_service: OpenRemoteService, generating_manifest: dict[str, Any]
+) -> None:
     """Model forecast job. Constructs the model provider, retrieves the forecast dataset,
     generates the forecast, and writes the forecasted datapoints to OpenRemote.
 
@@ -224,21 +292,37 @@ def _model_forecast_job(config: ModelConfig, data_service: OpenRemoteService) ->
         data_service: The data service
     """
     start_time = time.perf_counter()
+    current = ModelConfigService(data_service).get(config.realm, config.id)
+    storage = ModelStorageService()
+    if not current.enabled or storage.fingerprint(current) != storage.fingerprint(config):
+        raise ResourceValidationError(f"Forecast job has a stale or disabled config: {config.id}")
+    storage.get_ready_manifest(config)
     provider = ModelProviderFactory.create_provider(config)
 
     # Retrieve the forecast dataset
     forecast_dataset = data_service.get_forecast_dataset(config)
 
-    if config.regressors is not None and forecast_dataset is None:
+    all_covariates = get_all_covariates(config)
+    if len(all_covariates) > 0 and forecast_dataset is None:
         logger.error(
-            f"Cannot forecast model {config.id} - config has regressors but no forecast dataset. "
+            f"Cannot forecast model {config.id} - config has covariates but no forecast dataset. "
             f"Asset ID: {config.target.asset_id}, Attribute: {config.target.attribute_name}, "
-            f"Regressors: {', '.join(r.attribute_name for r in config.regressors)}"
+            f"Covariates: {', '.join(r.attribute_name for r in all_covariates)}"
         )
         return
 
     # Generate the forecast
     forecast = provider.generate_forecast(forecast_dataset)
+
+    # A config may have changed while prediction was running. Never publish
+    # results from an old job after a model switch or parameter update.
+    current = ModelConfigService(data_service).get(config.realm, config.id)
+    if not current.enabled or storage.fingerprint(current) != storage.fingerprint(config):
+        raise ResourceValidationError(f"Config changed during forecast: {config.id}")
+    manifest = storage.get_ready_manifest(config)
+    if manifest["revision"] != generating_manifest["revision"]:
+        raise ResourceValidationError(f"Model revision changed during forecast: {config.id}")
+    _validate_forecast_before_write(config, forecast, manifest.get("training_cutoff"))
 
     # Write the forecasted datapoints
     if not data_service.write_predicted_datapoints(
@@ -252,6 +336,14 @@ def _model_forecast_job(config: ModelConfig, data_service: OpenRemoteService) ->
         )
         return
 
+    storage.record_forecast(
+        config,
+        forecast.datapoints[0].x,
+        forecast.datapoints[-1].x,
+        len(forecast.datapoints),
+        manifest=generating_manifest,
+    )
+
     end_time = time.perf_counter()
 
     # Log the first and last datapoint datetimes of the forecast
@@ -264,3 +356,42 @@ def _model_forecast_job(config: ModelConfig, data_service: OpenRemoteService) ->
         f"First datapoint datetime: {first_datapoint_datetime}, Last datapoint datetime: {last_datapoint_datetime}, "
         f"Asset ID: {config.target.asset_id}, Attribute: {config.target.attribute_name}"
     )
+
+
+def _validate_forecast_before_write(config: ModelConfig, forecast: ForecastResult, training_cutoff: str | None) -> None:
+    """Reject stale, misrouted, incomplete, or invalid predictions."""
+    points = forecast.datapoints
+    if forecast.asset_id != config.target.asset_id or forecast.attribute_name != config.target.attribute_name:
+        raise ResourceValidationError(f"Forecast target does not match config: {config.id}")
+    if len(points) != config.forecast_periods:
+        raise ResourceValidationError(f"Forecast has the wrong number of periods: {config.id}")
+    if points[0].x <= TimeUtil.get_timestamp_ms():
+        raise ResourceValidationError(f"Forecast starts in the past: {config.id}")
+    try:
+        if not isinstance(training_cutoff, str):
+            raise ValueError("Missing training cutoff")
+        cutoff = pd.Timestamp(training_cutoff)
+        if pd.isna(cutoff):
+            raise ValueError("Missing training cutoff")
+        if cutoff.tzinfo is not None:
+            cutoff = cutoff.tz_convert("UTC").tz_localize(None)
+        frequency = pd.tseries.frequencies.to_offset(config.forecast_frequency)
+        # WEA retains raw minute timestamps and anchors its issue to a UTC bin.
+        # Darts stores the end of its already-resampled training series.
+        if config.type == ModelTypeEnum.WEA:
+            cutoff = cutoff.floor(config.forecast_frequency)
+        expected_first = cutoff + frequency
+        if points[0].x != expected_first.value // 1_000_000:
+            raise ValueError("Forecast start differs from the trained horizon")
+    except (ValueError, TypeError, OverflowError) as error:
+        raise ResourceValidationError(f"Forecast does not match its training cutoff: {config.id}") from error
+    expected = pd.date_range(
+        start=pd.Timestamp(points[0].x, unit="ms"),
+        periods=config.forecast_periods,
+        freq=config.forecast_frequency,
+    )
+    actual = pd.to_datetime([point.x for point in points], unit="ms")
+    if not expected.equals(actual):
+        raise ResourceValidationError(f"Forecast timestamps are not contiguous: {config.id}")
+    if any(point.y is None or not math.isfinite(float(point.y)) for point in points):
+        raise ResourceValidationError(f"Forecast contains non-finite values: {config.id}")
