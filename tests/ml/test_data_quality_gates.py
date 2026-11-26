@@ -2,22 +2,23 @@
 
 from __future__ import annotations
 
+import math
+from typing import cast
 from uuid import uuid4
 
 import pandas as pd
 import pytest
 from openremote_client import AssetDatapoint
 
-from service_ml_forecast.config import ENV
 from service_ml_forecast.ml.data_processing import align_forecast_data, align_training_data
+from service_ml_forecast.ml.model_provider_factory import ModelProviderFactory
 from service_ml_forecast.ml.prophet_model_provider import ProphetModelProvider
-from service_ml_forecast.ml.xgboost_model_provider import XGBoostModelProvider
 from service_ml_forecast.models.feature_data_wrappers import (
     AssetFeatureDatapoints,
     ForecastDataSet,
     TrainingDataSet,
 )
-from service_ml_forecast.models.model_config import ProphetModelConfig, XGBoostModelConfig
+from service_ml_forecast.models.model_config import ModelConfig, ProphetModelConfig
 
 FULL_HOURS = 10
 SUFFIX_HOURS = 4
@@ -54,23 +55,29 @@ def test_missing_future_hour_is_rejected() -> None:
         align_forecast_data(future, dataset, "1h", uuid4())
 
 
-def test_default_minimum_history_rejects_short_training(
-    xgboost_basic_config: XGBoostModelConfig, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.setattr(ENV, "ML_MIN_TRAINING_DAYS", 28)
-    provider = XGBoostModelProvider(xgboost_basic_config)
-    assert provider.train_model(training(list(range(30)))) is None
+@pytest.mark.parametrize("config_fixture", ["prophet_basic_config", "xgboost_basic_config", "lightgbm_basic_config"])
+def test_seven_day_history_trains_and_forecasts(config_fixture: str, request: pytest.FixtureRequest) -> None:
+    config = cast(ModelConfig, request.getfixturevalue(config_fixture))
+    config.target.training_data_period = "P7D"
+    config.forecast_periods = 24
+    provider = ModelProviderFactory.create_provider(config)
+    model = provider.train_model(training(list(range(7 * 24))))
+    assert model is not None
+    provider.save_model(model)
+
+    forecast = provider.generate_forecast()
+    assert len(forecast.datapoints) == config.forecast_periods
+    assert all(point.y is not None and math.isfinite(point.y) for point in forecast.datapoints)
+    assert [point.x for point in forecast.datapoints] == sorted({point.x for point in forecast.datapoints})
+    assert config.target.training_data_period == "P7D"
 
 
-@pytest.mark.parametrize(("frequency", "rows", "accepted"), [("30min", 24, False), ("2h", 12, True)])
-def test_prophet_minimum_history_respects_sampling_frequency(
+@pytest.mark.parametrize(("frequency", "rows"), [("30min", 24), ("2h", 12)])
+def test_prophet_training_has_no_minimum_elapsed_period(
     prophet_basic_config: ProphetModelConfig,
-    monkeypatch: pytest.MonkeyPatch,
     frequency: str,
     rows: int,
-    accepted: bool,
 ) -> None:
-    monkeypatch.setattr(ENV, "ML_MIN_TRAINING_DAYS", 1)
     prophet_basic_config.forecast_frequency = frequency
     times = pd.date_range("2026-10-01", periods=rows, freq=frequency)
     dataset = TrainingDataSet(
@@ -80,7 +87,7 @@ def test_prophet_minimum_history_respects_sampling_frequency(
         )
     )
     model = ProphetModelProvider(prophet_basic_config).train_model(dataset)
-    assert (model is not None) == accepted
+    assert model is not None
 
 
 @pytest.mark.parametrize("invalid_value", [float("inf"), float("-inf")])

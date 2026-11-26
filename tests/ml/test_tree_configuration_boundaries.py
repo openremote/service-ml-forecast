@@ -9,7 +9,6 @@ from fastapi.testclient import TestClient
 from openremote_client import AssetDatapoint
 from pydantic import ValidationError
 
-from service_ml_forecast.config import ENV
 from service_ml_forecast.ml.lightgbm_model_provider import LightGBMModelProvider
 from service_ml_forecast.ml.model_provider_factory import ModelProviderFactory
 from service_ml_forecast.ml.xgboost_model_provider import XGBoostModelProvider, _convert_darts_forecast_to_datapoints
@@ -79,21 +78,18 @@ def dataset(frequency: str, periods: int) -> TrainingDataSet:
 
 
 @pytest.mark.parametrize("config_class", CONFIG_CLASSES)
-@pytest.mark.parametrize(("frequency", "periods", "accepted"), [("30min", 672, False), ("2h", 336, True)])
-def test_minimum_training_days_use_elapsed_time_instead_of_hourly_row_count(
+@pytest.mark.parametrize(("frequency", "periods"), [("30min", 48), ("2h", 48)])
+def test_tree_training_has_no_minimum_elapsed_period(
     config_class: type[XGBoostModelConfig] | type[LightGBMModelConfig],
     frequency: str,
     periods: int,
-    accepted: bool,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(ENV, "ML_MIN_TRAINING_DAYS", 28)
     provider = ModelProviderFactory.create_provider(
         config_class.model_validate(BASE | {"forecast_frequency": frequency})
     )
     assert isinstance(provider, XGBoostModelProvider | LightGBMModelProvider)
     model = provider.train_model(dataset(frequency, periods))
-    assert (model is not None) is accepted
+    assert model is not None
 
 
 @pytest.mark.parametrize("config_class", CONFIG_CLASSES)

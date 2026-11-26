@@ -40,7 +40,7 @@ export interface TargetFeature {
     asset_id: string;
     /**
      * Name of the attribute of the asset.
-     * Constraints: min_length=3
+     * Constraints: min_length=1
      */
     attribute_name: string;
     /**
@@ -61,7 +61,7 @@ export interface RegressorFeature {
     asset_id: string;
     /**
      * Name of the attribute of the asset.
-     * Constraints: min_length=3
+     * Constraints: min_length=1
      */
     attribute_name: string;
     /**

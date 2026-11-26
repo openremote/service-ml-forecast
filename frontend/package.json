@@ -8,6 +8,8 @@
         "build:dev": "rspack build --mode development",
         "build:prod": "rspack build --mode production",
         "build:analyze": "rspack build --mode production --analyze",
+        "typecheck": "tsc --noEmit",
+        "test": "node --test",
         "lint": "eslint && prettier . --check",
         "format": "prettier . --write"
     },

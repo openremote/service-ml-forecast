@@ -87,14 +87,17 @@ class OpenRemoteServiceRegistrar:
             return
         self._stopped = True
 
-        if self.registered and self.instance_id:
-            self._deregister_service()
-
-        if self.scheduler.running:
-            self.scheduler.shutdown()
+        try:
+            if self.scheduler.running:
+                self.scheduler.shutdown()
+        finally:
+            if self.registered and self.instance_id:
+                self._deregister_service()
 
     def _register_service(self) -> None:
         """Register the service with OpenRemote."""
+        if self._stopped:
+            return
         try:
             response = self.client.services.register(self.service_info, self.is_global)
 
@@ -110,6 +113,8 @@ class OpenRemoteServiceRegistrar:
 
     def _send_heartbeat(self) -> None:
         """Send a heartbeat to OpenRemote."""
+        if self._stopped:
+            return
         if not self.registered or not self.instance_id:
             logger.warning("Cannot send heartbeat - service not registered, attempting re-registration")
             self._register_service()
@@ -118,11 +123,15 @@ class OpenRemoteServiceRegistrar:
         try:
             success = self.client.services.heartbeat(self.service_info.serviceId, self.instance_id)
 
-            if success:
+            if success is None:
+                logger.warning("Service instance %s no longer exists, registering again", self.instance_id)
+                self.registered = False
+                self.instance_id = None
+                self._register_service()
+            elif success:
                 logger.debug(f"Heartbeat sent successfully for instance: {self.instance_id}")
             else:
-                logger.error(f"Failed to send heartbeat for instance: {self.instance_id}, trying re-registration")
-                self._register_service()
+                logger.error("Failed to send heartbeat for instance %s; retaining it for retry", self.instance_id)
 
         except Exception as e:
             logger.error(f"Error sending heartbeat: {e}")

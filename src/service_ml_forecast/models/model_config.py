@@ -39,7 +39,7 @@ class AssetDatapointFeature(BaseModel):
     asset_id: str = Field(description="ID of the asset from OpenRemote.", min_length=22, max_length=22)
     attribute_name: str = Field(
         description="Name of the attribute of the asset.",
-        min_length=3,
+        min_length=1,
     )
     training_data_period: str = Field(
         default="P6M",
@@ -88,7 +88,7 @@ class TargetAssetDatapointsFeature(BaseModel):
     asset_id: str = Field(description="ID of the asset from OpenRemote.", min_length=22, max_length=22)
     attribute_name: str = Field(
         description="Name of the attribute of the asset.",
-        min_length=3,
+        min_length=1,
     )
     training_data_period: str = Field(
         default="P6M",

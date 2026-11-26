@@ -18,6 +18,7 @@
 import datetime
 import logging
 import math
+import threading
 import time
 from typing import Any
 
@@ -27,7 +28,7 @@ from apscheduler.executors.pool import ProcessPoolExecutor, ThreadPoolExecutor
 from apscheduler.jobstores.memory import MemoryJobStore
 from apscheduler.schedulers.background import BackgroundScheduler
 
-from service_ml_forecast.common.exceptions import ResourceValidationError
+from service_ml_forecast.common.exceptions import ResourceNotFoundError, ResourceValidationError
 from service_ml_forecast.common.model_lock import model_operation_lock
 from service_ml_forecast.common.singleton import Singleton
 from service_ml_forecast.common.time_util import TimeUtil
@@ -73,7 +74,46 @@ class ModelScheduler(Singleton):
             logger=logger,
         )
         self._forecast_recovery_attempts: dict[str, int] = {}
+        self._initial_forecasts: dict[str, datetime.datetime] = {}
+        self._scheduling_lock = threading.RLock()
         self.scheduler.add_listener(self._on_forecast_job_event, EVENT_JOB_ERROR | EVENT_JOB_EXECUTED)
+        self.scheduler.add_listener(self._on_training_job_event, EVENT_JOB_ERROR | EVENT_JOB_EXECUTED)
+
+    @staticmethod
+    def _model_is_ready(config: ModelConfig) -> bool:
+        try:
+            ModelStorageService().get_ready_manifest(config)
+        except (ResourceNotFoundError, ResourceValidationError, OSError):
+            return False
+        return True
+
+    def _on_training_job_event(self, event: JobExecutionEvent) -> None:
+        if not event.job_id.startswith(TRAINING_JOB_ID_PREFIX + ":"):
+            return
+        with self._scheduling_lock:
+            initial_run = self._initial_forecasts.get(event.job_id)
+            if initial_run is None:
+                return
+            job = self.scheduler.get_job(event.job_id)
+            if job is None or not job.args or not job.args[0].enabled:
+                return
+            if event.scheduled_run_time != initial_run:
+                next_run = datetime.datetime.now(datetime.UTC)
+                self._initial_forecasts[event.job_id] = next_run
+                self.scheduler.modify_job(event.job_id, next_run_time=next_run)
+                return
+            self._initial_forecasts.pop(event.job_id, None)
+            if event.exception is not None:
+                return
+            config = job.args[0]
+            if not self._model_is_ready(config):
+                logger.warning(
+                    "Training did not produce a ready model for %s; retaining its regular schedule", config.id
+                )
+                return
+            forecast_job_id = f"{FORECAST_JOB_ID_PREFIX}:{config.id}"
+            if self.scheduler.get_job(forecast_job_id) is not None:
+                self.scheduler.modify_job(forecast_job_id, next_run_time=datetime.datetime.now(datetime.UTC))
 
     def _on_forecast_job_event(self, event: JobExecutionEvent) -> None:
         """Retry transient dependency failures without waiting a full forecast interval.
@@ -127,7 +167,8 @@ class ModelScheduler(Singleton):
     def stop(self) -> None:
         """Stop the scheduler, does not interrupt any running jobs."""
 
-        self.scheduler.shutdown()
+        if self.scheduler.running:
+            self.scheduler.shutdown()
 
     def _add_training_job(self, config: ModelConfig) -> None:
         """Add a training job for the given model config."""
@@ -138,6 +179,19 @@ class ModelScheduler(Singleton):
         if not self._is_job_scheduling_needed(job_id, config):
             return
 
+        existing_job = self.scheduler.get_job(job_id)
+        material_change = existing_job is None or (
+            ModelStorageService.fingerprint(existing_job.args[0]) != ModelStorageService.fingerprint(config)
+        )
+        initial_run = (
+            {"next_run_time": datetime.datetime.now(datetime.UTC)}
+            if (material_change and not self._model_is_ready(config))
+            else {}
+        )
+        if initial_run:
+            self._initial_forecasts[job_id] = initial_run["next_run_time"]
+        elif job_id in self._initial_forecasts:
+            initial_run = {"next_run_time": self._initial_forecasts[job_id]}
         self.scheduler.add_job(
             _model_training_job,
             trigger="interval",
@@ -147,6 +201,7 @@ class ModelScheduler(Singleton):
             name=job_id,
             executor="process_pool",
             replace_existing=True,
+            **initial_run,
         )
         logger.info("Scheduled training %s every %s seconds", config.id, seconds)
 
@@ -159,6 +214,9 @@ class ModelScheduler(Singleton):
         if not self._is_job_scheduling_needed(job_id, config):
             return
 
+        initial_run = {"next_run_time": datetime.datetime.now(datetime.UTC)} if self._model_is_ready(config) else {}
+        if initial_run:
+            self._initial_forecasts.pop(f"{TRAINING_JOB_ID_PREFIX}:{config.id}", None)
         self.scheduler.add_job(
             _model_forecast_job,
             trigger="interval",
@@ -168,20 +226,22 @@ class ModelScheduler(Singleton):
             name=job_id,
             executor="process_pool",
             replace_existing=True,
+            **initial_run,
         )
         logger.info("Scheduled forecasts %s every %s seconds", config.id, seconds)
 
     def _poll_configs(self) -> None:
         """Poll for configurations and schedule the jobs based on the new configs"""
 
-        configs = self.config_storage.get_all()
-        self._cleanup_stale_jobs(configs)
+        with self._scheduling_lock:
+            configs = self.config_storage.get_all()
+            self._cleanup_stale_jobs(configs)
 
-        # Queue training and forecast jobs for enabled configs
-        for config in configs:
-            if config.enabled:
-                self._add_training_job(config)
-                self._add_forecast_job(config)
+            # Queue training and forecast jobs for enabled configs
+            for config in configs:
+                if config.enabled:
+                    self._add_training_job(config)
+                    self._add_forecast_job(config)
 
     def _cleanup_stale_jobs(self, configs: list[ModelConfig]) -> None:
         """Remove jobs for configs that are no longer present in the config storage"""
@@ -195,6 +255,7 @@ class ModelScheduler(Singleton):
         for job in self.scheduler.get_jobs():
             if job.id not in expected_jobs:
                 self.scheduler.remove_job(job.id)
+        self._initial_forecasts = {key: value for key, value in self._initial_forecasts.items() if key in training_jobs}
         if hasattr(self, "_forecast_recovery_attempts"):
             self._forecast_recovery_attempts = {
                 key: value for key, value in self._forecast_recovery_attempts.items() if key in forecast_jobs

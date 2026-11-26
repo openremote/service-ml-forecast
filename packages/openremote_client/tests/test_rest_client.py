@@ -2,6 +2,8 @@ import time
 from http import HTTPStatus
 from typing import Any
 
+import httpx
+import pytest
 import respx
 from openremote_client.models import AssetDatapoint, AssetDatapointPeriod
 from openremote_client.rest_client import OpenRemoteClient
@@ -17,6 +19,31 @@ from .conftest import (
 EXPECTED_DATAPOINTS_COUNT = 2
 EXPECTED_ASSETS_COUNT = 2
 EXPECTED_REALMS_COUNT = 2
+
+
+@pytest.mark.parametrize(
+    "status, expected",
+    [
+        (HTTPStatus.NO_CONTENT, True),
+        (HTTPStatus.NOT_FOUND, None),
+        (HTTPStatus.SERVICE_UNAVAILABLE, False),
+        (HTTPStatus.FORBIDDEN, False),
+    ],
+)
+def test_service_heartbeat_status(
+    mock_openremote_client: OpenRemoteClient,
+    status: HTTPStatus,
+    expected: bool | None,
+) -> None:
+    with respx.mock(base_url=MOCK_OPENREMOTE_URL) as api:
+        api.put("/api/master/service/test-service/1").respond(status)
+        assert mock_openremote_client.services.heartbeat("test-service", 1) is expected
+
+
+def test_service_heartbeat_connection_failure(mock_openremote_client: OpenRemoteClient) -> None:
+    with respx.mock(base_url=MOCK_OPENREMOTE_URL) as api:
+        api.put("/api/master/service/test-service/1").mock(side_effect=httpx.ConnectError("offline"))
+        assert mock_openremote_client.services.heartbeat("test-service", 1) is False
 
 
 # helper function to convert seconds to milliseconds

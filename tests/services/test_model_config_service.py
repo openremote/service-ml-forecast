@@ -1,9 +1,16 @@
+import json
 from uuid import uuid4
 
 import pytest
+from pydantic import ValidationError
 
 from service_ml_forecast.common.exceptions import ResourceNotFoundError, ResourceValidationError
-from service_ml_forecast.models.model_config import FutureAssetDatapointFeature, ProphetModelConfig
+from service_ml_forecast.config import DIRS
+from service_ml_forecast.models.model_config import (
+    FutureAssetDatapointFeature,
+    ProphetModelConfig,
+    TargetAssetDatapointsFeature,
+)
 from service_ml_forecast.services.model_config_service import ModelConfigService
 
 
@@ -73,6 +80,45 @@ def test_get_all_configs_with_realm(
     configs = config_service.get_all(realm="non-existent")
     assert configs is not None
     assert len(configs) == 0
+
+
+@pytest.mark.parametrize("attribute_name", ["t", "kw"])
+@pytest.mark.parametrize("dependency", ["target", "regressor"])
+def test_load_legacy_config_with_short_attribute_name(
+    config_service: ModelConfigService,
+    prophet_basic_config: ProphetModelConfig,
+    attribute_name: str,
+    dependency: str,
+) -> None:
+    payload = prophet_basic_config.model_dump(mode="json")
+    feature = {**payload["target"], "attribute_name": attribute_name}
+    if dependency == "target":
+        payload["target"] = feature
+    else:
+        payload["regressors"] = [feature]
+    path = DIRS.ML_CONFIGS_DATA_DIR / f"config-{prophet_basic_config.id}.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    saved_bytes = json.dumps(payload).encode("utf-8")
+    path.write_bytes(saved_bytes)
+
+    configs = config_service.get_all(prophet_basic_config.realm)
+    assert len(configs) == 1
+    loaded = config_service.get(prophet_basic_config.realm, prophet_basic_config.id)
+    assert configs[0] == loaded
+    if dependency == "target":
+        assert loaded.target.attribute_name == attribute_name
+    else:
+        assert isinstance(loaded, ProphetModelConfig)
+        assert loaded.regressors is not None
+        assert loaded.regressors[0].attribute_name == attribute_name
+    assert path.read_bytes() == saved_bytes
+
+
+@pytest.mark.parametrize("dependency", ["target", "regressor"])
+def test_reject_empty_attribute_name(prophet_basic_config: ProphetModelConfig, dependency: str) -> None:
+    feature_type = TargetAssetDatapointsFeature if dependency == "target" else FutureAssetDatapointFeature
+    with pytest.raises(ValidationError, match="string_too_short"):
+        feature_type(asset_id=prophet_basic_config.target.asset_id, attribute_name="")
 
 
 def test_update_config(config_service: ModelConfigService, prophet_basic_config: ProphetModelConfig) -> None:

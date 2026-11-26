@@ -16,7 +16,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from openremote_client import AssetDatapoint, OpenRemoteClient
 
-from service_ml_forecast.config import DIRS, ENV
+from service_ml_forecast.config import DIRS
 from service_ml_forecast.dependencies import get_config_service
 from service_ml_forecast.logging_config import LOGGING_CONFIG
 from service_ml_forecast.models.model_config import LightGBMModelConfig, ProphetModelConfig, XGBoostModelConfig
@@ -59,11 +59,6 @@ DIRS.ML_CONFIGS_DATA_DIR = TEST_TMP_DIR / "configs"
 def cleanup_test_tmp_dir() -> Generator[None]:
     yield
     shutil.rmtree(TEST_TMP_DIR, ignore_errors=True)
-
-
-@pytest.fixture(scope="function", autouse=True)
-def allow_short_unit_test_histories(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(ENV, "ML_MIN_TRAINING_DAYS", 0)
 
 
 @pytest.fixture

@@ -425,8 +425,8 @@ class OpenRemoteClient:
                     self._client.logger.error(f"Error registering service: {e}")
                     return None
 
-        def heartbeat(self, service_id: str, instance_id: int) -> bool:
-            """Sends a heartbeat to the OpenRemote API."""
+        def heartbeat(self, service_id: str, instance_id: int) -> bool | None:
+            """Return True on success, None for a missing instance, or False on other failures."""
             url = f"{self._client.openremote_url}/api/{self._client.realm}/service/{service_id}/{instance_id}"
             request = self._client._build_request("PUT", url)
             with httpx.Client(timeout=self._client.timeout, verify=self._client.verify_SSL) as client:
@@ -434,7 +434,12 @@ class OpenRemoteClient:
                     response = client.send(request)
                     response.raise_for_status()
                     return response.status_code == HTTPStatus.NO_CONTENT
-                except (httpx.HTTPStatusError, httpx.ConnectError) as e:
+                except httpx.HTTPStatusError as e:
+                    if e.response.status_code == HTTPStatus.NOT_FOUND:
+                        return None
+                    self._client.logger.error(f"Error sending heartbeat: {e}")
+                    return False
+                except httpx.RequestError as e:
                     self._client.logger.error(f"Error sending heartbeat: {e}")
                     return False
 

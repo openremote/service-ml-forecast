@@ -66,8 +66,6 @@ class AppEnvironment(BaseSettings):
     ML_ENVIRONMENT: str = "development"  # environment to run the service in
     ML_VERIFY_SSL: bool = True  # whether to verify SSL certificates when making requests
 
-    ML_MIN_TRAINING_DAYS: int = 28
-
     # FastAPI Settings
     ML_API_PUBLISH_DOCS: bool = True  # whether to make the openapi docs available
     ML_API_ROOT_PATH: str = (

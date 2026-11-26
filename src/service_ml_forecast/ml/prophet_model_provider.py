@@ -16,7 +16,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 import logging
-import math
 from uuid import UUID
 
 import pandas as pd
@@ -25,7 +24,6 @@ from darts.models import Prophet as DartsProphet
 from openremote_client import AssetDatapoint
 
 from service_ml_forecast.common.time_util import TimeUtil
-from service_ml_forecast.config import ENV
 from service_ml_forecast.ml.backtesting import calculate_backtest_parameters, run_darts_backtest
 from service_ml_forecast.ml.calendar_regressors import CALENDAR_COLUMNS, add_calendar_regressors
 from service_ml_forecast.ml.data_processing import (
@@ -73,9 +71,7 @@ class ProphetModelProvider(ModelProvider[DartsProphet]):
             value_col=VALUE_COLUMN_NAME,
         )
 
-        step = pd.Timedelta(pd.tseries.frequencies.to_offset(self.config.forecast_frequency).nanos, unit="ns")
-        minimum_rows = max(MIN_DATAPOINTS_FOR_PROPHET, math.ceil(pd.Timedelta(days=ENV.ML_MIN_TRAINING_DAYS) / step))
-        if dataframe.empty or len(dataframe) < minimum_rows:
+        if dataframe.empty or len(dataframe) < MIN_DATAPOINTS_FOR_PROPHET:
             logger.error(f"Insufficient training data for model {self.config.id}")
             return None
         elif len(dataframe) < MIN_RECOMMENDED_DATAPOINTS:

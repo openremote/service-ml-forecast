@@ -181,7 +181,7 @@ export class CustomDurationInput extends OrElement {
 
         // replace the number in the full match with % to get the unit
         const unit = match?.[0]?.replace(match?.[1], '%');
-        return unit as TimeDurationUnit;
+        return (unit as TimeDurationUnit | undefined) ?? null;
     }
 
     // Extract the number from the Pandas Frequency string
@@ -196,7 +196,7 @@ export class CustomDurationInput extends OrElement {
 
         // replace the number in the full match with % to get the unit
         const unit = match?.[0]?.replace(match?.[1], '%');
-        return unit as PandasTimeUnit;
+        return (unit as PandasTimeUnit | undefined) ?? null;
     }
 
     // Get available unit options based on the units property or defaults

@@ -16,7 +16,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 import logging
-import math
 from collections.abc import Sequence
 from uuid import UUID
 
@@ -26,7 +25,6 @@ from darts.models import XGBModel
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from openremote_client import AssetDatapoint
 
-from service_ml_forecast.config import ENV
 from service_ml_forecast.ml.backtesting import calculate_backtest_parameters, run_darts_backtest
 from service_ml_forecast.ml.calendar_regressors import CALENDAR_COLUMNS, add_calendar_regressors
 from service_ml_forecast.ml.data_processing import (
@@ -84,16 +82,13 @@ class TreeModelProvider(ModelProvider[ForecastingModel]):
             value_col=VALUE_COLUMN_NAME,
         )
 
-        step = pd.Timedelta(pd.tseries.frequencies.to_offset(self.config.forecast_frequency).nanos, unit="ns")
-        minimum_rows = max(MIN_DATAPOINTS_FOR_TREE_MODEL, math.ceil(pd.Timedelta(days=ENV.ML_MIN_TRAINING_DAYS) / step))
-        if dataframe.empty or len(dataframe) < minimum_rows:
+        if dataframe.empty or len(dataframe) < MIN_DATAPOINTS_FOR_TREE_MODEL:
             logger.error(
-                "Insufficient training data for model %s: %s aligned rows; require %s at %s (%s days)",
+                "Insufficient training data for model %s: %s aligned rows; require %s at %s",
                 self.config.id,
                 len(dataframe),
-                minimum_rows,
+                MIN_DATAPOINTS_FOR_TREE_MODEL,
                 self.config.forecast_frequency,
-                ENV.ML_MIN_TRAINING_DAYS,
             )
             return None
         elif len(dataframe) < MIN_RECOMMENDED_DATAPOINTS:
@@ -227,7 +222,6 @@ class TreeModelProvider(ModelProvider[ForecastingModel]):
             ForecastResult containing predicted datapoints
         """
         return self._predict(self.load_model(self.config.id), forecast_dataset, self.config.forecast_periods)
-
 
     def _predict(
         self,
