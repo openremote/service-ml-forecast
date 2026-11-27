@@ -72,7 +72,7 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None]:
 # --- FastAPI App ---
 app = FastAPI(
     root_path=ENV.ML_API_ROOT_PATH,
-    title=__app_info__.name,
+    title=ENV.ML_OR_SERVICE_LABEL,
     description=__app_info__.description,
     version=__app_info__.version,
     docs_url="/docs",

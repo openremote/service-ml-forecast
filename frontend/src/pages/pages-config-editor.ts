@@ -27,8 +27,8 @@ import type { OrVaadinComboBox } from '@openremote/or-vaadin-components/or-vaadi
 import { customElement, property, state } from 'lit/decorators.js';
 import { when } from 'lit/directives/when.js';
 import { guard } from 'lit/directives/guard.js';
-import { ModelTypeEnum, ProphetSeasonalityModeEnum } from '../services/models';
-import type { ModelConfig, ProphetModelConfig } from '../services/models';
+import { ModelTypeEnum } from '../services/models';
+import type { ModelConfig } from '../services/models';
 import { APIService } from '../services/api-service';
 import { Router, RouterLocation } from '@vaadin/router';
 import { showSnackbar } from '@openremote/or-mwc-components/or-mwc-snackbar';
@@ -39,6 +39,7 @@ import { realmContext } from './app-layout';
 import { manager } from '@openremote/core';
 import * as Model from '@openremote/model';
 import { ModelTypeRegistry } from './model-configs/model-registry';
+import { XGBoostConfig } from './model-configs/xgboost-config';
 import type { CovariateLagsInput } from '../components/covariate-lags-input';
 
 // Initialize model configurations
@@ -259,7 +260,8 @@ export class PageConfigEditor extends OrElement {
 
     @state()
     protected formData: ModelConfig = {
-        type: ModelTypeEnum.PROPHET,
+        ...XGBoostConfig.defaultConfig,
+        type: ModelTypeEnum.XGBOOST,
         realm: '', // Set during setup
         name: 'New Model Config',
         enabled: true,
@@ -268,18 +270,11 @@ export class PageConfigEditor extends OrElement {
             attribute_name: '',
             training_data_period: 'P6M'
         },
-        regressors: null,
         forecast_interval: 'PT1H',
         forecast_periods: 24,
         forecast_frequency: '1h',
-        calendar_timezone: null,
-        daily_seasonality: true,
-        weekly_seasonality: true,
-        yearly_seasonality: true,
-        changepoint_range: 0.8,
-        changepoint_prior_scale: 0.05,
-        seasonality_mode: ProphetSeasonalityModeEnum.ADDITIVE
-    } as ProphetModelConfig;
+        calendar_timezone: null
+    };
 
     // Handle basic form field updates
     protected handleBasicInput(ev: Event) {
@@ -611,7 +606,7 @@ export class PageConfigEditor extends OrElement {
                     <div class="group-content config-header-name">
                         <or-vaadin-text-field
                             name="name"
-                            label="Model name"
+                            label="Configuration name"
                             @input=${this.handleBasicInput}
                             .value=${this.formData.name}
                             required

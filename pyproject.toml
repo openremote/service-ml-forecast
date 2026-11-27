@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "service-ml-forecast"
 dynamic = ["version"]
-description = "ML Forecast Service"
+description = "Forecasting Service"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [

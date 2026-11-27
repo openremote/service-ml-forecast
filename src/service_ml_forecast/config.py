@@ -93,7 +93,7 @@ class AppEnvironment(BaseSettings):
     # Service registration settings
     ML_OR_SERVICE_URL: str = f"http://localhost:{ML_WEBSERVER_PORT}"  # URL for the OpenRemote service registration
     ML_OR_SERVICE_ICON: str = "chart-timeline-variant"  # OpenRemote service icon
-    ML_OR_SERVICE_LABEL: str = "ML Forecasting Service"  # OpenRemote service label
+    ML_OR_SERVICE_LABEL: str = "Forecasting Service"  # OpenRemote service label
     ML_OR_SERVICE_SERVICE_ID: str = "ml-forecast"  # OpenRemote service service id
     ML_OR_SERVICE_GLOBAL: bool = True  # OpenRemote service is global/multi-tenancy
 

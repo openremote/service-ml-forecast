@@ -1,4 +1,4 @@
-# service-ml-forecast
+# Forecasting Service
 [![Lint and Test](https://github.com/openremote/service-ml-forecast/actions/workflows/ci.yml/badge.svg)](https://github.com/openremote/service-ml-forecast/actions/workflows/ci.yml?query=branch%3Amain)
 [![Open Source? Yes!](https://badgen.net/badge/Open%20Source%20%3F/Yes%21/blue?icon=github)](https://github.com/Naereen/badges/)
 
@@ -73,7 +73,7 @@ in `/frontend`
 
 ## License
 
-The OpenRemote ML Forecast Service is distributed under [AGPL-3.0-or-later](LICENSE.txt).
+The OpenRemote Forecasting Service is distributed under [AGPL-3.0-or-later](LICENSE.txt).
 
 ```
 Copyright 2025, OpenRemote Inc.

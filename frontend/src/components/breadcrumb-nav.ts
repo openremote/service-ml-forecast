@@ -157,7 +157,7 @@ export class BreadcrumbNav extends LitElement {
 
         const homePart = {
             path: `${this.rootPath}/${this.realm}/configs`,
-            name: 'ML Forecast Service',
+            name: 'Forecasting Service',
             icon: 'puzzle'
         };
 
