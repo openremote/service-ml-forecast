@@ -10,7 +10,6 @@
       "training_data_period": "P6M"
     },
     "forecast_interval": "PT120S",
-    "training_interval": "PT60S",
     "forecast_periods": 7,
     "forecast_frequency": "1h",
     "regressors": [

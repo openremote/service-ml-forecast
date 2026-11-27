@@ -10,6 +10,8 @@ TEST_REALM = "master"
 TEST_ASSET_ID = "41ORIplRVAlT97dYGUD9n5"
 TEST_ATTRIBUTE_NAME = "test-attribute"
 TEST_training_data_period = "P6M"
+TREE_LAGS = 168
+GOPACS_OUTPUT_CHUNK_LENGTH = 24
 
 
 def create_test_config() -> dict[str, Any]:
@@ -71,6 +73,32 @@ def test_create_invalid_model_config(mock_test_client: TestClient) -> None:
     config = create_invalid_test_config()
     response = mock_test_client.post("/api/master/configs", json=config)
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+
+
+def test_create_lightgbm_model_config(mock_test_client: TestClient) -> None:
+    config = create_test_config()
+    config.update(
+        {
+            "id": str(uuid4()),
+            "name": "LightGBM Test Model",
+            "type": "lightgbm",
+            "lags": TREE_LAGS,
+            "output_chunk_length": GOPACS_OUTPUT_CHUNK_LENGTH,
+            "n_estimators": 100,
+            "max_depth": 6,
+            "learning_rate": 0.1,
+            "subsample": 0.8,
+            "random_state": 42,
+        }
+    )
+
+    response = mock_test_client.post("/api/master/configs", json=config)
+
+    assert response.status_code == HTTPStatus.OK
+    saved_config = response.json()
+    assert saved_config["type"] == "lightgbm"
+    assert saved_config["lags"] == TREE_LAGS
+    assert saved_config["output_chunk_length"] == GOPACS_OUTPUT_CHUNK_LENGTH
 
 
 def test_get_model_config(mock_test_client: TestClient) -> None:

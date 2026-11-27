@@ -16,6 +16,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { setupORIcons } from './common/theme';
+import themeCss from '@openremote/theme';
 import { setupRouter } from './router';
 import { IS_EMBEDDED, ML_OR_KEYCLOAK_URL, ML_OR_URL } from './common/constants';
 import { getRealmSearchParam } from './common/util';
@@ -33,17 +34,22 @@ import './components/breadcrumb-nav';
 import './components/alert-message';
 
 const DEFAULT_MANAGER_CONFIG: ManagerConfig = {
-    managerUrl: ML_OR_URL ?? '/',
+    managerUrl: ML_OR_URL || '/',
     keycloakUrl: ML_OR_KEYCLOAK_URL || '/auth',
     auth: Auth.KEYCLOAK,
     autoLogin: true,
     realm: undefined,
     consoleAutoEnable: true,
     loadTranslations: ['or'],
-    eventProviderType: EventProviderType.WEBSOCKET
+    eventProviderType: EventProviderType.POLLING
 };
 
 async function init() {
+    const themeStyle = document.createElement('style');
+    themeStyle.id = 'orDefaultTheme';
+    themeStyle.textContent = themeCss;
+    document.head.appendChild(themeStyle);
+
     console.info('Context:', IS_EMBEDDED ? 'iframe' : 'standalone');
 
     // get realm search param (?realm=) from url, if not provided, use master for auth

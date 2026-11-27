@@ -30,22 +30,22 @@ class AssetFeatureDatapoints(BaseModel):
 
 
 class TrainingDataSet(BaseModel):
-    """Training set of the asset target and optional asset regressors.
+    """Training set of the asset target and optional asset covariates.
 
-    The target is required, but the regressors are optional.
+    The target is required, but the covariates are optional.
     """
 
     target: AssetFeatureDatapoints
-    regressors: list[AssetFeatureDatapoints] | None = None
+    covariates: list[AssetFeatureDatapoints] | None = None
 
 
 class ForecastDataSet(BaseModel):
-    """Forecast feature set with asset regressors.
+    """Forecast feature set with asset covariates.
 
-    The regressors are required.
+    The covariates are required.
     """
 
-    regressors: list[AssetFeatureDatapoints]
+    covariates: list[AssetFeatureDatapoints]
 
 
 class ForecastResult(BaseModel):

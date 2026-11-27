@@ -1,9 +1,16 @@
+import json
 from uuid import uuid4
 
 import pytest
+from pydantic import ValidationError
 
-from service_ml_forecast.common.exceptions import ResourceNotFoundError
-from service_ml_forecast.models.model_config import ProphetModelConfig
+from service_ml_forecast.common.exceptions import ResourceNotFoundError, ResourceValidationError
+from service_ml_forecast.config import DIRS
+from service_ml_forecast.models.model_config import (
+    FutureAssetDatapointFeature,
+    ProphetModelConfig,
+    TargetAssetDatapointsFeature,
+)
 from service_ml_forecast.services.model_config_service import ModelConfigService
 
 
@@ -75,6 +82,45 @@ def test_get_all_configs_with_realm(
     assert len(configs) == 0
 
 
+@pytest.mark.parametrize("attribute_name", ["t", "kw"])
+@pytest.mark.parametrize("dependency", ["target", "regressor"])
+def test_load_legacy_config_with_short_attribute_name(
+    config_service: ModelConfigService,
+    prophet_basic_config: ProphetModelConfig,
+    attribute_name: str,
+    dependency: str,
+) -> None:
+    payload = prophet_basic_config.model_dump(mode="json")
+    feature = {**payload["target"], "attribute_name": attribute_name}
+    if dependency == "target":
+        payload["target"] = feature
+    else:
+        payload["regressors"] = [feature]
+    path = DIRS.ML_CONFIGS_DATA_DIR / f"config-{prophet_basic_config.id}.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    saved_bytes = json.dumps(payload).encode("utf-8")
+    path.write_bytes(saved_bytes)
+
+    configs = config_service.get_all(prophet_basic_config.realm)
+    assert len(configs) == 1
+    loaded = config_service.get(prophet_basic_config.realm, prophet_basic_config.id)
+    assert configs[0] == loaded
+    if dependency == "target":
+        assert loaded.target.attribute_name == attribute_name
+    else:
+        assert isinstance(loaded, ProphetModelConfig)
+        assert loaded.regressors is not None
+        assert loaded.regressors[0].attribute_name == attribute_name
+    assert path.read_bytes() == saved_bytes
+
+
+@pytest.mark.parametrize("dependency", ["target", "regressor"])
+def test_reject_empty_attribute_name(prophet_basic_config: ProphetModelConfig, dependency: str) -> None:
+    feature_type = TargetAssetDatapointsFeature if dependency == "target" else FutureAssetDatapointFeature
+    with pytest.raises(ValidationError, match="string_too_short"):
+        feature_type(asset_id=prophet_basic_config.target.asset_id, attribute_name="")
+
+
 def test_update_config(config_service: ModelConfigService, prophet_basic_config: ProphetModelConfig) -> None:
     """Test updating an existing model configuration.
 
@@ -92,6 +138,38 @@ def test_update_config(config_service: ModelConfigService, prophet_basic_config:
     assert config.name == "Updated Config"
 
 
+@pytest.mark.parametrize("dependency", ["target", "regressor"])
+def test_update_config_rejects_assets_outside_its_realm(
+    config_service: ModelConfigService,
+    prophet_basic_config: ProphetModelConfig,
+    monkeypatch: pytest.MonkeyPatch,
+    dependency: str,
+) -> None:
+    config_service.create(prophet_basic_config.realm, prophet_basic_config)
+    updated = prophet_basic_config.model_copy(deep=True)
+    unavailable_asset_id = "44ORIhkDVAlT97dYGUD9n5"
+    if dependency == "target":
+        updated.target.asset_id = unavailable_asset_id
+    else:
+        updated.regressors = [
+            FutureAssetDatapointFeature(
+                asset_id=unavailable_asset_id,
+                attribute_name="temperature",
+                training_data_period=updated.target.training_data_period,
+            )
+        ]
+
+    def available_assets(realm: str, asset_ids: list[str]) -> list[dict[str, str]]:
+        return [{"id": asset_id, "realm": realm} for asset_id in asset_ids if asset_id != unavailable_asset_id]
+
+    monkeypatch.setattr(config_service.openremote_service, "get_assets_by_ids", available_assets)
+
+    with pytest.raises(ResourceValidationError, match="assets do not exist or are not in the correct realm"):
+        config_service.update(updated.realm, updated.id, updated)
+
+    assert config_service.get(prophet_basic_config.realm, prophet_basic_config.id) == prophet_basic_config
+
+
 def test_delete_config(config_service: ModelConfigService, prophet_basic_config: ProphetModelConfig) -> None:
     """Test deleting a model configuration.
 
@@ -105,3 +183,29 @@ def test_delete_config(config_service: ModelConfigService, prophet_basic_config:
 
     with pytest.raises(ResourceNotFoundError):
         config_service.get(prophet_basic_config.realm, prophet_basic_config.id)
+
+
+def test_only_one_enabled_writer_per_target(
+    config_service: ModelConfigService, prophet_basic_config: ProphetModelConfig
+) -> None:
+    config_service.create(prophet_basic_config.realm, prophet_basic_config)
+    second = prophet_basic_config.model_copy(update={"id": uuid4(), "name": "Second model", "enabled": False})
+    config_service.create(second.realm, second)
+
+    with pytest.raises(ResourceValidationError, match="already owned"):
+        config_service.update(second.realm, second.id, second.model_copy(update={"enabled": True}))
+    assert not config_service.get(second.realm, second.id).enabled
+
+    with pytest.raises(ResourceValidationError, match="already owned"):
+        config_service.create(
+            second.realm,
+            second.model_copy(update={"id": uuid4(), "enabled": True}),
+        )
+
+    config_service.update(
+        prophet_basic_config.realm,
+        prophet_basic_config.id,
+        prophet_basic_config.model_copy(update={"enabled": False}),
+    )
+    config_service.update(second.realm, second.id, second.model_copy(update={"enabled": True}))
+    assert config_service.get(second.realm, second.id).enabled

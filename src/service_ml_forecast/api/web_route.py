@@ -84,7 +84,10 @@ def serve_index() -> HTMLResponse:
 def serve_spa(path: str) -> Response:
     """Serve static files or return index.html for SPA routing."""
 
-    requested_path = DIRS.ML_WEBSERVER_UI_DIST_DIR / path
+    web_root = DIRS.ML_WEBSERVER_UI_DIST_DIR.resolve()
+    requested_path = (web_root / path).resolve()
+    if not requested_path.is_relative_to(web_root):
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Static file not found")
 
     # If the exact file exists, serve it (e.g. css, images, etc.)
     if requested_path.is_file():

@@ -29,7 +29,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from openremote_client import ClientRoles
 
-from service_ml_forecast.dependencies import OAUTH2_SCHEME, OPENREMOTE_KC_RESOURCE, get_config_service
+from service_ml_forecast.dependencies import (
+    OAUTH2_SCHEME,
+    OPENREMOTE_KC_RESOURCE,
+    get_config_service,
+)
 from service_ml_forecast.middlewares.keycloak.decorators import realm_accessible, roles_allowed
 from service_ml_forecast.middlewares.keycloak.middleware import KeycloakMiddleware
 from service_ml_forecast.middlewares.keycloak.models import UserContext

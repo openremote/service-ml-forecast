@@ -28,6 +28,7 @@ from service_ml_forecast.common.exceptions import (
 )
 from service_ml_forecast.common.fs_util import FsUtil
 from service_ml_forecast.config import DIRS
+from service_ml_forecast.ml.model_provider_factory import get_all_covariates
 from service_ml_forecast.models.model_config import ModelConfig
 from service_ml_forecast.services.model_storage_service import ModelStorageService
 from service_ml_forecast.services.openremote_service import OpenRemoteService
@@ -36,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 
 class ModelConfigService:
-    """Manages the persistence of ML model configurations."""
+    """Manages the persistence of model configurations."""
 
     CONFIG_FILE_PREFIX = "config"
     CONFIG_FILE_EXTENSION = "json"
@@ -69,6 +70,7 @@ class ModelConfigService:
             raise ResourceValidationError(
                 f"Invalid model config: {config.id}! - some of the assets do not exist or are not in the correct realm"
             )
+        self._ensure_single_enabled_target(config)
 
         try:
             FsUtil.create_file(path, config.model_dump_json())
@@ -148,13 +150,24 @@ class ModelConfigService:
             ResourceNotFoundError: Config does not exist
         """
         existing_config = self.get(realm, config_id)
+        if updated_config.id != config_id:
+            raise ResourceValidationError("Cannot update config: ID does not match path")
 
         # Check if the updated config has a matching realm
         if not self._has_matching_realm(updated_config, realm):
             raise ResourceValidationError(f"Cannot update config: {config_id} - realm does not match")
+        if not self._has_valid_asset_dependencies(updated_config):
+            raise ResourceValidationError(
+                f"Invalid model config: {config_id}! - some of the assets do not exist or are not in the correct realm"
+            )
+        self._ensure_single_enabled_target(updated_config)
 
         path = self._get_config_file_path(existing_config.id)
         FsUtil.update_file(path, updated_config.model_dump_json())
+        if self.model_storage_service.fingerprint(existing_config) != self.model_storage_service.fingerprint(
+            updated_config
+        ):
+            self.model_storage_service.mark_training_pending(updated_config)
 
         return updated_config
 
@@ -186,7 +199,7 @@ class ModelConfigService:
             logger.info(f"Config did not have a model file to delete: {config_id} - {e}")
 
     def _parse(self, json: str) -> ModelConfig:
-        """Parse the provided ML model config JSON string into the concrete type."""
+        """Parse the provided model config JSON string into the concrete type."""
 
         model_adapter: TypeAdapter[ModelConfig] = TypeAdapter(ModelConfig)
         return model_adapter.validate_json(json)
@@ -209,9 +222,9 @@ class ModelConfigService:
 
         asset_ids_to_check.add(config.target.asset_id)
 
-        if config.regressors:
-            for regressor in config.regressors:
-                asset_ids_to_check.add(regressor.asset_id)
+        # Add all covariate asset IDs to check
+        for covariate in get_all_covariates(config):
+            asset_ids_to_check.add(covariate.asset_id)
 
         assets = self.openremote_service.get_assets_by_ids(config.realm, list(asset_ids_to_check))
 
@@ -220,3 +233,19 @@ class ModelConfigService:
             return False
 
         return True
+
+    def _ensure_single_enabled_target(self, config: ModelConfig) -> None:
+        """Only one scheduled writer may own an asset attribute at a time."""
+        if not config.enabled:
+            return
+        for existing in self.get_all(config.realm):
+            if (
+                existing.id != config.id
+                and existing.enabled
+                and existing.target.asset_id == config.target.asset_id
+                and existing.target.attribute_name == config.target.attribute_name
+            ):
+                raise ResourceValidationError(
+                    f"Cannot enable config {config.id}: target {config.target.asset_id}/"
+                    f"{config.target.attribute_name} is already owned by enabled config {existing.id}"
+                )

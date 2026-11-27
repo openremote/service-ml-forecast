@@ -18,11 +18,14 @@
 // TODO: Automatically generate the Models via OpenAPI spec -- See https://github.com/openremote/service-ml-forecast/issues/31
 
 /**
- * Enum representing the different types of machine learning models available.
+ * Enum representing the different types of models available.
  * Corresponds to service_ml_forecast.models.model_type.ModelTypeEnum
  */
 export enum ModelTypeEnum {
-    PROPHET = 'prophet'
+    PROPHET = 'prophet',
+    XGBOOST = 'xgboost',
+    LIGHTGBM = 'lightgbm',
+    WEA = 'wea'
 }
 
 /**
@@ -37,7 +40,7 @@ export interface TargetFeature {
     asset_id: string;
     /**
      * Name of the attribute of the asset.
-     * Constraints: min_length=3
+     * Constraints: min_length=1
      */
     attribute_name: string;
     /**
@@ -58,7 +61,7 @@ export interface RegressorFeature {
     asset_id: string;
     /**
      * Name of the attribute of the asset.
-     * Constraints: min_length=3
+     * Constraints: min_length=1
      */
     attribute_name: string;
     /**
@@ -69,7 +72,7 @@ export interface RegressorFeature {
 }
 
 /**
- * Base configuration common to all ML models.
+ * Base configuration common to all models.
  */
 interface BaseModelConfig {
     /**
@@ -90,7 +93,7 @@ interface BaseModelConfig {
      */
     enabled?: boolean; // Optional as it has a default
     /**
-     * Which machine learning model to use.
+     * Which model to use.
      */
     type: ModelTypeEnum;
     /**
@@ -98,12 +101,6 @@ interface BaseModelConfig {
      * There must be historical data available for training.
      */
     target: TargetFeature;
-    /**
-     * List of asset attributes that will be used as regressors.
-     * There must be historical data available for training.
-     * @default null
-     */
-    regressors?: RegressorFeature[] | null; // Optional as it has a default
     /**
      * Forecast generation interval. Expects ISO 8601 duration strings.
      */
@@ -119,6 +116,8 @@ interface BaseModelConfig {
      * Example: 15:30 -> 16:00 -> 16:30 etc.
      */
     forecast_frequency: string;
+    /** IANA timezone for cyclic hour and weekday regressors; null disables them. */
+    calendar_timezone?: string | null;
 }
 
 /**
@@ -137,6 +136,13 @@ export interface ProphetModelConfig extends BaseModelConfig {
      * Discriminator field indicating the model type is Prophet.
      */
     type: ModelTypeEnum.PROPHET; // Use literal type for discriminator
+    /**
+     * List of asset attributes that will be used as regressors.
+     * There must be historical data available for training.
+     * There must also be future data available for forecasting.
+     * @default null
+     */
+    regressors?: RegressorFeature[] | null; // Optional as it has a default
     /**
      * Include yearly seasonality in the model.
      * @default true
@@ -175,7 +181,89 @@ export interface ProphetModelConfig extends BaseModelConfig {
 }
 
 /**
+ * XGBoost specific model configuration.
+ */
+export interface XGBoostModelConfig extends BaseModelConfig {
+    /**
+     * Discriminator field indicating the model type is XGBoost.
+     */
+    type: ModelTypeEnum.XGBOOST;
+    /**
+     * List of asset attributes that will be used as past covariates.
+     * Historical data is required for training. Only historical data is used for forecasting.
+     * Use this when future data cannot be provided.
+     * @default null
+     */
+    past_covariates?: RegressorFeature[] | null;
+    /**
+     * List of asset attributes that will be used as future covariates.
+     * Historical data is required for training. Future data is required for forecasting.
+     * Use this when future data can be provided (e.g., weather forecasts).
+     * @default null
+     */
+    future_covariates?: RegressorFeature[] | null;
+    /**
+     * Number of lagged target values to use as features.
+     * @default 168
+     */
+    lags?: number | number[] | null;
+    /**
+     * Lags of past covariates to use as features.
+     * Can be a single number or list of numbers.
+     * @default null
+     */
+    lags_past_covariates?: number | number[] | null;
+    /**
+     * Lags of future covariates to use as features.
+     * Can be a single number or list of numbers.
+     * @default null
+     */
+    lags_future_covariates?: number | number[] | null;
+    /**
+     * Number of time steps the model outputs in one forward pass.
+     * @default 1
+     */
+    output_chunk_length?: number;
+    /**
+     * Number of gradient boosted trees.
+     * @default 100
+     */
+    n_estimators?: number;
+    /**
+     * Maximum depth of the individual regression estimators.
+     * @default 6
+     */
+    max_depth?: number;
+    /**
+     * Boosting learning rate.
+     * @default 0.1
+     */
+    learning_rate?: number;
+    /**
+     * Subsample ratio of the training instances.
+     * @default 0.8
+     */
+    subsample?: number;
+    /**
+     * Random state for reproducibility.
+     * @default 42
+     */
+    random_state?: number;
+}
+
+/** LightGBM uses the same Darts lag, covariate, and boosting controls as XGBoost. */
+export interface LightGBMModelConfig extends Omit<XGBoostModelConfig, 'type'> {
+    type: ModelTypeEnum.LIGHTGBM;
+}
+
+/**
  * Represents a model configuration, which can be one of the specific model types.
  * This uses a discriminated union based on the 'type' field.
  */
-export type ModelConfig = ProphetModelConfig;
+export interface WEAModelConfig extends BaseModelConfig {
+    type: ModelTypeEnum.WEA;
+    past_period: string;
+    past_count: number;
+}
+
+export type ModelConfig = ProphetModelConfig | XGBoostModelConfig | LightGBMModelConfig | WEAModelConfig;

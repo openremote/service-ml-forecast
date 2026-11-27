@@ -78,9 +78,15 @@ def get_openremote_issuers() -> list[str] | None:
         if realms is None:
             return None
 
-        urls = []
+        issuer_base_url = (ENV.ML_OR_ISSUER_URL or f"{ENV.ML_OR_URL}/auth").rstrip("/")
+        # OpenRemote administrators can be authenticated by the master realm
+        # while configuring assets in a tenant realm. The route decorators
+        # still enforce realm access and the required service role.
+        urls = [f"{issuer_base_url}/realms/master"]
         for realm in realms:
-            urls.append(f"{ENV.ML_OR_URL}/auth/realms/{realm.name}")
+            issuer = f"{issuer_base_url}/realms/{realm.name}"
+            if issuer not in urls:
+                urls.append(issuer)
         return urls
     except Exception as e:
         logger.error(f"Error getting issuers from OpenRemote: {e}", exc_info=True)

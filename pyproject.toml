@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "service-ml-forecast"
 dynamic = ["version"]
-description = "ML Forecast Service"
+description = "Forecasting Service"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
@@ -27,14 +27,22 @@ dependencies = [
     "pyjwt>=2.10.1",
     "aiocache>=0.12.3",
     "openremote-client",
+    "scikit-learn>=1.7.2",
+    "u8darts>=0.37.1",
+    # 2.0.1 has no CPython 3.13 Windows wheel and requires a local C++ toolchain.
+    "statsforecast>=2.1.1",
+    "xgboost>=3.0.5",
+    "lightgbm>=4.6.0",
 ]
 
 
+# Workspace and sources for local packages
 [tool.uv.workspace]
 members = ["packages/*"]
 
 [tool.uv.sources]
 openremote-client = { workspace = true }
+
 
 [dependency-groups]
 dev = [
@@ -53,8 +61,12 @@ dev = [
 "Bug Tracker" = "https://github.com/openremote/service-ml-forecast/issues"
 
 [tool.setuptools]
-packages = ["service_ml_forecast", "scripts"]
 package-dir = { "service_ml_forecast" = "src/service_ml_forecast", "scripts" = "scripts" }
+
+[tool.setuptools.packages.find]
+where = ["src", "."]
+include = ["service_ml_forecast*", "scripts*"]
+namespaces = false
 
 [tool.ruff]
 line-length = 120
@@ -115,22 +127,30 @@ combine-as-imports = true
 testpaths = ["tests"]
 python_files = "test_*.py"
 filterwarnings = ["ignore:.*"]
+log_cli = true
+log_cli_level = "INFO"
+log_cli_format = "%(asctime)s [%(levelname)8s] %(name)s: %(message)s"
+log_cli_date_format = "%Y-%m-%d %H:%M:%S"
 
 [project.scripts]
 service_ml_forecast = "service_ml_forecast.main:app"
 
 # CLI helpers
 help = "scripts.tools:help"
-lint = "scripts.tools:lint"
-format = "scripts.tools:format"
-test = "scripts.tools:test"
-test-coverage = "scripts.tools:test_coverage"
-build = "scripts.tools:build"
-start = "scripts.tools:start"
-build-frontend = "scripts.tools:build_frontend"
-build-frontend-dev = "scripts.tools:build_frontend_dev"
-lint-packages = "scripts.tools:lint_packages"
-test-packages = "scripts.tools:test_packages"
-build-packages = "scripts.tools:build_packages"
+
+lint = "scripts.tools:lint" # lint backend and packages
+format = "scripts.tools:format" # format backend and packages
+test = "scripts.tools:test" # test backend and packages
+test-coverage = "scripts.tools:test_coverage" # test backend and packages with coverage
+build = "scripts.tools:build" # build backend and packages
+start = "scripts.tools:start" # start backend server
+
+build-frontend = "scripts.tools:build_frontend" # build frontend bundle
+build-frontend-dev = "scripts.tools:build_frontend_dev" # build frontend bundle for development
+
+# Package-specific commands
+lint-packages = "scripts.tools:lint_packages" # lint packages
+test-packages = "scripts.tools:test_packages" # test packages
+build-packages = "scripts.tools:build_packages" # build packages
 
 

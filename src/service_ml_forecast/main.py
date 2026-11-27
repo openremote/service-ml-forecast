@@ -45,15 +45,34 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncGenerator[None]:
     logger.info("FastAPI instance starting")
-
-    yield  # yield to the FastAPI app
-    logger.info("FastAPI instance shutting down")
+    model_scheduler = ModelScheduler(get_openremote_service())
+    service_info = ServiceInfo(
+        serviceId=ENV.ML_OR_SERVICE_SERVICE_ID,
+        label=ENV.ML_OR_SERVICE_LABEL,
+        icon=ENV.ML_OR_SERVICE_ICON,
+        realm=ENV.ML_OR_REALM,
+        homepageUrl=f"{ENV.ML_OR_SERVICE_URL}{ENV.ML_API_ROOT_PATH}/ui/{{realm}}",
+        status=ServiceStatus.AVAILABLE,
+    )
+    service_registrar = OpenRemoteServiceRegistrar(
+        get_openremote_client(), service_info, is_global=ENV.ML_OR_SERVICE_GLOBAL
+    )
+    try:
+        model_scheduler.start()
+        service_registrar.start()
+        yield
+    finally:
+        logger.info("FastAPI instance shutting down")
+        try:
+            model_scheduler.stop()
+        finally:
+            service_registrar.stop()
 
 
 # --- FastAPI App ---
 app = FastAPI(
     root_path=ENV.ML_API_ROOT_PATH,
-    title=__app_info__.name,
+    title=ENV.ML_OR_SERVICE_LABEL,
     description=__app_info__.description,
     version=__app_info__.version,
     docs_url="/docs",
@@ -99,30 +118,6 @@ app.include_router(web_route.router)
 register_exception_handlers(app)
 
 
-def initialize_background_services() -> None:
-    """Initialize background services, these run in the background and are not part of the FastAPI lifecycle"""
-
-    # Setup the Model Scheduler
-    model_scheduler = ModelScheduler(get_openremote_service())
-    model_scheduler.start()
-
-    # Service details for registration
-    service_info = ServiceInfo(
-        serviceId=ENV.ML_OR_SERVICE_SERVICE_ID,
-        label=ENV.ML_OR_SERVICE_LABEL,
-        icon=ENV.ML_OR_SERVICE_ICON,
-        realm=ENV.ML_OR_REALM,
-        homepageUrl=f"{ENV.ML_OR_SERVICE_URL}{ENV.ML_API_ROOT_PATH}/ui/{{realm}}",
-        status=ServiceStatus.AVAILABLE,
-    )
-
-    # Start the OpenRemote Service Registrar
-    service_registrar = OpenRemoteServiceRegistrar(
-        get_openremote_client(), service_info, is_global=ENV.ML_OR_SERVICE_GLOBAL
-    )
-    service_registrar.start()
-
-
 # Entrypoint for the service
 if __name__ == "__main__":
     IS_DEV = ENV.is_development()
@@ -131,9 +126,6 @@ if __name__ == "__main__":
         logger.warning("Application is running in development mode -- DO NOT USE IN PRODUCTION")
 
     logger.info("Application details: %s", __app_info__)
-
-    # Initialize any services that run separately from the FastAPI app
-    initialize_background_services()
 
     # Run the FastAPI app, enable auto-reload in development mode
     uvicorn.run("service_ml_forecast.main:app", host=ENV.ML_WEBSERVER_HOST, port=ENV.ML_WEBSERVER_PORT, reload=IS_DEV)

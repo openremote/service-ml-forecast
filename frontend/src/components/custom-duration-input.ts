@@ -15,9 +15,13 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import { css, html, LitElement } from 'lit';
+import { css, html, type PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { InputType, OrInputChangedEvent } from '@openremote/or-mwc-components/or-mwc-input';
+import { OrElement } from '@openremote/or-element';
+import '@openremote/or-vaadin-components/or-vaadin-number-field';
+import '@openremote/or-vaadin-components/or-vaadin-select';
+import type { OrVaadinNumberField } from '@openremote/or-vaadin-components/or-vaadin-number-field';
+import type { OrVaadinSelect } from '@openremote/or-vaadin-components/or-vaadin-select';
 
 // Duration Input Type
 export enum DurationInputType {
@@ -59,17 +63,45 @@ const PandasTimeUnitDisplay: Record<PandasTimeUnit, string> = {
 
 // This is a input component that renders both a number input and a dropdown for the unit of the duration
 @customElement('custom-duration-input')
-export class CustomDurationInput extends LitElement {
+export class CustomDurationInput extends OrElement {
     static get styles() {
         return css`
             :host {
-                display: block;
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) minmax(6rem, 0.55fr);
+                gap: var(--lumo-space-xs, 4px);
+                align-items: start;
+            }
+
+            or-vaadin-number-field,
+            or-vaadin-select {
+                width: 100%;
+                min-width: 0;
+            }
+
+            or-vaadin-select {
+                padding-top: calc(var(--lumo-font-size-s) * 1.5);
+            }
+
+            or-vaadin-number-field::part(label) {
+                white-space: normal;
+                line-height: 1;
+            }
+
+            .unit-label {
+                position: absolute;
+                width: 1px;
+                height: 1px;
+                overflow: hidden;
+                clip-path: inset(50%);
+                white-space: nowrap;
             }
         `;
     }
 
-    connectedCallback() {
-        super.connectedCallback();
+    protected willUpdate(changed: PropertyValues) {
+        if (!changed.has('value') && !changed.has('type')) return;
+        if (this.value === this.lastInputValue && !changed.has('type')) return;
 
         switch (this.type) {
             case DurationInputType.ISO_8601:
@@ -82,37 +114,26 @@ export class CustomDurationInput extends LitElement {
         }
     }
 
-    onInput(e: OrInputChangedEvent) {
-        const value = e.detail.value;
-        const target = e.target as HTMLInputElement;
-
-        if (!target || value === undefined) {
-            return;
-        }
+    onInput(event: Event) {
+        const target = event.currentTarget as OrVaadinNumberField | OrVaadinSelect;
+        const value = target.value;
 
         switch (target.name) {
-            case 'value':
-                this.number = value;
+            case 'value': {
+                const number = value === '' ? null : Number(value);
+                if (this.number === number) return;
+                this.number = number;
                 break;
+            }
             case 'unit':
-                this.unit = value;
+                if (this.unit === (value || null)) return;
+                this.unit = (value || null) as TimeDurationUnit | PandasTimeUnit | null;
                 break;
         }
 
-        if (!this.unit || !this.number) {
-            return;
-        }
-
-        // Replace the % in the unit with the number and set the value
-        switch (this.type) {
-            case DurationInputType.ISO_8601:
-                this.value = `${this.unit.replace('%', this.number.toString())}`;
-                break;
-            case DurationInputType.PANDAS_FREQ:
-                this.value = `${this.unit.replace('%', this.number.toString())}`;
-        }
-
-        // Fire event to notify parent component that the value has changed
+        this.value = this.checkValidity() && this.unit ? this.unit.replace('%', String(this.number)) : '';
+        this.lastInputValue = this.value;
+        this.requestUpdate();
         this.dispatchEvent(new CustomEvent('value-changed', { detail: { value: this.value, name: this.name } }));
     }
 
@@ -140,6 +161,14 @@ export class CustomDurationInput extends LitElement {
 
     protected unit: TimeDurationUnit | PandasTimeUnit | null = null;
 
+    protected lastInputValue?: string;
+
+    checkValidity(): boolean {
+        return (
+            Number.isInteger(Number(this.number)) && Number(this.number) >= 1 && this.getUnitOptions().some(([unit]) => unit === this.unit)
+        );
+    }
+
     // Extract the number from the ISO 8601 Duration string
     getNumberFromDuration(duration: string): number | null {
         const match = /P(?:T)?(\d+)([HMDWMOY]+)/.exec(duration);
@@ -152,7 +181,7 @@ export class CustomDurationInput extends LitElement {
 
         // replace the number in the full match with % to get the unit
         const unit = match?.[0]?.replace(match?.[1], '%');
-        return unit as TimeDurationUnit;
+        return (unit as TimeDurationUnit | undefined) ?? null;
     }
 
     // Extract the number from the Pandas Frequency string
@@ -167,7 +196,7 @@ export class CustomDurationInput extends LitElement {
 
         // replace the number in the full match with % to get the unit
         const unit = match?.[0]?.replace(match?.[1], '%');
-        return unit as PandasTimeUnit;
+        return (unit as PandasTimeUnit | undefined) ?? null;
     }
 
     // Get available unit options based on the units property or defaults
@@ -188,21 +217,26 @@ export class CustomDurationInput extends LitElement {
         }
 
         return html`
-            <or-mwc-input
-                type="${InputType.NUMBER}"
+            <or-vaadin-number-field
                 name="value"
-                .value=${this.number}
-                @or-mwc-input-changed=${this.onInput}
+                .value=${this.number === null ? '' : String(this.number)}
+                @value-changed=${this.onInput}
                 label=${this.label}
-            ></or-mwc-input>
-            <or-mwc-input
-                type="${InputType.SELECT}"
+                min="1"
+                step="1"
+                required
+                .invalid=${!this.checkValidity()}
+                error-message="Enter a whole number of at least 1 and choose a unit."
+            ></or-vaadin-number-field>
+            <span id="unit-label" class="unit-label">${this.label} unit</span>
+            <or-vaadin-select
                 name="unit"
-                label="Unit"
-                .value=${this.unit}
-                @or-mwc-input-changed=${this.onInput}
-                .options="${this.getUnitOptions()}"
-            ></or-mwc-input>
+                accessible-name-ref="unit-label"
+                .value=${this.unit ?? ''}
+                @value-changed=${this.onInput}
+                .items=${this.getUnitOptions().map(([value, label]) => ({ value, label }))}
+                required
+            ></or-vaadin-select>
         `;
     }
 }

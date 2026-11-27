@@ -92,8 +92,13 @@ async def _get_jwks(issuer: str, kid: str, valid_issuers: list[str]) -> dict[str
     if issuer not in valid_issuers:
         raise jwt.exceptions.InvalidTokenError(f"Invalid issuer URL: {issuer}. Not in the list of valid issuers.")
 
-    # Construct JWKS URL using the provided keycloak_url
-    jwks_url = f"{issuer}{JWKS_ENDPOINT_PATH}"
+    # The issuer is browser-facing and can be unreachable from inside the
+    # service container. After validating it, fetch the keys through the
+    # configured internal Keycloak URL instead.
+    realm_name = issuer.rsplit("/realms/", maxsplit=1)[-1]
+    if not realm_name or "/" in realm_name:
+        raise jwt.exceptions.InvalidTokenError(f"Invalid issuer realm path: {issuer}")
+    jwks_url = f"{ENV.ML_OR_KEYCLOAK_URL.rstrip('/')}/realms/{realm_name}{JWKS_ENDPOINT_PATH}"
 
     try:
         async with httpx.AsyncClient(verify=ENV.ML_VERIFY_SSL, timeout=JWKS_REQUEST_TIMEOUT_SECONDS) as client:
@@ -134,7 +139,7 @@ async def _verify_jwt_token(token: str, valid_issuers: list[str]) -> dict[str, A
         if unverified_header.get("alg") != JWT_ALGORITHM_RS256:
             raise jwt.exceptions.InvalidTokenError("Invalid token algorithm: Expected RS256")
 
-        # Decode the token without verifying (we don't have the public key yet)
+        # Decode the token without verifying (necessary so we can extract the issuer for retrieving the JWKS)
         unverified_payload = jwt.decode(token, options={"verify_signature": False, "verify_aud": False})
 
         # Extract required claims

@@ -1,0 +1,22 @@
+{
+  "id": "e4d229b7-2129-4fce-a43c-b610fc8bc842",
+  "realm": "test",
+  "name": "LightGBM Windspeed Forecast",
+  "enabled": true,
+  "type": "lightgbm",
+  "target": {
+    "asset_id": "44ORIhkDVAlT97dYGUD9n5",
+    "attribute_name": "windSpeed",
+    "training_data_period": "P6M"
+  },
+  "forecast_interval": "PT1H",
+  "forecast_frequency": "1h",
+  "forecast_periods": 7,
+  "lags": 3,
+  "output_chunk_length": 1,
+  "n_estimators": 100,
+  "max_depth": 6,
+  "learning_rate": 0.1,
+  "subsample": 0.8,
+  "random_state": 42
+}

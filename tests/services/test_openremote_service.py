@@ -2,6 +2,7 @@ from unittest.mock import Mock
 
 from openremote_client import AssetDatapoint
 
+from service_ml_forecast.common.time_util import TimeUtil
 from service_ml_forecast.services.openremote_service import OpenRemoteService
 
 # Constants for test values
@@ -131,9 +132,11 @@ def test_get_historical_datapoints_chunking_partial_months(mock_openremote_servi
 
     # Mock return values for chunks
     jan_datapoints = [AssetDatapoint(x=1705276800000, y=100)]  # Jan 15-31
-    feb_datapoints = [AssetDatapoint(x=FEB_1_2024, y=200)]  # Feb 1-29
-    mar_datapoints = [AssetDatapoint(x=MAR_1_2024, y=300)]  # Mar 1-31
-    apr_datapoints = [AssetDatapoint(x=APR_1_2024, y=400)]  # Apr 1-30
+    # Partial-month chunks start on the 15th, so responses must lie inside
+    # their actual requested bounds rather than preceding each chunk.
+    feb_datapoints = [AssetDatapoint(x=TimeUtil.add_months_to_timestamp(1705276800000, 1), y=200)]
+    mar_datapoints = [AssetDatapoint(x=TimeUtil.add_months_to_timestamp(1705276800000, 2), y=300)]
+    apr_datapoints = [AssetDatapoint(x=TimeUtil.add_months_to_timestamp(1705276800000, 3), y=400)]
 
     mock_client.assets.get_historical_datapoints.side_effect = [
         jan_datapoints,
